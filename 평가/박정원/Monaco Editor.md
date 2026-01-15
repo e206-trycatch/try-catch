@@ -1,3 +1,5 @@
+> ⚡monaco-practice 폴더를 참고하세요.
+
 ## 1️⃣ React + Vite 프로젝트 생성
 
 ```bash
