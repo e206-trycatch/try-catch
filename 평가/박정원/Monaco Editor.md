@@ -77,7 +77,7 @@ export default App;
 
 이렇게 하면, 기본적으로 다음과 같은 화면이 뜨게 된다.
 
-![monaco1](assets/monaco1.png)
+![monaco1](image/monaco1.png)
 
 ---
 
@@ -124,7 +124,7 @@ function App() {
 export default App;
 ```
 
-![monaco2](assets/monaco2.png)
+![monaco2](image/monaco2.png)
 
 이렇게 잘 나오는 것을 확인할 수 있다.
 
