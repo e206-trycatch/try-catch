@@ -5,6 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import checkFile from 'eslint-plugin-check-file'; //파일명 체크 플러그인 import
 
 export default tseslint.config(
   { ignores: ['dist'] },
@@ -12,8 +14,7 @@ export default tseslint.config(
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
-      // Prettier와 충돌하는 ESLint 규칙을 꺼주는 설정 (가장 마지막에 와야 함)
-      eslintConfigPrettier, 
+      eslintConfigPrettier,
     ],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -23,27 +24,51 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'simple-import-sort': simpleImportSort,
+      'check-file': checkFile, // 플러그인 등록
       prettier: prettier,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      
-      // 1. Prettier 규칙을 ESLint 에러로 표시 (포맷팅 안 맞으면 빨간줄)
-      'prettier/prettier': 'warn',
 
-      // 2. 개발 속도를 위해 완화한 규칙들 (Error -> Warn)
+      // * import 정렬 규칙
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+
+      // * 파일명 규칙 (Jenkins 고려)
+      'check-file/filename-naming-convention': [
+        'error',
+        {
+          // ? .tsx: PascalCase
+          '**/*.{tsx}': 'PASCAL_CASE',
+          // ? .ts (유틸, 훅 등): camelCase
+          '**/*.{ts}': 'CAMEL_CASE',
+        },
+        {
+            // index.ts 같은 파일은 예외 처리하지 않아도 규칙에 맞으면 통과됨
+            // 파일 중간의 확장자(.test.tsx 등)는 무시
+            ignoreMiddleExtensions: true 
+        }
+      ],
+      // * 폴더명 규칙
+      'check-file/folder-naming-convention': [
+        'error',
+        {
+          'src/**/': 'KEBAB_CASE', // ? src 하위 폴더: kebab-case
+        },
+      ],
+
+      'prettier/prettier': 'warn',
+      
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
       
-      // 변수 선언해놓고 안 쓰면 에러나는데, 개발 중엔 그럴 수 있으므로 '경고'로 낮춤
       '@typescript-eslint/no-unused-vars': 'warn',
       
-      // 급할 때 'any' 타입 쓸 수 있게 에러 대신 '경고' 처리
-      '@typescript-eslint/no-explicit-any': 'warn', 
+      '@typescript-eslint/no-explicit-any': 'error', 
       
-      // console.log 남겨도 빌드 에러 안 나게 (배포 땐 지우는 게 좋지만 일단 허용)
       'no-console': 'off',
     },
   },
