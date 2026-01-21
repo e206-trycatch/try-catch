@@ -253,28 +253,3 @@ gradle-app.setting
 .hprof
 
 # End of httpswww.toptal.comdevelopersgitignoreapijava,windows,macos,git,visualstudiocode,gradle,netbeans,intellij+all
-
-### Frontend (Node.js & Vite) ###
-# 의존성 모듈 (가장 중요)
-node_modules/
-
-# 빌드 결과물
-dist/
-dist-ssr/
-
-# 로그 파일
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Vite 임시 파일 및 캐시
-.vite/
-*.tsbuildinfo
-
-# 환경변수 (이미 상단에 .env가 있지만, Vite 전용 패턴 추가)
-.env.local
-.env.*.local
-
-# 테스팅 커버리지
-coverage/
