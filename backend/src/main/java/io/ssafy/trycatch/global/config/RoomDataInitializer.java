@@ -2,6 +2,7 @@ package io.ssafy.trycatch.global.config;
 
 import io.ssafy.trycatch.domain.room.entity.Framework;
 import io.ssafy.trycatch.domain.room.entity.Theme;
+import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
@@ -53,7 +54,7 @@ public class RoomDataInitializer implements CommandLineRunner {
             Framework fw1 = Framework.builder()
                     .name("Spring Boot")
                     .language("Java")
-                    .category("BACKEND")
+                    .category(FrameworkCategory.BACKEND)
                     .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw1);
@@ -62,7 +63,7 @@ public class RoomDataInitializer implements CommandLineRunner {
             Framework fw2 = Framework.builder()
                     .name("React")
                     .language("JavaScript")
-                    .category("FRONTEND")
+                    .category(FrameworkCategory.FRONTEND)
                     .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw2);
@@ -71,7 +72,7 @@ public class RoomDataInitializer implements CommandLineRunner {
             Framework fw3 = Framework.builder()
                     .name("Vue.js")
                     .language("JavaScript")
-                    .category("FRONTEND")
+                    .category(FrameworkCategory.FRONTEND)
                     .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw3);
@@ -80,7 +81,7 @@ public class RoomDataInitializer implements CommandLineRunner {
             Framework fw4 = Framework.builder()
                     .name("Node.js")
                     .language("JavaScript")
-                    .category("BACKEND")
+                    .category(FrameworkCategory.BACKEND)
                     .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw4);

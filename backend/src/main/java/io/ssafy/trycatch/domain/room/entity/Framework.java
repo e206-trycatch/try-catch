@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.room.entity;
 
+import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,8 +31,9 @@ public class Framework {
     @Column(name = "language", length = 255)
     private String language;
 
-    @Column(name = "category", nullable = false, columnDefinition = "ENUM('FRONTEND','BACKEND') DEFAULT 'FRONTEND'")
-    private String category;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false)
+    private FrameworkCategory category;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

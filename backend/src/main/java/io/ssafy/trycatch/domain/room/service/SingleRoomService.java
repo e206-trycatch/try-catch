@@ -4,6 +4,7 @@ import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.Framework;
 import io.ssafy.trycatch.domain.room.entity.Theme;
+import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
@@ -50,7 +51,7 @@ public class SingleRoomService {
         Map<String, List<FrameworkInfo>> frameworkMap = new HashMap<>();
 
         List<FrameworkInfo> frontendFrameworks = frameworks.stream()
-                .filter(f -> "FRONTEND".equals(f.getCategory()))
+                .filter(f -> FrameworkCategory.FRONTEND.equals(f.getCategory()))
                 .map(f -> FrameworkInfo.builder()
                         .id(f.getId())
                         .name(f.getName())
@@ -58,7 +59,7 @@ public class SingleRoomService {
                 .collect(Collectors.toList());
 
         List<FrameworkInfo> backendFrameworks = frameworks.stream()
-                .filter(f -> "BACKEND".equals(f.getCategory()))
+                .filter(f -> FrameworkCategory.BACKEND.equals(f.getCategory()))
                 .map(f -> FrameworkInfo.builder()
                         .id(f.getId())
                         .name(f.getName())
