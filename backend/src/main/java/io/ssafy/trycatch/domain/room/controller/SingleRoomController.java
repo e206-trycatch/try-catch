@@ -1,14 +1,13 @@
 package io.ssafy.trycatch.domain.room.controller;
 
+import io.ssafy.trycatch.domain.room.dto.request.SingleRoomCreateReqDto;
+import io.ssafy.trycatch.domain.room.dto.response.SingleRoomCreateRespDto;
 import io.ssafy.trycatch.global.common.ApiRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
@@ -26,5 +25,13 @@ public class SingleRoomController {
         return ResponseEntity.ok(
                 ApiRespDto.success("싱글 플레이 설정 데이터를 불러왔습니다.", response)
         );
+    }
+
+    @PostMapping("/single")
+    public ResponseEntity<ApiRespDto<SingleRoomCreateRespDto>> createSingleRoom(
+            @RequestBody SingleRoomCreateReqDto request) {
+        SingleRoomCreateRespDto response = singleRoomService.createSingleRoom(request);
+        return ResponseEntity.ok(
+                ApiRespDto.success("싱글 방이 생성되었습니다.", response));
     }
 }
