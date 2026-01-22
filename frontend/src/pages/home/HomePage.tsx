@@ -1,0 +1,100 @@
+import mainBgm from '../../assets/sounds/1199_Flyns Forest.mp3';
+import VHSEffect from '../../components/effects/VHSEffect';
+import VHSStyles from '../../components/effects/VHSStyles';
+import { useAudio } from '../../hooks/useAudio';
+
+const logoText = 'try - catch!';
+const charCount = logoText.length;
+const typingDuration = 0.1; // 각 글자 타이핑 시간
+const displayTime = 2; // 전체 표시 시간
+const totalCycle = charCount * typingDuration * 2 + displayTime; // 전체 사이클 시간
+
+const HomePage = () => {
+  useAudio(mainBgm);
+
+  // 각 글자의 애니메이션 생성
+  const generateKeyframes = (charIndex: number, reverseIndex: number) => {
+    const typeInStart = ((charIndex * typingDuration) / totalCycle) * 100;
+    const typeInEnd = typeInStart + (typingDuration / totalCycle) * 100;
+    const typeOutStart =
+      ((charCount * typingDuration +
+        displayTime +
+        reverseIndex * typingDuration) /
+        totalCycle) *
+      100;
+    const typeOutEnd = typeOutStart + (typingDuration / totalCycle) * 100;
+
+    return `
+      @keyframes typeChar${charIndex} {
+        0%, ${typeInStart}% { opacity: 0; }
+        ${typeInEnd}%, ${typeOutStart}% { opacity: 1; }
+        ${typeOutEnd}%, 100% { opacity: 0; }
+      }
+    `;
+  };
+
+  return (
+    <div className="fixed inset-0 overflow-hidden flex items-center justify-center">
+      <VHSEffect />
+
+      {/* 동적 키프레임 생성 */}
+      <style>
+        {logoText
+          .split('')
+          .map((_, index) => generateKeyframes(index, charCount - index - 1))
+          .join('')}
+      </style>
+
+      <div className="flex flex-col items-center gap-8 relative z-10">
+        <div
+          className="typing-text text-[90px] font-bold tracking-wide"
+          style={{
+            color: '#FEFEFE',
+            textShadow: '0 0 10px rgba(254, 254, 254, 0.5)',
+          }}
+        >
+          {logoText.split('').map((char, index) => (
+            <span
+              key={index}
+              className="char"
+              style={{
+                animation: `typeChar${index} ${totalCycle}s infinite`,
+              }}
+            >
+              {char}
+            </span>
+          ))}
+        </div>
+
+        <button
+          className="relative px-8 py-4 hover:opacity-80 transition-opacity duration-200 pixel-button text-2xl font-semibold"
+          style={{
+            backgroundColor: '#FEFEFE',
+            color: '#040040',
+            clipPath:
+              'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))',
+          }}
+          onClick={() => console.log('Start clicked')}
+        >
+          Start
+        </button>
+      </div>
+
+      <div
+        className="absolute text-4xl"
+        style={{
+          color: '#FEFEFE',
+          top: '15%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        }}
+      >
+        &gt;
+      </div>
+
+      <VHSStyles />
+    </div>
+  );
+};
+
+export default HomePage;
