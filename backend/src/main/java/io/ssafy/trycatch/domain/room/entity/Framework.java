@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.room.entity;
 
+import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,6 +41,7 @@ public class Framework {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_deleted", nullable = false, columnDefinition = "ENUM('T','F') DEFAULT 'F'")
-    private String isDeleted;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "is_deleted", nullable = false)
+    private TrueOrFalse isDeleted = TrueOrFalse.F;
 }

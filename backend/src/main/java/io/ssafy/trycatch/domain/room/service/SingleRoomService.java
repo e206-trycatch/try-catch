@@ -6,6 +6,7 @@ import io.ssafy.trycatch.domain.room.entity.Framework;
 import io.ssafy.trycatch.domain.room.entity.Theme;
 import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
+import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,7 +45,7 @@ public class SingleRoomService {
     }
 
     private Map<String, List<FrameworkInfo>> getAvailableFrameworks() {
-        List<Framework> frameworks = frameworkRepository.findAllByIsDeleted("F");
+        List<Framework> frameworks = frameworkRepository.findAllByIsDeleted(TrueOrFalse.F);
 
         Map<String, List<FrameworkInfo>> frameworkMap = new HashMap<>();
 

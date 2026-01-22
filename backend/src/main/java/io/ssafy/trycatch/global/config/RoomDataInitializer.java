@@ -4,6 +4,7 @@ import io.ssafy.trycatch.domain.room.entity.Framework;
 import io.ssafy.trycatch.domain.room.entity.Theme;
 import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
+import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -30,7 +31,7 @@ public class RoomDataInitializer implements CommandLineRunner {
                     .description("지하축구로 기는 운을 농본 깜박 필요한다")
                     .genre("일반")
                     .level(1)
-                    .isDeleted("F")
+                    .isDeleted(TrueOrFalse.F)
                     .build();
             themeRepository.save(theme1);
             log.info("Theme 1 삽입 완료");
@@ -40,7 +41,7 @@ public class RoomDataInitializer implements CommandLineRunner {
                     .description("폭탄을 해제하는 테마")
                     .genre("일반")
                     .level(2)
-                    .isDeleted("F")
+                    .isDeleted(TrueOrFalse.F)
                     .build();
             themeRepository.save(theme2);
             log.info("Theme 2 삽입 완료");
@@ -53,7 +54,7 @@ public class RoomDataInitializer implements CommandLineRunner {
                     .name("Spring Boot")
                     .language("Java")
                     .category("BACKEND")
-                    .isDeleted("F")
+                    .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw1);
             log.info("Framework 1 삽입 완료");
@@ -62,7 +63,7 @@ public class RoomDataInitializer implements CommandLineRunner {
                     .name("React")
                     .language("JavaScript")
                     .category("FRONTEND")
-                    .isDeleted("F")
+                    .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw2);
             log.info("Framework 2 삽입 완료");
@@ -71,7 +72,7 @@ public class RoomDataInitializer implements CommandLineRunner {
                     .name("Vue.js")
                     .language("JavaScript")
                     .category("FRONTEND")
-                    .isDeleted("F")
+                    .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw3);
             log.info("Framework 3 삽입 완료");
@@ -80,7 +81,7 @@ public class RoomDataInitializer implements CommandLineRunner {
                     .name("Node.js")
                     .language("JavaScript")
                     .category("BACKEND")
-                    .isDeleted("F")
+                    .isDeleted(TrueOrFalse.F)
                     .build();
             frameworkRepository.save(fw4);
             log.info("Framework 4 삽입 완료");

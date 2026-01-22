@@ -1,11 +1,14 @@
 package io.ssafy.trycatch.domain.room.entity;
 
+import io.ssafy.trycatch.global.common.TrueOrFalse;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+
+import static io.ssafy.trycatch.global.common.TrueOrFalse.F;
 
 @Entity
 @Table(name = "theme")
@@ -43,6 +46,8 @@ public class Theme {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_deleted", nullable = false, columnDefinition = "ENUM('T','F') DEFAULT 'F'")
-    private String isDeleted;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "is_deleted", nullable = false)
+    private TrueOrFalse isDeleted = F;
+
 }

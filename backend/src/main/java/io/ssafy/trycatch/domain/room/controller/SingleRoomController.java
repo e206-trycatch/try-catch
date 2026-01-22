@@ -1,6 +1,6 @@
 package io.ssafy.trycatch.domain.room.controller;
 
-import io.ssafy.trycatch.domain.room.dto.response.ApiRespDto;
+import io.ssafy.trycatch.global.common.ApiRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SingleRoomController {
 
     private final SingleRoomService singleRoomService;
-    
+
     @GetMapping("/single")
     public ResponseEntity<ApiRespDto<SingleRoomSettingRespDto>> getSingleRoomSettings(
             @RequestParam Long themeId) {
