@@ -1,6 +1,9 @@
 """API 라우터"""
 
 from fastapi import APIRouter, HTTPException
+from openai import AuthenticationError, RateLimitError, APITimeoutError, APIError
+import httpx
+
 from app.schemas import HintRequest, HintResponse
 from app.services.guardrail import guardrail_service
 from app.services.hint_generator import hint_generator_service
@@ -74,10 +77,8 @@ async def generate_hint(request: HintRequest):
         hint = await hint_generator_service.generate_hint(
             framework=request.framework,
             problem_description=request.problem_description,
-            answer_code=request.answer_code,
             user_question=request.user_question,
-            user_code_context=user_code_context,
-            error_message=request.error_message
+            user_code_context=user_code_context
         )
 
         return HintResponse(
@@ -87,11 +88,52 @@ async def generate_hint(request: HintRequest):
             rejection_reason=None
         )
 
+    except AuthenticationError as e:
+        # LLM API 인증 오류 (API 키 문제)
+        print(f"LLM API 인증 오류: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="AI 서비스 인증에 실패했습니다. 관리자에게 문의해주세요."
+        )
+
+    except RateLimitError as e:
+        # LLM API 요청 한도 초과
+        print(f"LLM API 요청 한도 초과: {str(e)}")
+        raise HTTPException(
+            status_code=429,
+            detail="요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
+        )
+
+    except APITimeoutError as e:
+        # LLM API 응답 시간 초과
+        print(f"LLM API 타임아웃: {str(e)}")
+        raise HTTPException(
+            status_code=504,
+            detail="AI 서비스 응답 시간이 초과되었습니다. 다시 시도해주세요."
+        )
+
+    except APIError as e:
+        # 기타 LLM API 오류
+        print(f"LLM API 오류: {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail="AI 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+        )
+
+    except httpx.RequestError as e:
+        # 백엔드 서버 연결 실패
+        print(f"백엔드 서버 연결 실패: {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail="백엔드 서버와 통신에 실패했습니다. 잠시 후 다시 시도해주세요."
+        )
+
     except Exception as e:
+        # 예상치 못한 오류 (최후의 폴백)
         print(f"힌트 생성 중 예외 발생: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"힌트 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="힌트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 

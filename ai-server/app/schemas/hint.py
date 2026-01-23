@@ -14,11 +14,9 @@ class Framework(str, Enum):
 class HintRequest(BaseModel):
     """힌트 요청 스키마 (Backend → AI Server)"""
     user_id: str = Field(..., description="사용자 ID")
-    problem_id: str = Field(..., description="문제 ID")
+    problem_id: str = Field(..., description="문제 ID (problem_framework_id)")
     framework: Framework = Field(..., description="선택한 프레임워크 (django, spring, vue)")
-    problem_description: str = Field(..., description="문제 설명")
-    answer_code: str = Field(..., description="정답 코드")
-    error_message: Optional[str] = Field(None, description="에러 메시지 (선택)")
+    problem_description: str = Field(..., description="문제 설명 (DOC 파일 내용)")
     user_question: str = Field(..., description="사용자 질문")
 
     model_config = {
@@ -26,11 +24,9 @@ class HintRequest(BaseModel):
             "examples": [
                 {
                     "user_id": "user-123",
-                    "problem_id": "prob-001",
+                    "problem_id": "1",
                     "framework": "spring",
-                    "problem_description": "Spring Boot에서 의존성 주입이 동작하지 않아 NullPointerException 발생",
-                    "answer_code": "@Service\npublic class UserService {\n    @Autowired\n    private UserRepository userRepository;\n}",
-                    "error_message": "java.lang.NullPointerException",
+                    "problem_description": "문제 설명 내용(md 파일)",
                     "user_question": "왜 userRepository가 null인가요?"
                 }
             ]

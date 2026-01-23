@@ -36,8 +36,8 @@ ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Djan
 │       ▼                                                             │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  POST /api/v1/hint                                           │   │
-│  │  (user_id, problem_id, framework, problem_description,       │   │
-│  │   answer_code, error_message, user_question)                 │   │
+│  │  (user_id, problem_id, framework,                            │   │
+│  │   problem_description, user_question)                        │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │       │                                                             │
 │       ▼                                                             │
@@ -72,16 +72,13 @@ ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Djan
 | URL | `POST /api/v1/hint` |
 | Content-Type | `application/json` |
 
-# 아래 데이터 형식은 백엔드 팀원과 상의하여 다시 수정 필요함!!!!!!!!!!!!!!!!
 #### Request Body
 ```json
 {
   "user_id": "string (필수) - 사용자 ID",
-  "problem_id": "string (필수) - 문제 ID",
+  "problem_id": "string (필수) - 문제 ID (problem_framework_id)",
   "framework": "django | spring | vue (필수)",
-  "problem_description": "string (필수) - 문제 설명",
-  "answer_code": "string (필수) - 정답 코드",
-  "error_message": "string (선택) - 에러 메시지",
+  "problem_description": "string (필수) - 문제 설명 (DOC 파일 내용)",
   "user_question": "string (필수) - 사용자 질문"
 }
 ```
@@ -104,7 +101,26 @@ ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Djan
   "success": false,
   "hint": null,
   "guardrail_passed": false,
-  "rejection_reason": "정답을 직접 알려드릴 수 없습니다. 스스로 해결할 수 있도록 힌트를 드릴게요."
+  "rejection_reason": "정답을 직접 알려드릴 수 없습니다."
+}
+```
+
+#### 에러 응답
+
+서버는 오류 유형에 따라 세분화된 HTTP 상태 코드를 반환합니다.
+
+| HTTP 코드 | 원인 | 에러 메시지 |
+|-----------|------|-------------|
+| `429` | LLM API 요청 한도 초과 | "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." |
+| `500` | 예상치 못한 서버 오류 | "힌트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." |
+| `502` | AI 서비스 또는 백엔드 연결 실패 | "AI 서비스에 일시적인 문제가 발생했습니다." / "백엔드 서버와 통신에 실패했습니다." |
+| `503` | LLM API 인증 오류 (API 키 문제) | "AI 서비스 인증에 실패했습니다. 관리자에게 문의해주세요." |
+| `504` | LLM API 응답 시간 초과 | "AI 서비스 응답 시간이 초과되었습니다. 다시 시도해주세요." |
+
+**에러 응답 예시:**
+```json
+{
+  "detail": "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
 }
 ```
 
@@ -179,23 +195,44 @@ ai-server/
 
 ### 환경 변수 (.env)
 
+> **중요**: 필수 환경변수가 누락되면 서버 시작 시 `ValidationError`가 발생합니다.
+> `.env.example` 파일을 복사하여 `.env` 파일을 생성하세요.
+
 ```bash
+# ============================================
+# 필수 환경변수 (누락 시 서버 시작 불가)
+# ============================================
+
 # OpenAI API 설정
 GMS_API_KEY=your_api_key_here
 GMS_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
 
 # AI 모델 설정
-GUARDRAIL_MODEL=gpt-4o-mini    # 가드레일 검증용
-HINT_MODEL=gpt-4o-mini         # 힌트 생성용
+GUARDRAIL_MODEL=gpt-5-mini    # 가드레일 검증용
+HINT_MODEL=gpt-5-mini         # 힌트 생성용
 
-# 백엔드 서버 연동 (선택)
+# 백엔드 서버 연동
 BACKEND_BASE_URL=http://localhost:8080
-BACKEND_API_TOKEN=               # 인증 토큰 (없으면 비워둠)
 
-# 앱 설정
-APP_TITLE=ErrorScape AI Server
-APP_VERSION=1.0.0
+# ============================================
+# 선택 환경변수 (기본값 제공)
+# ============================================
+
+# BACKEND_API_TOKEN=your_token  # 백엔드 인증 토큰 (선택)
+# APP_TITLE=ErrorScape AI Server
+# APP_VERSION=1.0.0
 ```
+
+| 환경변수 | 필수 여부 | 설명 |
+|----------|-----------|------|
+| `GMS_API_KEY` | **필수** | OpenAI API 키 |
+| `GMS_BASE_URL` | **필수** | OpenAI API 엔드포인트 URL |
+| `GUARDRAIL_MODEL` | **필수** | 가드레일 검증용 모델 (예: gpt-5-mini) |
+| `HINT_MODEL` | **필수** | 힌트 생성용 모델 (예: gpt-5-mini) |
+| `BACKEND_BASE_URL` | **필수** | Spring Boot 백엔드 서버 URL |
+| `BACKEND_API_TOKEN` | 선택 | 백엔드 서버 인증 토큰 |
+| `APP_TITLE` | 선택 | 앱 이름 (기본: ErrorScape AI Server) |
+| `APP_VERSION` | 선택 | 앱 버전 (기본: 1.0.0) |
 
 ### 의존성
 
@@ -262,11 +299,9 @@ curl -X POST http://localhost:8000/api/v1/hint \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "test-user",
-    "problem_id": "prob-001",
+    "problem_id": "1",
     "framework": "spring",
-    "problem_description": "Spring Boot에서 @Autowired가 동작하지 않음",
-    "answer_code": "@Service\npublic class UserService {\n    @Autowired\n    private UserRepository repo;\n}",
-    "error_message": "NullPointerException",
+    "problem_description": "문제 설명 내용",
     "user_question": "왜 userRepository가 null인가요?"
   }'
 
