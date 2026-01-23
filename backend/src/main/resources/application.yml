@@ -22,10 +22,12 @@ jwt:
   access-token-validity: 86400000      # 24시간
   refresh-token-validity: 604800000   # 7일
 
-
 # 로깅 설정
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql: trace
     io.ssafy: debug
+
+server:
+  port: 8081
