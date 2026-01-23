@@ -1,16 +1,19 @@
 package io.ssafy.trycatch.domain.room.service;
 
 import io.ssafy.trycatch.domain.room.dto.request.SingleRoomCreateReqDto;
+import io.ssafy.trycatch.domain.room.dto.response.QuestDetailRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomCreateRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.Framework;
+import io.ssafy.trycatch.domain.room.entity.Quest;
 import io.ssafy.trycatch.domain.room.entity.Room;
 import io.ssafy.trycatch.domain.room.entity.Theme;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.domain.room.enums.RoomMode;
 import io.ssafy.trycatch.domain.room.enums.RoomStatus;
 import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
+import io.ssafy.trycatch.domain.room.repository.QuestRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
@@ -33,6 +36,7 @@ public class SingleRoomService {
     private final ThemeRepository themeRepository;
     private final FrameworkRepository frameworkRepository;
     private final RoomRepository roomRepository;
+    private final QuestRepository questRepository;
 
     // 싱글 모드 방 설정
     public SingleRoomSettingRespDto getSingleRoomSettings(Long themeId) {
@@ -164,4 +168,33 @@ public class SingleRoomService {
     private String generateRoomName(String themeName) {
         return themeName + " - 싱글 플레이";
     }
+
+    // 각 퀘스트 시작 페이지 생성
+    public List<QuestDetailRespDto> getQuestList(Long themeId) {
+        // 1. 테마 존재 여부 확인
+        validateTheme(themeId);
+
+        // 2. 해당 테마의 모든 퀘스트 조회 (순서대로)
+        List<Quest> quests = questRepository.findByThemeIdAndIsDeletedOrderByQuestOrderAsc(
+                themeId, TrueOrFalse.F);
+
+        // 3. 퀘스트가 없으면 예외
+        if (quests.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "해당 테마에 퀘스트가 없습니다. themeId: " + themeId);
+        }
+
+        log.info("퀘스트 목록 조회 완료 - themeId: {}, count: {}", themeId, quests.size());
+
+        // 4. DTO 변환
+        return quests.stream()
+                .map(quest -> QuestDetailRespDto.builder()
+                        .questId(quest.getId())
+                        .questOrder(quest.getQuestOrder())
+                        .title(quest.getTitle())
+                        .description(quest.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
 }
