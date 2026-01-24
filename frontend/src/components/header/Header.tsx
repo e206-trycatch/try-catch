@@ -16,24 +16,40 @@ const Header = () => {
   return (
     <>
       <GlobalAudioPlayer />
-      <header className="w-full flex items-center px-[80px] py-6 text-white absolute top-0 left-0 z-10">
+      <header
+        className="w-full flex items-center fixed top-0 left-0 z-10 text-white"
+        style={{ padding: '24px 80px' }}
+      >
         {/* 좌측 로고 영역 */}
         {!isHomePage && (
           <Link
             to="/"
-            className="flex items-center gap-2 hover:opacity-80 active:opacity-60 transition-opacity"
+            className="flex items-center hover:opacity-80 active:opacity-60 transition-opacity"
+            style={{ gap: '0.5vw' }}
           >
-            <img src={backIcon} alt="Back" className="w-6 h-6" />
+            <img
+              src={backIcon}
+              alt="Back"
+              style={{ width: '24px', height: '24px' }}
+            />
             <img
               src={trycatchLogo}
               alt="TryCatch Logo"
-              className="w-[95px] h-[23px] justify-center aspect-[95/23] object-contain ml-2"
+              style={{ width: '95px', height: '23px', marginLeft: '0.5vw' }}
+              className="object-contain"
             />
           </Link>
         )}
 
-        {/* 우측 메뉴 영역 (조건부 렌더링) */}
-        <nav className="flex items-center gap-6 tracking-[-0.8px] text-md ml-auto">
+        {/* 우측 메뉴 영역 */}
+        <nav
+          className="flex items-center ml-auto"
+          style={{ 
+            gap: '1.5vw', 
+            letterSpacing: '-0.05vw',
+            fontSize: 'max(14px, 1vw)' // 확대해도 커지지 않되, 최소 크기는 보장
+          }}
+        >
           <SoundToggleButton />
           {isLogin ? (
             <LogInMenu userName={user?.name} onLogout={logout} />
