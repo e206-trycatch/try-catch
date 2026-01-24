@@ -14,7 +14,7 @@ spring:
         jdbc:
           time_zone: Asia/Seoul
         show_sql: true
-        format_sql: false
+        format_sql: true  # SQL 출력
 
 # JWT 설정
 jwt:
@@ -28,4 +28,5 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql: trace
+    org.hibernate.orm.jdbc.bind: trace  # 파라미터 값 확인용
     io.ssafy: debug
