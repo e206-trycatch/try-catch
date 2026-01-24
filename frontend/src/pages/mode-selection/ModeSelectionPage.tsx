@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import ModeSelectionButton from '../../assets/images/buttons/mode_selection_button.png';
 
 const ModeSelectionPage = () => {
+  const navigate = useNavigate();
   // 선택된 모드 상태 관리 (스토어 연동 전 로컬 테스트용)
   const [selectedMode, setSelectedMode] = useState<'SINGLE' | 'MULTI' | null>(
     null,
@@ -10,7 +12,7 @@ const ModeSelectionPage = () => {
 
   const handleModeSelect = (mode: 'SINGLE' | 'MULTI') => {
     setSelectedMode(mode);
-    console.log(`Mode Selected: {${mode}}`);
+    navigate('/theme');
   };
 
   return (
@@ -61,5 +63,4 @@ const ModeCard = ({ title, onClick }: ModeCardProps) => {
     </button>
   );
 };
-
 export default ModeSelectionPage;
