@@ -1,18 +1,15 @@
-import mainBgm from '../../assets/sounds/1199_Flyns Forest.mp3';
 import VHSEffect from '../../components/effects/VHSEffect';
 import VHSStyles from '../../components/effects/VHSStyles';
-import { useAudio } from '../../hooks/useAudio';
 
 const logoText = 'try - catch!';
 const charCount = logoText.length;
-const typingDuration = 0.1; // 각 글자 타이핑 시간
-const displayTime = 2; // 전체 표시 시간
-const totalCycle = charCount * typingDuration * 2 + displayTime; // 전체 사이클 시간
+const typingDuration = 0.1;
+const displayTime = 2;
+const totalCycle = charCount * typingDuration * 2 + displayTime;
 
 const HomePage = () => {
-  useAudio(mainBgm);
+  // useAudio 제거 - GlobalAudioPlayer가 관리
 
-  // 각 글자의 애니메이션 생성
   const generateKeyframes = (charIndex: number, reverseIndex: number) => {
     const typeInStart = ((charIndex * typingDuration) / totalCycle) * 100;
     const typeInEnd = typeInStart + (typingDuration / totalCycle) * 100;
@@ -37,7 +34,6 @@ const HomePage = () => {
     <div className="fixed inset-0 overflow-hidden flex items-center justify-center">
       <VHSEffect />
 
-      {/* 동적 키프레임 생성 */}
       <style>
         {logoText
           .split('')

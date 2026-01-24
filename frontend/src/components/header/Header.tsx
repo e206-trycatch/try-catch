@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import backIcon from '../../assets/images/icons/back_icon.png';
 import trycatchLogo from '../../assets/images/trycatch_logo.png';
 import { useStore } from '../../stores/useStore';
+import GlobalAudioPlayer from '../sound/GlobalAudioPlayer';
 import SoundToggleButton from '../sound/SoundToggleButton';
 import LogInMenu from './LogInMenu';
 import LogOutMenu from './LogOutMenu';
@@ -14,6 +15,7 @@ const Header = () => {
 
   return (
     <>
+      <GlobalAudioPlayer />
       <header className="w-full flex items-center px-[80px] py-6 text-white absolute top-0 left-0 z-10">
         {/* 좌측 로고 영역 */}
         {!isHomePage && (
