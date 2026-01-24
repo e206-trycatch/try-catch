@@ -52,9 +52,9 @@ public class SingleRoomController {
     }
 
     // 퀘스트 스토리 목록 조회
-    @GetMapping("/single/quest/story")
+    @GetMapping("/single/quest/{questId}/story")
     public ResponseEntity<ApiRespDto<List<QuestStoryRespDto>>> getQuestStoryList(
-            @RequestParam Long questId) {
+            @PathVariable Long questId) {
 
         List<QuestStoryRespDto> response = singleRoomService.getQuestStoryList(questId);
         return ResponseEntity.ok(

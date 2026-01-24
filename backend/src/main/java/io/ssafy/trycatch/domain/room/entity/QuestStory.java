@@ -43,7 +43,7 @@ public class QuestStory {
 
     // 삭제 여부
     @Enumerated(EnumType.STRING)
-    @Column(name = "is_deleted", nullable = false, columnDefinition = "ENUM('T','F')")
+    @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private TrueOrFalse isDeleted = TrueOrFalse.F;
 
