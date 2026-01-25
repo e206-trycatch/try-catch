@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         FRONTEND_CHANGED = 'false'
-        BACKEND_CHANGED = 'false'
+        BACKEND_CHANGED = 'true'
         GITLAB_CREDENTIALS = 'gitlab-credentials'
     }
     
@@ -19,13 +19,8 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    def lastSuccessfulCommit = null
-                    
                     // 마지막 성공한 빌드의 커밋 찾기
-                    def lastSuccessfulBuild = currentBuild.getPreviousSuccessfulBuild()
-                    if (lastSuccessfulBuild) {
-                        lastSuccessfulCommit = lastSuccessfulBuild.getEnvironment().GIT_COMMIT
-                    }
+                    def lastSuccessfulCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT
                     
                     if (lastSuccessfulCommit) {
                         // 마지막 성공한 빌드와 비교
