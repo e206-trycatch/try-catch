@@ -19,7 +19,6 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    // 이전 커밋과 비교하여 변경된 파일 확인
                     def changes = sh(
                         script: "git diff --name-only HEAD~1 HEAD || echo ''",
                         returnStdout: true
@@ -36,7 +35,6 @@ pipeline {
                         echo "✅ Backend changed"
                     }
                     
-                    // 둘 다 변경 안됐으면 종료
                     if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
                         echo "⚠️ No frontend or backend changes detected"
                         currentBuild.result = 'SUCCESS'
@@ -69,6 +67,14 @@ pipeline {
                 
                 dir('frontend') {
                     sh '''
+                        # nvm 로드
+                        export NVM_DIR="$HOME/.nvm"
+                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        
+                        # Node.js 버전 확인
+                        node --version
+                        npm --version
+                        
                         echo "📦 Installing dependencies..."
                         npm ci
                         
