@@ -165,17 +165,21 @@ pipeline {
                 echo '========================================='
                 
                 sh '''
-                    echo "⏳ Waiting for backend to be healthy..."
-                    for i in {1..30}; do
-                        if curl -f http://localhost:8081/actuator/health 2>/dev/null; then
-                            echo "✅ Backend is healthy"
-                            exit 0
-                        fi
-                        echo "Attempt $i: Backend not ready yet..."
-                        sleep 2
-                    done
-                    echo "❌ Backend health check timeout"
-                    exit 1
+                echo "⏳ Waiting for backend to be healthy..."
+                i=1
+                while [ $i -le 30 ]; do
+                    if curl -fsS http://localhost:8081/actuator/health >/dev/null; then
+                    echo "✅ Backend is healthy"
+                    exit 0
+                    fi
+                    echo "Attempt $i: Backend not ready yet..."
+                    i=$((i+1))
+                    sleep 2
+                done
+                echo "❌ Backend health check timeout"
+                # 실패 시 진짜 원인 바로 보이게 본문 출력(선택)
+                curl -v http://localhost:8081/actuator/health || true
+                exit 1
                 '''
             }
         }
