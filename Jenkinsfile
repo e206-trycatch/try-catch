@@ -47,11 +47,11 @@ pipeline {
                         //     echo "✅ Frontend changed"
                         // }
                         if (changes.contains('backend/')) {
-                            BACKEND_CHANGED = 'true'
+                            env.BACKEND_CHANGED = 'true'
                             echo "✅ Backend changed"
                         }
                         
-                        if (BACKEND_CHANGED == 'false') {
+                        if (env.BACKEND_CHANGED == 'false') {
                             echo "⚠️ No backend changes detected"
                             currentBuild.result = 'SUCCESS'
                             return
@@ -63,7 +63,7 @@ pipeline {
                         echo "Deploying all services..."
                         echo "========================================="
                         // FRONTEND_CHANGED = 'true'
-                        BACKEND_CHANGED = 'true'
+                        env.BACKEND_CHANGED = 'true'
                     }
                 }
             }
@@ -119,30 +119,46 @@ pipeline {
         
         stage('Deploy Backend') {
             when {
-                expression { BACKEND_CHANGED == 'true' }
+                expression { env.BACKEND_CHANGED == 'true' }
             }
             steps {
                 echo '========================================='
                 echo '  Deploying Backend'
                 echo '========================================='
                 
-                sh '''
-                    if [ -f docker-compose-prod.yml ]; then
-                        echo "🐳 Building and deploying Spring Boot..."
-                        docker-compose -f docker-compose-prod.yml up -d --build spring-boot
+                withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
+                    sh '''
+                        # 환경 변수 설정
+                        echo "Setting up environment variables..."
+                        cat "$ENV_FILE" > .env
+                        
+                        # .env 파일 확인
+                        if [ ! -f .env ]; then
+                            echo "❌ .env file not found!"
+                            exit 1
+                        fi
+                        
+                        # docker-compose 파일 확인
+                        if [ ! -f docker-compose-prod.yml ]; then
+                            echo "❌ docker-compose-prod.yml not found!"
+                            exit 1
+                        fi
+                        
+                        echo "🛑 Stopping existing containers..."
+                        docker-compose --env-file .env -f docker-compose-prod.yml down || true
+                        
+                        echo "🐳 Building and deploying services..."
+                        docker-compose --env-file .env -f docker-compose-prod.yml up -d --build
+                        
                         echo "✅ Backend deployment initiated"
-                    else
-                        echo "❌ docker-compose-prod.yml not found!"
-                        ls -la
-                        exit 1
-                    fi
-                '''
+                    '''
+                }
             }
         }
         
         stage('Health Check') {
             when {
-                expression { BACKEND_CHANGED == 'true' }
+                expression { env.BACKEND_CHANGED == 'true' }
             }
             steps {
                 echo '========================================='
@@ -186,7 +202,7 @@ pipeline {
                 // if (FRONTEND_CHANGED == 'true') {
                 //     echo '✅ Frontend: Deployed to /var/www/html/'
                 // }
-                if (BACKEND_CHANGED == 'true') {
+                if (env.BACKEND_CHANGED == 'true') {
                     echo '✅ Backend: Running on port 8081'
                 }
                 echo 'MySQL: Running on port 3306'
@@ -197,41 +213,30 @@ pipeline {
             echo '❌❌❌ Deployment Failed! ❌❌❌'
             
             script {
-                // 백엔드 배포가 시도되었다면 로그 확인
-                if (BACKEND_CHANGED == 'true') {
+                if (env.BACKEND_CHANGED == 'true') {
                     echo '========================================='
-                    echo 'Spring Boot Container Logs (last 100 lines):'
+                    echo 'Spring Boot Container Logs:'
                     echo '========================================='
-                    sh 'docker-compose -f docker-compose-prod.yml logs --tail=100 spring-boot || true'
+                    sh 'docker-compose --env-file .env -f docker-compose-prod.yml logs --tail=100 spring-boot || docker logs trycatch-backend || true'
                     
                     echo '========================================='
-                    echo 'Spring Boot Container Inspect:'
+                    echo 'Container Inspect:'
                     echo '========================================='
-                    sh 'docker inspect backend || true'
+                    sh 'docker inspect trycatch-backend || true'
                 }
                 
-                // 프론트엔드 배포가 시도되었다면
-                // if (FRONTEND_CHANGED == 'true') {
-                //     echo '========================================='
-                //     echo 'Frontend Build Directory:'
-                //     echo '========================================='
-                //     sh 'ls -la frontend/build 2>/dev/null || echo "Build directory not found"'
-                // }
-                
-                // 전체 컨테이너 상태
                 echo '========================================='
                 echo 'All Containers Status:'
                 echo '========================================='
                 sh 'docker ps -a || true'
                 
-                // 디스크 용량 확인
                 echo '========================================='
-                echo 'Disk Usage:'
+                echo 'Docker Compose Status:'
                 echo '========================================='
-                sh 'df -h || true'
+                sh 'docker-compose --env-file .env -f docker-compose-prod.yml ps || true'
             }
         }
-        always {
+        cleanup {
             sh 'rm -f .env || true'
             echo '🧹 Cleaning up...'
             sh 'docker system prune -f || true'
