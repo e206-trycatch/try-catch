@@ -19,15 +19,26 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    if (env.GIT_PREVIOUS_COMMIT) {
-                        // 이전 빌드 있음 - diff 비교
+                    def lastSuccessfulCommit = null
+                    
+                    // 마지막 성공한 빌드의 커밋 찾기
+                    def lastSuccessfulBuild = currentBuild.getPreviousSuccessfulBuild()
+                    if (lastSuccessfulBuild) {
+                        lastSuccessfulCommit = lastSuccessfulBuild.getEnvironment().GIT_COMMIT
+                    }
+                    
+                    if (lastSuccessfulCommit) {
+                        // 마지막 성공한 빌드와 비교
                         def changes = sh(
-                            script: "git diff --name-only ${env.GIT_PREVIOUS_COMMIT} ${env.GIT_COMMIT}",
+                            script: "git diff --name-only ${lastSuccessfulCommit} ${env.GIT_COMMIT}",
                             returnStdout: true
                         ).trim()
                         
                         echo "========================================="
-                        echo "Changed files since last build:"
+                        echo "Comparing with last successful build"
+                        echo "Last successful commit: ${lastSuccessfulCommit}"
+                        echo "Current commit: ${env.GIT_COMMIT}"
+                        echo "Changed files:"
                         echo "${changes}"
                         echo "========================================="
                         
@@ -46,9 +57,9 @@ pipeline {
                             return
                         }
                     } else {
-                        // 첫 빌드 - 전체 배포
+                        // 첫 빌드 또는 성공한 빌드가 없음 - 전체 배포
                         echo "========================================="
-                        echo "🎉 First build detected"
+                        echo "🎉 First build or no previous successful build"
                         echo "Deploying all services..."
                         echo "========================================="
                         FRONTEND_CHANGED = 'true'
@@ -122,6 +133,7 @@ pipeline {
                         echo "✅ Backend deployment initiated"
                     else
                         echo "❌ docker-compose-prod.yml not found!"
+                        ls -la
                         exit 1
                     fi
                 '''
@@ -183,6 +195,41 @@ pipeline {
         }
         failure {
             echo '❌❌❌ Deployment Failed! ❌❌❌'
+            
+            script {
+                // 백엔드 배포가 시도되었다면 로그 확인
+                if (BACKEND_CHANGED == 'true') {
+                    echo '========================================='
+                    echo 'Spring Boot Container Logs (last 100 lines):'
+                    echo '========================================='
+                    sh 'docker-compose -f docker-compose-prod.yml logs --tail=100 spring-boot || true'
+                    
+                    echo '========================================='
+                    echo 'Spring Boot Container Inspect:'
+                    echo '========================================='
+                    sh 'docker inspect backend || true'
+                }
+                
+                // 프론트엔드 배포가 시도되었다면
+                if (FRONTEND_CHANGED == 'true') {
+                    echo '========================================='
+                    echo 'Frontend Build Directory:'
+                    echo '========================================='
+                    sh 'ls -la frontend/build 2>/dev/null || echo "Build directory not found"'
+                }
+                
+                // 전체 컨테이너 상태
+                echo '========================================='
+                echo 'All Containers Status:'
+                echo '========================================='
+                sh 'docker ps -a || true'
+                
+                // 디스크 용량 확인
+                echo '========================================='
+                echo 'Disk Usage:'
+                echo '========================================='
+                sh 'df -h || true'
+            }
         }
         always {
             sh 'rm -f .env || true'
