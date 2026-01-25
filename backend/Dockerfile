@@ -6,6 +6,7 @@ WORKDIR /app
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
 COPY gradlew ./
+RUN chmod +x gradlew
 
 # 의존성/플러그인 캐시
 RUN ./gradlew dependencies --no-daemon
