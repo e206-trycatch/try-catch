@@ -48,4 +48,19 @@ public class AuthController {
         return ResponseEntity.ok(DuplicateCheckRespDto.available("사용 가능한 닉네임입니다."));
     }
 
+    // 이메일 중복 체크
+    @GetMapping("/check-email")
+    public ResponseEntity<DuplicateCheckRespDto> checkEmail(
+            @RequestParam String email) {
+        log.info("이메일 중복 체크 API 호출: {}", email);
+        boolean isDuplicate = authService.checkEmailDuplicate(email);
+
+        if (isDuplicate) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(DuplicateCheckRespDto.duplicate("해당 이메일로 가입된 계정이 있습니다."));
+        }
+
+        return ResponseEntity.ok(DuplicateCheckRespDto.available("사용 가능한 이메일입니다."));
+    }
 }

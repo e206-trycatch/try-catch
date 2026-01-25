@@ -25,4 +25,9 @@ public class AuthService {
         return userRepository.existsByNicknameAndIsDeleted(nickname, TrueOrFalse.F);
     }
 
+    // 이메일 중복 체크
+    public boolean checkEmailDuplicate(String email){
+        return userRepository.existsByEmailAndIsDeleted(email, TrueOrFalse.F);
+    }
+
 }
