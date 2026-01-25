@@ -20,4 +20,9 @@ public class AuthService {
         return userRepository.existsByLoginIdAndIsDeleted(loginId, TrueOrFalse.F);
     }
 
+    // 닉네임 중복 체크
+    public boolean checkNicknameDuplicate(String nickname) {
+        return userRepository.existsByNicknameAndIsDeleted(nickname, TrueOrFalse.F);
+    }
+
 }

@@ -1,14 +1,12 @@
 package io.ssafy.trycatch.domain.user.controller;
 
+import io.ssafy.trycatch.domain.user.dto.response.DuplicateCheckRespDto;
 import io.ssafy.trycatch.domain.user.service.AuthService;
-import io.ssafy.trycatch.global.common.ApiRespDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -20,7 +18,7 @@ public class AuthController {
 
     // 아이디 중복 체크
     @GetMapping("/check-loginId")
-    public ResponseEntity<ApiRespDto<Map<String, Boolean>>> checkLoginId(
+    public ResponseEntity<DuplicateCheckRespDto> checkLoginId(
             @RequestParam String loginId) {
         log.info("아이디 중복 체크 API 호출: {}", loginId);
         boolean isDuplicate = authService.checkLoginIdDuplicate(loginId);
@@ -28,10 +26,26 @@ public class AuthController {
         if (isDuplicate) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body(ApiRespDto.error("이미 사용중인 아이디입니다"));
+                    .body(DuplicateCheckRespDto.duplicate("이미 사용 중인 아이디입니다."));
         }
 
-        return ResponseEntity.ok(ApiRespDto.success("사용 가능한 아이디입니다", null));
+        return ResponseEntity.ok(DuplicateCheckRespDto.available("사용 가능한 아이디입니다."));
+    }
+
+    // 닉네임 중복 체크
+    @GetMapping("/check-nickname")
+    public ResponseEntity<DuplicateCheckRespDto> checkNickname(
+            @RequestParam String nickname) {
+        log.info("닉네임 중복 체크 API 호출: {}", nickname);
+        boolean isDuplicate = authService.checkNicknameDuplicate(nickname);
+
+        if (isDuplicate) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(DuplicateCheckRespDto.duplicate("이미 사용 중인 닉네임입니다."));
+        }
+
+        return ResponseEntity.ok(DuplicateCheckRespDto.available("사용 가능한 닉네임입니다."));
     }
 
 }

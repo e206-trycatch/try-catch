@@ -14,7 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 중복 체크
     boolean existsByLoginIdAndIsDeleted(String loginId, TrueOrFalse isDeleted);
 
-    boolean existsByEmailAndIsDeleted(String email, TrueOrFalse isDeleted);
-
     boolean existsByNicknameAndIsDeleted(String nickname, TrueOrFalse isDeleted);
+
+    boolean existsByEmailAndIsDeleted(String email, TrueOrFalse isDeleted);
 }
