@@ -29,3 +29,6 @@ logging:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql: trace
     io.ssafy: debug
+
+server:
+  port: 8081
