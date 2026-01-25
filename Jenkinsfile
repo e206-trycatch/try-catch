@@ -1,5 +1,9 @@
 pipeline {
     agent any
+
+    options {
+        disableConcurrentBuilds()
+    }
     
     environment {
         FRONTEND_CHANGED = 'false'
