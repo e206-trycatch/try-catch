@@ -42,17 +42,17 @@ pipeline {
                         echo "${changes}"
                         echo "========================================="
                         
-                        if (changes.contains('frontend/')) {
-                            FRONTEND_CHANGED = 'true'
-                            echo "✅ Frontend changed"
-                        }
+                        // if (changes.contains('frontend/')) {
+                        //     FRONTEND_CHANGED = 'true'
+                        //     echo "✅ Frontend changed"
+                        // }
                         if (changes.contains('backend/')) {
                             BACKEND_CHANGED = 'true'
                             echo "✅ Backend changed"
                         }
                         
-                        if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
-                            echo "⚠️ No frontend or backend changes detected"
+                        if (BACKEND_CHANGED == 'false') {
+                            echo "⚠️ No backend changes detected"
                             currentBuild.result = 'SUCCESS'
                             return
                         }
@@ -62,7 +62,7 @@ pipeline {
                         echo "🎉 First build or no previous successful build"
                         echo "Deploying all services..."
                         echo "========================================="
-                        FRONTEND_CHANGED = 'true'
+                        // FRONTEND_CHANGED = 'true'
                         BACKEND_CHANGED = 'true'
                     }
                 }
@@ -81,41 +81,41 @@ pipeline {
             }
         }
         
-        stage('Build & Deploy Frontend') {
-            when {
-                expression { FRONTEND_CHANGED == 'true' }
-            }
-            steps {
-                echo '========================================='
-                echo '  Building Frontend'
-                echo '========================================='
-                
-                dir('frontend') {
-                    sh '''
-                        # nvm 로드
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        
-                        echo "Using Node.js version:"
-                        node --version
-                        npm --version
-                        
-                        echo "📦 Installing dependencies..."
-                        npm ci
-                        
-                        echo "🔨 Building React app..."
-                        npm run build
-                        
-                        echo "🚀 Deploying to /var/www/html/..."
-                        sudo rm -rf /var/www/html/*
-                        sudo cp -r build/* /var/www/html/
-                        sudo chown -R www-data:www-data /var/www/html
-                        
-                        echo "✅ Frontend deployed successfully"
-                    '''
-                }
-            }
-        }
+        // stage('Build & Deploy Frontend') {
+        //     when {
+        //         expression { FRONTEND_CHANGED == 'true' }
+        //     }
+        //     steps {
+        //         echo '========================================='
+        //         echo '  Building Frontend'
+        //         echo '========================================='
+        //         
+        //         dir('frontend') {
+        //             sh '''
+        //                 # nvm 로드
+        //                 export NVM_DIR="$HOME/.nvm"
+        //                 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        //                 
+        //                 echo "Using Node.js version:"
+        //                 node --version
+        //                 npm --version
+        //                 
+        //                 echo "📦 Installing dependencies..."
+        //                 npm ci
+        //                 
+        //                 echo "🔨 Building React app..."
+        //                 npm run build
+        //                 
+        //                 echo "🚀 Deploying to /var/www/html/..."
+        //                 sudo rm -rf /var/www/html/*
+        //                 sudo cp -r build/* /var/www/html/
+        //                 sudo chown -R www-data:www-data /var/www/html
+        //                 
+        //                 echo "✅ Frontend deployed successfully"
+        //             '''
+        //         }
+        //     }
+        // }
         
         stage('Deploy Backend') {
             when {
@@ -183,9 +183,9 @@ pipeline {
         success {
             script {
                 echo '✅✅✅ Deployment Successful! ✅✅✅'
-                if (FRONTEND_CHANGED == 'true') {
-                    echo '✅ Frontend: Deployed to /var/www/html/'
-                }
+                // if (FRONTEND_CHANGED == 'true') {
+                //     echo '✅ Frontend: Deployed to /var/www/html/'
+                // }
                 if (BACKEND_CHANGED == 'true') {
                     echo '✅ Backend: Running on port 8081'
                 }
@@ -211,12 +211,12 @@ pipeline {
                 }
                 
                 // 프론트엔드 배포가 시도되었다면
-                if (FRONTEND_CHANGED == 'true') {
-                    echo '========================================='
-                    echo 'Frontend Build Directory:'
-                    echo '========================================='
-                    sh 'ls -la frontend/build 2>/dev/null || echo "Build directory not found"'
-                }
+                // if (FRONTEND_CHANGED == 'true') {
+                //     echo '========================================='
+                //     echo 'Frontend Build Directory:'
+                //     echo '========================================='
+                //     sh 'ls -la frontend/build 2>/dev/null || echo "Build directory not found"'
+                // }
                 
                 // 전체 컨테이너 상태
                 echo '========================================='
