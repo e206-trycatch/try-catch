@@ -1,18 +1,16 @@
 package io.ssafy.trycatch.domain.room.service;
 
 import io.ssafy.trycatch.domain.room.dto.request.SingleRoomCreateReqDto;
+import io.ssafy.trycatch.domain.room.dto.response.QuestDetailRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.QuestStoryRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomCreateRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto.FrameworkInfo;
-import io.ssafy.trycatch.domain.room.entity.Framework;
-import io.ssafy.trycatch.domain.room.entity.Room;
-import io.ssafy.trycatch.domain.room.entity.Theme;
+import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.domain.room.enums.RoomMode;
 import io.ssafy.trycatch.domain.room.enums.RoomStatus;
-import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
-import io.ssafy.trycatch.domain.room.repository.RoomRepository;
-import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
+import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +31,8 @@ public class SingleRoomService {
     private final ThemeRepository themeRepository;
     private final FrameworkRepository frameworkRepository;
     private final RoomRepository roomRepository;
-
+    private final QuestRepository questRepository;
+    private final QuestStoryRepository questStoryRepository;
     // 싱글 모드 방 설정
     public SingleRoomSettingRespDto getSingleRoomSettings(Long themeId) {
         Theme selectedTheme = getThemeById(themeId);
@@ -160,8 +159,60 @@ public class SingleRoomService {
                         "존재하지 않는 프레임워크입니다. frameworkId: " + frameworkId));
     }
 
-    // 방 제목 생성 (예: "프로젝트 에이아 - 싱글 플레이")
     private String generateRoomName(String themeName) {
         return themeName + " - 싱글 플레이";
+    }
+
+    // 각 퀘스트 시작 페이지 생성
+    public List<QuestDetailRespDto> getQuestList(Long themeId) {
+        // 1. 테마 존재 여부 확인
+        validateTheme(themeId);
+
+        // 2. 해당 테마의 모든 퀘스트 조회 (순서대로)
+        List<Quest> quests = questRepository.findByThemeIdAndIsDeletedOrderByQuestOrderAsc(
+                themeId, TrueOrFalse.F);
+
+        // 3. 퀘스트가 없으면 예외
+        if (quests.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "해당 테마에 퀘스트가 없습니다. themeId: " + themeId);
+        }
+
+        log.info("퀘스트 목록 조회 완료 - themeId: {}, count: {}", themeId, quests.size());
+
+        // 4. DTO 변환
+        return quests.stream()
+                .map(quest -> QuestDetailRespDto.builder()
+                        .questId(quest.getId())
+                        .questOrder(quest.getQuestOrder())
+                        .title(quest.getTitle())
+                        .description(quest.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // 퀘스트 스토리 목록 조회
+    public List<QuestStoryRespDto> getQuestStoryList(Long questId) {
+        // 1. 해당 퀘스트의 모든 스토리 조회 (순서대로)
+        List<QuestStory> stories = questStoryRepository.findByQuestIdAndIsDeletedOrderByStoryOrderAsc(
+                questId, TrueOrFalse.F);
+
+        // 2. 스토리가 없으면 예외
+        if (stories.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "해당 퀘스트 스토리를 찾을 수 없습니다.");
+        }
+
+        log.info("퀘스트 스토리 목록 조회 완료");
+
+        // 3. DTO 변환
+        return stories.stream()
+                .map(story -> QuestStoryRespDto.builder()
+                        .storyId(story.getId())
+                        .storyOrder(story.getStoryOrder())
+                        .imageUrl(story.getImageUrl())
+                        .content(story.getContent())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

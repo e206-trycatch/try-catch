@@ -1,0 +1,34 @@
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+
+class Settings(BaseSettings):
+    """
+    애플리케이션 설정
+
+    필수 환경변수가 누락되면 서버 시작 시 ValidationError 발생.
+    .env.example 파일을 참고하여 .env 파일을 생성하세요.
+    """
+
+    # OpenAI API 설정 (필수)
+    gms_api_key: str
+    gms_base_url: str
+
+    # AI 모델 설정 (필수)
+    guardrail_model: str  # 가드레일 모델 (예: gpt-5-mini)
+    hint_model: str  # 힌트 생성 모델 (예: gpt-5-mini)
+
+    # 백엔드 서버 연동 설정 (필수)
+    backend_base_url: str  # Spring Boot 백엔드 서버 URL
+    backend_api_token: Optional[str] = None  # 백엔드 서버 인증 토큰 (선택)
+
+    # 애플리케이션 설정 (기본값 제공)
+    app_title: str = "ErrorScape AI Server"
+    app_version: str = "1.0.0"
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+
+
+settings = Settings()

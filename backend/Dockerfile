@@ -1,19 +1,26 @@
+######################## 1) Build Stage ########################
 FROM gradle:8.5-jdk21 AS builder
 WORKDIR /app
 
-# 의존성 캐싱!
+# Gradle 설정/래퍼 먼저 복사
 COPY build.gradle settings.gradle ./
-RUN gradle dependencies --no-daemon || return 0
+COPY gradle ./gradle
+COPY gradlew ./
 
+# 의존성/플러그인 캐시
+RUN ./gradlew dependencies --no-daemon
+
+# 소스 복사 후 빌드
 COPY . .
-RUN gradle build -x test --no-daemon
+RUN ./gradlew build -x test --no-daemon
 
+
+######################## 2) Runtime Stage ######################
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-HEALTHCHECK CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-jar", "app.jar"]
