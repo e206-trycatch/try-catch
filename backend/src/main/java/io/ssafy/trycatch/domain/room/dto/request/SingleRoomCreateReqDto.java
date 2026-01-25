@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SingleRoomCreateReqDto {
-
-
     private Long themeId;
     private String position;
     private Long frontId;
