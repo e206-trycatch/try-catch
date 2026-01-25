@@ -19,7 +19,7 @@ export function useFile() {
         const data = await getQuestFile(1); // 서버 요청
         const tree = buildFileTree(data); // 트리 변환
         setFiles(tree.children ?? []); // 상태 저장
-      } catch (e) {
+      } catch {
         setError('파일을 불러오지 못했습니다.');
       } finally {
         setLoading(false);

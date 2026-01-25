@@ -2,6 +2,23 @@ import { useMemo, useState } from 'react';
 
 import type { FileNode } from '../types/ideTypes';
 
+function collectFileCodes(root: FileNode): Record<string, string> {
+  const result: Record<string, string> = {};
+
+  const dfs = (node: FileNode) => {
+    // 파일인 경우, 코드 저장하기
+    if (node.type === 'file') {
+      result[node.id] = node.code ?? '';
+      return;
+    }
+
+    // 폴더인 경우, 폴더의 자식들 dfs 하기
+    node.children?.forEach(dfs);
+  };
+  dfs(root);
+  return result;
+}
+
 export function useIde(root: FileNode) {
   // 상단 탭 영역에 열려 있는 파일 목록
   const [openTabs, setOpenTabs] = useState<FileNode[]>([]);
@@ -14,6 +31,11 @@ export function useIde(root: FileNode) {
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(['root']),
   );
+
+  // {파일 id : 코드} 형식으로 저장하기
+  const [fileCodes, setFileCodes] = useState<Record<string, string>>(() => {
+    return collectFileCodes(root);
+  });
 
   // 폴더를 클릭했을 때 열고 닫는 기능
   const toggleFolder = (folderId: string) => {
@@ -50,6 +72,15 @@ export function useIde(root: FileNode) {
     });
 
     setActiveFileId(file.id); // 클릭한 파일을 현재 작업 중인 파일로 지정하기
+
+    setFileCodes((prev) => {
+      // fileCodes에 없다면 = 열린 적이 없어서 등록이 되어있지 않다면 추가하기
+      if (prev[file.id] === undefined) {
+        return { ...prev, [file.id]: file.code ?? '빈 파일입니다.' };
+      }
+      // fileCodes에 있다면 = 이미 열린 적이 있는 파일
+      return prev;
+    });
   };
 
   const closeTab = (fileId: string) => {
@@ -77,6 +108,20 @@ export function useIde(root: FileNode) {
     return openTabs.find((f) => f.id === activeFileId) ?? null; // 열려있는 탭 들 중에서 활성화된 파일 찾기
   }, [activeFileId, openTabs]); // activeFileId나 openTabs가 바뀔 때마다 실행하기
 
+  // 현재 선택된 파일의 코드
+  const activeCode = useMemo(() => {
+    if (!activeFileId) return '';
+    // fileCodes는 fileid를 키로, 해당 코드를 값으로 가지고 있다.
+    return fileCodes[activeFileId] ?? '';
+  }, [activeFileId, fileCodes]);
+
+  // 현재 활성화된 파일의 코드를 fileCodes에 저장
+  // 사용자가 수정을 했을 경우, 코드를 저장하는 역할
+  const updateActiveFileCode = (value: string) => {
+    if (!activeFileId) return;
+    setFileCodes((prev) => ({ ...prev, [activeFileId]: value }));
+  };
+
   return {
     expanded,
     toggleFolder,
@@ -87,5 +132,7 @@ export function useIde(root: FileNode) {
     closeTab,
 
     activeFile,
+    activeCode,
+    updateActiveFileCode,
   };
 }

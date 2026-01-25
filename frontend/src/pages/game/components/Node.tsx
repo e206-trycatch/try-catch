@@ -6,11 +6,13 @@ export default function Node({
   depth, // 트리 깊이
   expanded,
   onToggleFolder,
+  onOpenFile,
 }: {
   node: FileNode;
   depth: number;
   expanded: Set<string>;
   onToggleFolder: (id: string) => void;
+  onOpenFile: (file: FileNode) => void;
 }) {
   const indent = 10 + depth * 14; // 왼쪽 여백 설정
 
@@ -41,6 +43,7 @@ export default function Node({
               depth={depth + 1}
               expanded={expanded}
               onToggleFolder={onToggleFolder}
+              onOpenFile={onOpenFile}
             />
           ))}
       </div>
@@ -53,6 +56,9 @@ export default function Node({
       <div
         className="flex items-center gap-1.5 h-7 cursor-pointer select-none "
         style={{ paddingLeft: indent }}
+        onClick={() => {
+          onOpenFile(node);
+        }}
       >
         <span className="text-xs tracking-widest">{'</>'}</span>
         <span>{node.name}</span>

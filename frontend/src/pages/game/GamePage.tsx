@@ -37,10 +37,16 @@ export default function GamePage() {
           root={rootNode}
           expanded={ide.expanded}
           onToggleFolder={ide.toggleFolder}
+          onOpenFile={ide.openFile}
         />
       </div>
       <div>
-        <CodeEditor activeFile={ide.activeFile} />
+        <h1>code editor</h1>
+        <CodeEditor
+          activeFile={ide.activeFile}
+          code={ide.activeCode}
+          onChange={ide.updateActiveFileCode}
+        />
       </div>
     </div>
   );
