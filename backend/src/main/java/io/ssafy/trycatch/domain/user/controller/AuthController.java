@@ -1,7 +1,10 @@
 package io.ssafy.trycatch.domain.user.controller;
 
+import io.ssafy.trycatch.domain.user.dto.request.SignupReqDto;
 import io.ssafy.trycatch.domain.user.dto.response.DuplicateCheckRespDto;
+import io.ssafy.trycatch.domain.user.dto.response.SignupRespDto;
 import io.ssafy.trycatch.domain.user.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,15 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+    // 회원가입
+    @PostMapping("/signup")
+    public ResponseEntity<SignupRespDto> signup(
+            @Valid @RequestBody SignupReqDto request) {
+        log.info("회원가입 API 호출: {}", request.getLoginId());
+        SignupRespDto response = authService.signup(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 
     // 아이디 중복 체크
     @GetMapping("/check-loginId")
