@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 
+import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import type { FileNode } from './types/ideTypes';
 
-export default function Idepage() {
+export default function GamePage() {
   const { files, loading, error } = useFile();
 
   const rootNode = useMemo<FileNode>(
@@ -31,11 +32,16 @@ export default function Idepage() {
 
   return (
     <div>
-      <Explorer
-        root={rootNode}
-        expanded={ide.expanded}
-        onToggleFolder={ide.toggleFolder}
-      />
+      <div>
+        <Explorer
+          root={rootNode}
+          expanded={ide.expanded}
+          onToggleFolder={ide.toggleFolder}
+        />
+      </div>
+      <div>
+        <CodeEditor activeFile={ide.activeFile} />
+      </div>
     </div>
   );
 }
