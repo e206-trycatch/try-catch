@@ -19,33 +19,40 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    def changes = sh(
-                        script: """
-                            git fetch origin develop
-                            git diff --name-only origin/develop...HEAD || echo ''
-                        """,
-                        returnStdout: true
-                    ).trim()
-                    
-                    echo "========================================="
-                    echo "Changed files:"
-                    echo "${changes}"
-                    echo "========================================="
-                    
-                    if (changes.contains('frontend/')) {
+                    if (env.GIT_PREVIOUS_COMMIT) {
+                        // 이전 빌드 있음 - diff 비교
+                        def changes = sh(
+                            script: "git diff --name-only ${env.GIT_PREVIOUS_COMMIT} ${env.GIT_COMMIT}",
+                            returnStdout: true
+                        ).trim()
+                        
+                        echo "========================================="
+                        echo "Changed files since last build:"
+                        echo "${changes}"
+                        echo "========================================="
+                        
+                        if (changes.contains('frontend/')) {
+                            FRONTEND_CHANGED = 'true'
+                            echo "✅ Frontend changed"
+                        }
+                        if (changes.contains('backend/')) {
+                            BACKEND_CHANGED = 'true'
+                            echo "✅ Backend changed"
+                        }
+                        
+                        if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
+                            echo "⚠️ No frontend or backend changes detected"
+                            currentBuild.result = 'SUCCESS'
+                            return
+                        }
+                    } else {
+                        // 첫 빌드 - 전체 배포
+                        echo "========================================="
+                        echo "🎉 First build detected"
+                        echo "Deploying all services..."
+                        echo "========================================="
                         FRONTEND_CHANGED = 'true'
-                        echo "✅ Frontend changed"
-                    }
-                    if (changes.contains('backend/')) {
                         BACKEND_CHANGED = 'true'
-                        echo "✅ Backend changed"
-                    }
-                    
-                    if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
-                        echo "⚠️ No frontend or backend changes detected"
-                        echo "Changed files were: ${changes}"
-                        currentBuild.result = 'SUCCESS'
-                        return
                     }
                 }
             }
@@ -78,7 +85,6 @@ pipeline {
                         export NVM_DIR="$HOME/.nvm"
                         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                         
-                        # Node.js 버전 확인
                         echo "Using Node.js version:"
                         node --version
                         npm --version
@@ -110,10 +116,14 @@ pipeline {
                 echo '========================================='
                 
                 sh '''
-                    echo "🐳 Building and deploying Spring Boot..."
-                    docker-compose -f docker-compose.prod.yml up -d --build spring-boot
-                    
-                    echo "✅ Backend deployment initiated"
+                    if [ -f docker-compose-prod.yml ]; then
+                        echo "🐳 Building and deploying Spring Boot..."
+                        docker-compose -f docker-compose-prod.yml up -d --build spring-boot
+                        echo "✅ Backend deployment initiated"
+                    else
+                        echo "❌ docker-compose-prod.yml not found!"
+                        exit 1
+                    fi
                 '''
             }
         }
@@ -173,7 +183,6 @@ pipeline {
         }
         failure {
             echo '❌❌❌ Deployment Failed! ❌❌❌'
-            sh 'docker-compose -f docker-compose.prod.yml logs --tail=50 spring-boot || true'
         }
         always {
             sh 'rm -f .env || true'
