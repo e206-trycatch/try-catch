@@ -19,7 +19,6 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    // develop 브랜치의 이전 상태와 현재 푸시된 전체 변경사항 비교
                     def changes = sh(
                         script: """
                             git fetch origin develop
@@ -77,7 +76,7 @@ pipeline {
                     sh '''
                         # nvm 로드
                         export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                         
                         # Node.js 버전 확인
                         echo "Using Node.js version:"
