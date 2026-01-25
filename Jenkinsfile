@@ -19,33 +19,51 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    def changes = sh(
-                        script: """
-                            git fetch origin develop
-                            git diff --name-only origin/develop...HEAD || echo ''
-                        """,
-                        returnStdout: true
-                    ).trim()
+                    def lastSuccessfulCommit = null
                     
-                    echo "========================================="
-                    echo "Changed files:"
-                    echo "${changes}"
-                    echo "========================================="
+                    // 마지막 성공한 빌드의 커밋 찾기
+                    def lastSuccessfulBuild = currentBuild.getPreviousSuccessfulBuild()
+                    if (lastSuccessfulBuild) {
+                        lastSuccessfulCommit = lastSuccessfulBuild.getEnvironment().GIT_COMMIT
+                    }
                     
-                    if (changes.contains('frontend/')) {
+                    if (lastSuccessfulCommit) {
+                        // 마지막 성공한 빌드와 비교
+                        def changes = sh(
+                            script: "git diff --name-only ${lastSuccessfulCommit} ${env.GIT_COMMIT}",
+                            returnStdout: true
+                        ).trim()
+                        
+                        echo "========================================="
+                        echo "Comparing with last successful build"
+                        echo "Last successful commit: ${lastSuccessfulCommit}"
+                        echo "Current commit: ${env.GIT_COMMIT}"
+                        echo "Changed files:"
+                        echo "${changes}"
+                        echo "========================================="
+                        
+                        if (changes.contains('frontend/')) {
+                            FRONTEND_CHANGED = 'true'
+                            echo "✅ Frontend changed"
+                        }
+                        if (changes.contains('backend/')) {
+                            BACKEND_CHANGED = 'true'
+                            echo "✅ Backend changed"
+                        }
+                        
+                        if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
+                            echo "⚠️ No frontend or backend changes detected"
+                            currentBuild.result = 'SUCCESS'
+                            return
+                        }
+                    } else {
+                        // 첫 빌드 또는 성공한 빌드가 없음 - 전체 배포
+                        echo "========================================="
+                        echo "🎉 First build or no previous successful build"
+                        echo "Deploying all services..."
+                        echo "========================================="
                         FRONTEND_CHANGED = 'true'
-                        echo "✅ Frontend changed"
-                    }
-                    if (changes.contains('backend/')) {
                         BACKEND_CHANGED = 'true'
-                        echo "✅ Backend changed"
-                    }
-                    
-                    if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
-                        echo "⚠️ No frontend or backend changes detected"
-                        echo "Changed files were: ${changes}"
-                        currentBuild.result = 'SUCCESS'
-                        return
                     }
                 }
             }
@@ -78,7 +96,6 @@ pipeline {
                         export NVM_DIR="$HOME/.nvm"
                         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                         
-                        # Node.js 버전 확인
                         echo "Using Node.js version:"
                         node --version
                         npm --version
@@ -110,10 +127,15 @@ pipeline {
                 echo '========================================='
                 
                 sh '''
-                    echo "🐳 Building and deploying Spring Boot..."
-                    docker-compose -f docker-compose.prod.yml up -d --build spring-boot
-                    
-                    echo "✅ Backend deployment initiated"
+                    if [ -f docker-compose-prod.yml ]; then
+                        echo "🐳 Building and deploying Spring Boot..."
+                        docker-compose -f docker-compose-prod.yml up -d --build spring-boot
+                        echo "✅ Backend deployment initiated"
+                    else
+                        echo "❌ docker-compose-prod.yml not found!"
+                        ls -la
+                        exit 1
+                    fi
                 '''
             }
         }
@@ -173,7 +195,41 @@ pipeline {
         }
         failure {
             echo '❌❌❌ Deployment Failed! ❌❌❌'
-            sh 'docker-compose -f docker-compose.prod.yml logs --tail=50 spring-boot || true'
+            
+            script {
+                // 백엔드 배포가 시도되었다면 로그 확인
+                if (BACKEND_CHANGED == 'true') {
+                    echo '========================================='
+                    echo 'Spring Boot Container Logs (last 100 lines):'
+                    echo '========================================='
+                    sh 'docker-compose -f docker-compose-prod.yml logs --tail=100 spring-boot || true'
+                    
+                    echo '========================================='
+                    echo 'Spring Boot Container Inspect:'
+                    echo '========================================='
+                    sh 'docker inspect backend || true'
+                }
+                
+                // 프론트엔드 배포가 시도되었다면
+                if (FRONTEND_CHANGED == 'true') {
+                    echo '========================================='
+                    echo 'Frontend Build Directory:'
+                    echo '========================================='
+                    sh 'ls -la frontend/build 2>/dev/null || echo "Build directory not found"'
+                }
+                
+                // 전체 컨테이너 상태
+                echo '========================================='
+                echo 'All Containers Status:'
+                echo '========================================='
+                sh 'docker ps -a || true'
+                
+                // 디스크 용량 확인
+                echo '========================================='
+                echo 'Disk Usage:'
+                echo '========================================='
+                sh 'df -h || true'
+            }
         }
         always {
             sh 'rm -f .env || true'
