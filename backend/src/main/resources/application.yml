@@ -22,6 +22,7 @@ jwt:
   access-token-validity: 86400000      # 24시간
   refresh-token-validity: 604800000   # 7일
 
+
 # 로깅 설정
 logging:
   level:
