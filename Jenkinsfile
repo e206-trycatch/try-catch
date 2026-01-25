@@ -19,13 +19,19 @@ pipeline {
         stage('Check Changes') {
             steps {
                 script {
-                    // 이전 커밋과 비교하여 변경된 파일 확인
+                    // develop 브랜치의 이전 상태와 현재 푸시된 전체 변경사항 비교
                     def changes = sh(
-                        script: "git diff --name-only HEAD~1 HEAD || echo ''",
+                        script: """
+                            git fetch origin develop
+                            git diff --name-only origin/develop...HEAD || echo ''
+                        """,
                         returnStdout: true
                     ).trim()
                     
-                    echo "Changed files:\n${changes}"
+                    echo "========================================="
+                    echo "Changed files:"
+                    echo "${changes}"
+                    echo "========================================="
                     
                     if (changes.contains('frontend/')) {
                         FRONTEND_CHANGED = 'true'
@@ -36,9 +42,9 @@ pipeline {
                         echo "✅ Backend changed"
                     }
                     
-                    // 둘 다 변경 안됐으면 종료
                     if (FRONTEND_CHANGED == 'false' && BACKEND_CHANGED == 'false') {
                         echo "⚠️ No frontend or backend changes detected"
+                        echo "Changed files were: ${changes}"
                         currentBuild.result = 'SUCCESS'
                         return
                     }
@@ -69,6 +75,15 @@ pipeline {
                 
                 dir('frontend') {
                     sh '''
+                        # nvm 로드
+                        export NVM_DIR="$HOME/.nvm"
+                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        
+                        # Node.js 버전 확인
+                        echo "Using Node.js version:"
+                        node --version
+                        npm --version
+                        
                         echo "📦 Installing dependencies..."
                         npm ci
                         
