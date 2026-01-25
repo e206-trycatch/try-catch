@@ -1,21 +1,43 @@
 const Footer = () => {
   return (
-    <footer className="w-full flex justify-between items-end px-12 py-8 text-white absolute bottom-0 left-0 z-10 pointer-events-none">
+    <footer
+      className="w-full flex justify-between items-end fixed bottom-0 left-0 z-10 pointer-events-none"
+      style={{
+        padding: '2vw 3vw',
+        fontSize: '1.1vw', // 18px -> 1.1vm
+      }}
+    >
       {/* 왼쪽 텍스트 */}
-      <div className="flex flex-col gap-1.5 select-none">
-        <span className="tracking-[-0.8px] -webkit-text-stroke-width:0.5px text-lg leading-4">
+      <div className="flex flex-col select-none" style={{ gap: '0.4vw' }}>
+        <span style={{ letterSpacing: '-0.05vw', lineHeight: '1.1' }}>
           ESCAPE
         </span>
-        <span className="tracking-[-0.8px] -webkit-text-stroke-width:0.5px text-lg leading-4">
+        <span style={{ letterSpacing: '-0.05vw', lineHeight: '1.1' }}>
           THE ROOM
         </span>
       </div>
+
       {/* 오른쪽 텍스트 */}
-      <div className="flex flex-col items-end gap-1.5 select-none">
-        <span className="tracking-[-0.8px] -webkit-text-stroke-width:0.5px text-lg font-normal leading-4">
+      <div
+        className="flex flex-col items-end select-none"
+        style={{ gap: '0.4vw' }}
+      >
+        <span
+          style={{
+            letterSpacing: '-0.05vw',
+            lineHeight: '1.1',
+            fontWeight: 'normal',
+          }}
+        >
           CATCH ERROR
         </span>
-        <span className="tracking-[-0.8px] -webkit-text-stroke-width:0.5px text-lg font-normal leading-4">
+        <span
+          style={{
+            letterSpacing: '-0.05vw',
+            lineHeight: '1.1',
+            fontWeight: 'normal',
+          }}
+        >
           IF YOU CAN
         </span>
       </div>
