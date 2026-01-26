@@ -61,7 +61,7 @@ export default function GamePage() {
   }
 
   return (
-    <div className=" w-full px-20">
+    <div className=" w-full px-20 pt-[80px]">
       <div className="flex border border-gray-700 ">
         <div className="w-1/4 min-w-0 bg-stone-900 border-r border-gray-700">
           <Explorer
