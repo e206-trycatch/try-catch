@@ -7,6 +7,7 @@ import LoginPage from './pages/login/LoginPage';
 import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
+import SignupPage from './pages/signup/SignupPage';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
 
         {/* 게임 */}
         <Route path="/game" element={<GamePage />} />
+        <Route path="/signup" element={<SignupPage />} />
       </Route>
     </Routes>
   );
