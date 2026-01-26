@@ -82,6 +82,36 @@ public class JwtTokenProvider {
         }
     }
 
+    // Refresh Token 검증 (재발급용 - 만료/유효하지 않음 구분)
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            // refresh 타입인지 확인
+            String type = claims.get("type", String.class);
+            if (!"refresh".equals(type)) {
+                log.error("Refresh Token이 아닙니다");
+                return false;
+            }
+            return true;
+        } catch (ExpiredJwtException e) {
+            log.error("만료된 Refresh Token입니다");
+            return false;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.error("유효하지 않은 Refresh Token입니다");
+            return false;
+        }
+    }
+
+    // 만료된 토큰에서 userId 추출 (재발급용)
+    public Long getUserIdFromExpiredToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            return Long.parseLong(claims.getSubject());
+        } catch (ExpiredJwtException e) {
+            return Long.parseLong(e.getClaims().getSubject());
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(key)

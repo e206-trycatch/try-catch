@@ -29,11 +29,4 @@ public class LoginRespDto {
                         .build())
                 .build();
     }
-
-    public static LoginRespDto fail(String message) {
-        return LoginRespDto.builder()
-                .message(message)
-                .result(null)
-                .build();
-    }
 }
