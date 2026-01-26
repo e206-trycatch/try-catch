@@ -10,6 +10,20 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import ProfileSection from './ProfileSection';
 import EscapeRecordSection from './EscapeRecordSection';
 
+// API 응답 검증 헬퍼 함수
+type ApiResponse = { status: number; result: unknown };
+type ErrorMessages = { notFound: string; failed: string };
+
+const validateResponse = (
+  res: ApiResponse,
+  errorMessages: ErrorMessages
+): string | null => {
+  if (res.status === 401) return 'UNAUTHORIZED';
+  if (res.status === 404) return errorMessages.notFound;
+  if (res.status !== 200 || !res.result) return errorMessages.failed;
+  return null; // 성공
+};
+
 const MyPage = () => {
   const navigate = useNavigate();
 
@@ -39,39 +53,35 @@ const MyPage = () => {
           getSubmissions({ page: 0, size: 999 }),
         ]);
 
-        // 인증 실패 → 로그인 이동 (둘 중 하나라도 401이면)
-        if (profileRes.status === 401 || submissionsRes.status === 401) {
+        // 프로필 응답 검증
+        const profileError = validateResponse(profileRes, {
+          notFound: '프로필 정보를 찾을 수 없습니다.',
+          failed: '프로필 정보를 불러오는데 실패했습니다.',
+        });
+
+        // 제출 기록 응답 검증
+        const submissionsError = validateResponse(submissionsRes, {
+          notFound: '제출 기록을 찾을 수 없습니다.',
+          failed: '제출 기록을 불러오는데 실패했습니다.',
+        });
+
+        // 인증 실패 → 로그인 이동
+        if (profileError === 'UNAUTHORIZED' || submissionsError === 'UNAUTHORIZED') {
           navigate('/login');
           return;
         }
 
-        // 프로필 조회 에러 처리
-        if (profileRes.status === 404) {
-          setError('프로필 정보를 찾을 수 없습니다.');
-          setIsLoading(false);
-          return;
-        }
-        if (profileRes.status !== 200 || !profileRes.result) {
-          setError('프로필 정보를 불러오는데 실패했습니다.');
-          setIsLoading(false);
-          return;
-        }
-
-        // 제출 기록 조회 에러 처리
-        if (submissionsRes.status === 404) {
-          setError('제출 기록을 찾을 수 없습니다.');
-          setIsLoading(false);
-          return;
-        }
-        if (submissionsRes.status !== 200 || !submissionsRes.result) {
-          setError('제출 기록을 불러오는데 실패했습니다.');
+        // 에러 처리
+        const error = profileError || submissionsError;
+        if (error) {
+          setError(error);
           setIsLoading(false);
           return;
         }
 
         // 성공
         setProfile(profileRes.result);
-        setRecords(submissionsRes.result.content);
+        setRecords(submissionsRes.result!.content);
         setIsLoading(false);
       } catch (err) {
         // 네트워크 오류 (서버 다운, 타임아웃 등)
