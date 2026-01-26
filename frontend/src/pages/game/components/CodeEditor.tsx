@@ -27,7 +27,7 @@ export default function CodeEditor({
       value={code} // 에디터에 표시되는 텍스트
       theme="vs-dark"
       options={{ minimap: { enabled: false } }}
-      onChange={(v) => onChange(v ?? '')} // 사용자가 에디터에 입력할 때마다 실행된다. 현재 active 파일의 코드를 state에 저장 -> onChange말고 저장버튼 클릭 시로 변경 예정
+      onChange={(f) => onChange(f ?? '')}
     />
   );
 }

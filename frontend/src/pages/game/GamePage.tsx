@@ -45,8 +45,8 @@ export default function GamePage() {
         <h1>code editor</h1>
         <CodeEditor
           activeFile={ide.activeFile}
-          code={ide.activeCode}
-          onChange={ide.updateActiveFileCode}
+          code={ide.currentCode}
+          onChange={ide.setCurrentCode}
         />
       </div>
     </div>
