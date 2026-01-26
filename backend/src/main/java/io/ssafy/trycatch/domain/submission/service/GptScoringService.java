@@ -77,10 +77,14 @@ public class GptScoringService {
 
                 출력 JSON 스키마(정확히 이 키만 포함):
                 {
-                  "success": true/false,
-                  "score": 0-100,
-                  "errorLog": "에러가 있다면 에러 내용(없으면 빈 문자열)"
+                  "success": true,
+                  "score": 85,
+                  "errorLog": ""
                 }
+                
+                - success: 문제 요구사항을 충족하면 true, 아니면 false
+                - score: 0-100 사이의 정수
+                - errorLog: 오류가 있으면 설명, 없으면 빈 문자열. 답을 설명하지는 않는다.
                 """, safeProblemDoc, safeRubric, safeSource);
     }
 
@@ -93,11 +97,15 @@ public class GptScoringService {
                 .model(gptModel)
                 .messages(List.of(
                         new GptReqDto.Message("developer",
-                                "Answer in Korean. Output ONLY a single valid JSON object. No markdown."),
+                                "Answer in Korean. You are a code grading system. Always respond with valid JSON only."),
                         new GptReqDto.Message("user", prompt)
                 ))
                 .temperature(0.2)
+                .responseFormat(GptReqDto.ResponseFormat.builder()
+                        .type("json_object")
+                        .build())
                 .build();
+
 
         HttpEntity<GptReqDto> entity = new HttpEntity<>(request, headers);
 
@@ -119,8 +127,21 @@ public class GptScoringService {
         String content = null;
         try {
             content = response.getChoices().get(0).getMessage().getContent();
-            String json = extractJsonObject(content);
-            return objectMapper.readValue(json, ScoreResult.class);
+
+            // JSON 모드 사용 시 응답이 바로 JSON이므로 추출 불필요
+            ScoreResult result = objectMapper.readValue(content, ScoreResult.class);
+
+            // executionTime이 null이면 0으로 설정
+            if (result.getExecutionTime() == null) {
+                result = ScoreResult.builder()
+                        .success(result.getSuccess())
+                        .score(result.getScore())
+                        .errorLog(result.getErrorLog())
+                        .executionTime(0L)
+                        .build();
+            }
+
+            return result;
         } catch (Exception e) {
             log.error("GPT 응답 파싱 실패. content={}", content, e);
             throw new RuntimeException("채점 결과 파싱 실패", e);

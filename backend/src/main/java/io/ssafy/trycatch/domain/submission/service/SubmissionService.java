@@ -28,150 +28,88 @@ public class SubmissionService {
     private final RoomRepository roomRepository;
     private final GptScoringService gptScoringService;
 
-    @Transactional
+    private static final String FRONTEND_RUBRIC = """
+            - 요구사항(문제 설명) 충족 여부
+            - 컴포넌트 구조/가독성
+            - 명백한 런타임 오류 가능성 여부
+            - 이벤트/상태 처리의 적절성
+            """;
+
+    private static final String BACKEND_RUBRIC = """
+            - 요구사항(문제 설명) 충족 여부
+            - REST API 설계/입출력/상태코드의 타당성
+            - 예외 처리/검증 로직의 적절성
+            - 명백한 컴파일/런타임 오류 가능성 여부
+            """;
+
     public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request) {
+        // 1단계: DB 작업 (트랜잭션 내)
+        SubmissionContext context = createSubmissions(roomId, userId, request);
+
+        // 2단계: GPT 채점 (트랜잭션 밖 - 외부 API 호출)
+        List<ScoreResult> scoreResults = scoreSubmissions(context);
+
+        // 3단계: 결과 업데이트 및 응답 생성 (트랜잭션 내)
+        return updateAndBuildResponse(context, scoreResults);
+    }
+
+    @Transactional
+    public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
 
-        List<Submission> submissions = new ArrayList<>();
-        List<ScoreResult> scoreResults = new ArrayList<>();
-        List<SubmissionRespDto.RoleInfo> roles = new ArrayList<>();
+        SubmissionContext context = new SubmissionContext(room);
 
         // Frontend 제출 처리
         if (request.getFrontend() != null) {
-            Submission frontendSubmission = createSubmission(roomId, userId, request.getFrontend());
-            submissions.add(frontendSubmission);
-
-            List<SubmissionFile> frontendFiles = saveSubmissionFiles(
-                    frontendSubmission.getId(),
-                    request.getFrontend().getFiles()
+            processRoleSubmission(
+                    roomId, userId, request.getFrontend(), "FRONTEND", context
             );
-
-            // DOC / SOURCE 분리
-            String problemDoc = combineDoc(frontendFiles);
-            String submittedSource = combineSource(frontendFiles);
-
-            String rubric = """
-                    - 요구사항(문제 설명) 충족 여부
-                    - React 컴포넌트 구조/가독성
-                    - 명백한 런타임 오류 가능성 여부
-                    - 이벤트/상태 처리의 적절성
-                    """;
-
-            // 변경된 시그니처로 호출
-            ScoreResult frontendScore = gptScoringService.scoreSubmission(problemDoc, submittedSource, rubric);
-            scoreResults.add(frontendScore);
-
-            frontendSubmission.updateResult(
-                    frontendScore.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
-                    frontendScore.getExecutionTime(),
-                    frontendScore.getErrorLog(),
-                    frontendScore.getScore()
-            );
-
-            roles.add(SubmissionRespDto.RoleInfo.builder()
-                    .role("FRONTEND")
-                    .frameworkId(request.getFrontend().getProblemFrameworkId())
-                    .build());
         }
 
         // Backend 제출 처리
         if (request.getBackend() != null) {
-            Submission backendSubmission = createSubmission(roomId, userId, request.getBackend());
-            submissions.add(backendSubmission);
-
-            List<SubmissionFile> backendFiles = saveSubmissionFiles(
-                    backendSubmission.getId(),
-                    request.getBackend().getFiles()
-            );
-
-            // DOC / SOURCE 분리
-            String problemDoc = combineDoc(backendFiles);
-            String submittedSource = combineSource(backendFiles);
-
-            String rubric = """
-                    - 요구사항(문제 설명) 충족 여부
-                    - REST API 설계/입출력/상태코드의 타당성
-                    - 예외 처리/검증 로직의 적절성
-                    - 명백한 컴파일/런타임 오류 가능성 여부
-                    """;
-
-            // 변경된 시그니처로 호출
-            ScoreResult backendScore = gptScoringService.scoreSubmission(problemDoc, submittedSource, rubric);
-            scoreResults.add(backendScore);
-
-            backendSubmission.updateResult(
-                    backendScore.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
-                    backendScore.getExecutionTime(),
-                    backendScore.getErrorLog(),
-                    backendScore.getScore()
-            );
-
-            roles.add(SubmissionRespDto.RoleInfo.builder()
-                    .role("BACKEND")
-                    .frameworkId(request.getBackend().getProblemFrameworkId())
-                    .build());
-        }
-
-        int averageScore = (int) scoreResults.stream()
-                .mapToInt(ScoreResult::getScore)
-                .average()
-                .orElse(0);
-
-        boolean allSuccess = scoreResults.stream()
-                .allMatch(ScoreResult::getSuccess);
-
-        long totalExecutionTime = scoreResults.stream()
-                .mapToLong(result -> result.getExecutionTime() != null ? result.getExecutionTime() : 0L)
-                .sum();
-
-        String errorLog = scoreResults.stream()
-                .map(ScoreResult::getErrorLog)
-                .filter(log -> log != null && !log.isEmpty())
-                .collect(Collectors.joining("\n"));
-
-        if (allSuccess) {
-            return buildSuccessResponse(
-                    submissions.get(0).getId(),
-                    roomId,
-                    averageScore,
-                    totalExecutionTime,
-                    room,
-                    roles
-            );
-        } else {
-            return buildFailResponse(
-                    submissions.get(0).getId(),
-                    roomId,
-                    room.getThemeId(), // TODO: questId 로직 추가
-                    averageScore,
-                    totalExecutionTime,
-                    room,
-                    errorLog
+            processRoleSubmission(
+                    roomId, userId, request.getBackend(), "BACKEND", context
             );
         }
+
+        return context;
     }
 
-    private Submission createSubmission(Long roomId, Long userId, SubmissionReqDto.SubmissionItem item) {
+    private void processRoleSubmission(
+            Long roomId,
+            Long userId,
+            SubmissionReqDto.SubmissionItem item,
+            String roleName,
+            SubmissionContext context
+    ) {
+        // Submission 생성 및 저장
         Submission submission = Submission.builder()
                 .userId(userId)
                 .roomId(roomId)
                 .problemFrameworkId(item.getProblemFrameworkId())
                 .status(Submission.Status.FAIL)
                 .build();
+        submission = submissionRepository.save(submission);
 
-        return submissionRepository.save(submission);
+        // SubmissionFile 저장
+        List<SubmissionFile> files = saveSubmissionFiles(submission.getId(), item.getFiles());
+
+        // Context에 정보 저장
+        context.addSubmission(submission, files, roleName, item.getProblemFrameworkId());
     }
 
     private List<SubmissionFile> saveSubmissionFiles(Long submissionId, List<SubmissionReqDto.FileItem> files) {
-        if (files == null) return List.of();
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
 
         List<SubmissionFile> submissionFiles = files.stream()
                 .map(file -> SubmissionFile.builder()
                         .submissionId(submissionId)
                         .filePath(file.getFilePath())
                         .codeRole(determineCodeRole(file.getFilePath()))
-                        // 프론트에서 "DOC"/"SOURCE" 대문자로 보내야 valueOf가 안전함
                         .fileType(SubmissionFile.FileType.valueOf(file.getFileType()))
                         .code(file.getCode())
                         .build())
@@ -181,9 +119,10 @@ public class SubmissionService {
     }
 
     private SubmissionFile.CodeRole determineCodeRole(String filePath) {
-        if (filePath == null) return SubmissionFile.CodeRole.FRONTEND;
+        if (filePath == null) {
+            return SubmissionFile.CodeRole.FRONTEND;
+        }
 
-        // 괄호로 우선순위 보정
         if (filePath.contains("/frontend/")
                 || filePath.contains("/components/")
                 || (filePath.contains("/src/") && filePath.endsWith(".jsx"))) {
@@ -192,6 +131,96 @@ public class SubmissionService {
             return SubmissionFile.CodeRole.BACKEND;
         }
         return SubmissionFile.CodeRole.FRONTEND;
+    }
+
+    // GPT 채점 (트랜잭션 밖)
+    private List<ScoreResult> scoreSubmissions(SubmissionContext context) {
+        List<ScoreResult> results = new ArrayList<>();
+
+        for (SubmissionContext.SubmissionData data : context.getSubmissionDataList()) {
+            String problemDoc = combineDoc(data.getFiles());
+            String submittedSource = combineSource(data.getFiles());
+            String rubric = data.getRoleName().equals("FRONTEND") ? FRONTEND_RUBRIC : BACKEND_RUBRIC;
+
+            ScoreResult score = gptScoringService.scoreSubmission(problemDoc, submittedSource, rubric);
+            results.add(score);
+        }
+
+        return results;
+    }
+
+    @Transactional
+    public SubmissionRespDto updateAndBuildResponse(
+            SubmissionContext context,
+            List<ScoreResult> scoreResults
+    ) {
+        List<Submission> submissions = context.getSubmissions();
+        List<SubmissionRespDto.RoleInfo> roles = new ArrayList<>();
+
+        // 각 Submission 결과 업데이트
+        for (int i = 0; i < submissions.size(); i++) {
+            Submission submission = submissions.get(i);
+            ScoreResult score = scoreResults.get(i);
+            SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(i);
+
+            submission.updateResult(
+                    score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
+                    score.getExecutionTime(),
+                    score.getErrorLog(),
+                    score.getScore()
+            );
+
+            roles.add(SubmissionRespDto.RoleInfo.builder()
+                    .role(data.getRoleName())
+                    .frameworkId(data.getFrameworkId())
+                    .build());
+        }
+
+        // 전체 평균 점수 계산
+        int averageScore = (int) scoreResults.stream()
+                .mapToInt(ScoreResult::getScore)
+                .average()
+                .orElse(0);
+
+        // 성공 여부 판단
+        boolean allSuccess = scoreResults.stream()
+                .allMatch(ScoreResult::getSuccess);
+
+        // 실행 시간 합계
+        long totalExecutionTime = scoreResults.stream()
+                .mapToLong(result -> result.getExecutionTime() != null ? result.getExecutionTime() : 0L)
+                .sum();
+
+        // 에러 로그 수집
+        String errorLog = scoreResults.stream()
+                .map(ScoreResult::getErrorLog)
+                .filter(log -> log != null && !log.isEmpty())
+                .collect(Collectors.joining("\n"));
+
+        Room room = context.getRoom();
+
+        if (allSuccess) {
+            return buildSuccessResponse(
+                    submissions.get(0).getId(),
+                    room.getId(),
+                    averageScore,
+                    totalExecutionTime,
+                    room,
+                    roles
+            );
+        } else {
+            // 실패 시 life 감소
+            room.decreaseLife();
+            return buildFailResponse(
+                    submissions.get(0).getId(),
+                    room.getId(),
+                    room.getThemeId(), // TODO: questId 로직 추가
+                    averageScore,
+                    totalExecutionTime,
+                    room,
+                    errorLog
+            );
+        }
     }
 
     // DOC만 합치기 (문제 설명)
@@ -234,8 +263,8 @@ public class SubmissionService {
                         .build())
                 .roles(roles)
                 .next(SubmissionRespDto.NextQuest.builder()
-                        .hasNextQuest(true)
-                        .nextQuestId(22L)
+                        .hasNextQuest(true) // TODO: 실제 다음 퀘스트 확인 로직
+                        .nextQuestId(22L) // TODO: 실제 다음 퀘스트 ID
                         .build())
                 .build();
     }
@@ -249,7 +278,7 @@ public class SubmissionService {
             Room room,
             String errorLog
     ) {
-        int lifeAfter = room.getLife() - 1;
+        int lifeAfter = room.getLife();
 
         return SubmissionRespDto.builder()
                 .submissionId(submissionId)
@@ -264,5 +293,32 @@ public class SubmissionService {
                         .build())
                 .errorLog((errorLog == null || errorLog.isEmpty()) ? "채점에 실패했습니다." : errorLog)
                 .build();
+    }
+
+    // 내부 Context 클래스
+    @lombok.Getter
+    private static class SubmissionContext {
+        private final Room room;
+        private final List<Submission> submissions = new ArrayList<>();
+        private final List<SubmissionData> submissionDataList = new ArrayList<>();
+
+        public SubmissionContext(Room room) {
+            this.room = room;
+        }
+
+        public void addSubmission(Submission submission, List<SubmissionFile> files,
+                                  String roleName, Long frameworkId) {
+            submissions.add(submission);
+            submissionDataList.add(new SubmissionData(submission, files, roleName, frameworkId));
+        }
+
+        @lombok.Getter
+        @lombok.AllArgsConstructor
+        private static class SubmissionData {
+            private Submission submission;
+            private List<SubmissionFile> files;
+            private String roleName;
+            private Long frameworkId;
+        }
     }
 }

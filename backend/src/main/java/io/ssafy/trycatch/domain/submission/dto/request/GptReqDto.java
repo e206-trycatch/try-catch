@@ -10,6 +10,7 @@ public class GptReqDto {
     private String model;
     private List<Message> messages;
     private Double temperature;
+    private ResponseFormat responseFormat;
 
     @Getter
     @Builder
@@ -21,5 +22,11 @@ public class GptReqDto {
             this.role = role;
             this.content = content;
         }
+    }
+
+    @Getter
+    @Builder
+    public static class ResponseFormat {
+        private String type;
     }
 }
