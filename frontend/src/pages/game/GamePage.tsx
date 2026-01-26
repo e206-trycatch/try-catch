@@ -13,10 +13,14 @@ import useTerminal from './hooks/useTerminal';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 
+type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
+
 export default function GamePage() {
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
 
   useEffect(() => {
     const loadQuest = async () => {
@@ -66,7 +70,7 @@ export default function GamePage() {
     <div className=" flex w-full px-20 pt-[80px] pb-[40px] h-screen ">
       {/* 메뉴바 */}
       <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
-        <MenuBar />
+        <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
       </div>
 
       {/* 파일탐색기 + 코드 편집기 + 터미널 */}
