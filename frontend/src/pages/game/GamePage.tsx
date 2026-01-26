@@ -1,9 +1,11 @@
+import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getQuest } from '../../api/questFile';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
+import MenuBar from './components/MenuBar';
 import Terminal from './components/Terminal';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
@@ -61,37 +63,61 @@ export default function GamePage() {
   }
 
   return (
-    <div className=" w-full px-20 pt-[80px]">
-      <div className="flex border border-gray-700 ">
-        <div className="w-1/4 min-w-0 bg-stone-900 border-r border-gray-700">
-          <Explorer
-            root={rootNode}
-            expanded={ide.expanded}
-            onToggleFolder={ide.toggleFolder}
-            onOpenFile={ide.openFile}
-          />
-        </div>
-        <div className="flex flex-col w-3/4 min-w-0 min-h-0">
-          <FileTabs
-            openTabs={ide.openTabs}
-            activeFileId={ide.activeFileId}
-            onSelectTab={ide.selectTab}
-            onCloseTab={ide.closeTab}
-          />
-          <div className="h-[580px] bg-[#1E1E1E]">
-            <CodeEditor
-              activeFile={ide.activeFile}
-              code={ide.currentCode}
-              onChange={ide.setCurrentCode}
+    <div className=" flex w-full px-20 pt-[80px] pb-[40px] h-screen ">
+      {/* 메뉴바 */}
+      <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
+        <MenuBar />
+      </div>
+
+      {/* 파일탐색기 + 코드 편집기 + 터미널 */}
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* 파일 탐색기 + 코드 편집기 */}
+        <div className="flex border border-gray-700 flex-1 min-h-0">
+          <Resizable
+            defaultSize={{ width: 300, height: '100%' }}
+            minWidth={50}
+            maxWidth={400}
+            enable={{ right: true }} // 드래그 설정 - 오른쪽만
+            className="bg-stone-900 border-r border-gray-700"
+          >
+            <div className="h-full overflow-hidden">
+              <Explorer
+                root={rootNode}
+                expanded={ide.expanded}
+                onToggleFolder={ide.toggleFolder}
+                onOpenFile={ide.openFile}
+              />
+            </div>
+          </Resizable>
+
+          <div className="flex flex-col flex-1 min-w-0 min-h-0 ">
+            <FileTabs
+              openTabs={ide.openTabs}
+              activeFileId={ide.activeFileId}
+              onSelectTab={ide.selectTab}
+              onCloseTab={ide.closeTab}
             />
+            <div className="flex-1 min-h-0 bg-[#1E1E1E]">
+              <CodeEditor
+                activeFile={ide.activeFile}
+                code={ide.currentCode}
+                onChange={ide.setCurrentCode}
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="border border-gray-700">
-        <Terminal
-          frontendErrorLog={frontendErrorLog}
-          backendErrorLog={backendErrorLog}
-        />
+        {/* 터미널 */}
+        <Resizable
+          defaultSize={{ width: '100%', height: 220 }}
+          enable={{ top: true }}
+          className="shrink-0 border border-gray-700 overflow-hidden"
+          minHeight={50}
+        >
+          <Terminal
+            frontendErrorLog={frontendErrorLog}
+            backendErrorLog={backendErrorLog}
+          />
+        </Resizable>
       </div>
     </div>
   );
