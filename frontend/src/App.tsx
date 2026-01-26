@@ -6,8 +6,8 @@ import HomePage from './pages/home/HomePage';
 import LoginPage from './pages/login/LoginPage';
 import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
-import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import SignupPage from './pages/signup/SignupPage';
+import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 
 function App() {
   return (
