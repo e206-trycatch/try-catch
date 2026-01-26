@@ -51,10 +51,10 @@ const Header = () => {
         {/* 우측 메뉴 영역 */}
         <nav
           className="flex items-center ml-auto"
-          style={{ 
-            gap: '1.5vw', 
+          style={{
+            gap: '1.5vw',
             letterSpacing: '-0.05vw',
-            fontSize: 'max(14px, 1vw)' // 확대해도 커지지 않되, 최소 크기는 보장
+            fontSize: 'max(14px, 1vw)', // 확대해도 커지지 않되, 최소 크기는 보장
           }}
         >
           <SoundToggleButton />
