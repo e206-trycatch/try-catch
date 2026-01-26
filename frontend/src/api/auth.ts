@@ -59,6 +59,128 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   // return response.data;
 };
 
+// ===== 회원가입 =====
+
+// 회원가입 요청
+interface SignupRequest {
+  id: string;
+  password: string;
+  email: string;
+  nickname: string;
+}
+
+// 회원가입 응답
+interface SignupResponse {
+  loginId: string;
+  password: string;
+  nickname: string;
+}
+
+// 회원가입
+export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
+  // ===== 목 데이터 (백엔드 완료 전) =====
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // 성공 응답
+  return {
+    loginId: data.id,
+    password: data.password,
+    nickname: data.nickname,
+  };
+
+  // ===== 실제 API (백엔드 완료 후 주석 해제) =====
+  // const response = await api.post<SignupResponse>('/auth/signup', data);
+  // return response.data;
+};
+
+// ===== 중복 확인 =====
+
+// 중복 확인 응답 타입
+interface CheckDuplicateResponse {
+  status: number;
+  message: string;
+  result: {
+    available: boolean;
+  };
+}
+
+// 아이디 중복 확인
+export const checkLoginId = async (loginId: string): Promise<CheckDuplicateResponse> => {
+  // ===== 목 데이터 (백엔드 완료 전) =====
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // 'test'는 이미 사용 중인 아이디로 시뮬레이션
+  if (loginId === 'test') {
+    return {
+      status: 409,
+      message: '이미 사용 중인 아이디입니다.',
+      result: { available: false },
+    };
+  }
+
+  return {
+    status: 200,
+    message: '사용 가능한 아이디입니다.',
+    result: { available: true },
+  };
+
+  // ===== 실제 API (백엔드 완료 후 주석 해제) =====
+  // const response = await api.get<CheckDuplicateResponse>(`/auth/check-loginId?loginId=${loginId}`);
+  // return response.data;
+};
+
+// 닉네임 중복 확인
+export const checkNickname = async (nickname: string): Promise<CheckDuplicateResponse> => {
+  // ===== 목 데이터 (백엔드 완료 전) =====
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // '테스트'는 이미 사용 중인 닉네임으로 시뮬레이션
+  if (nickname === '테스트') {
+    return {
+      status: 409,
+      message: '이미 사용 중인 닉네임입니다.',
+      result: { available: false },
+    };
+  }
+
+  return {
+    status: 200,
+    message: '사용 가능한 닉네임입니다.',
+    result: { available: true },
+  };
+
+  // ===== 실제 API (백엔드 완료 후 주석 해제) =====
+  // const response = await api.get<CheckDuplicateResponse>(`/auth/check-nickname?nickname=${nickname}`);
+  // return response.data;
+};
+
+// 이메일 중복 확인
+export const checkEmail = async (email: string): Promise<CheckDuplicateResponse> => {
+  // ===== 목 데이터 (백엔드 완료 전) =====
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // 'test@example.com'은 이미 사용 중인 이메일로 시뮬레이션
+  if (email === 'test@example.com') {
+    return {
+      status: 409,
+      message: '해당 이메일로 가입된 계정이 있습니다.',
+      result: { available: false },
+    };
+  }
+
+  return {
+    status: 200,
+    message: '사용 가능한 이메일',
+    result: { available: true },
+  };
+
+  // ===== 실제 API (백엔드 완료 후 주석 해제) =====
+  // const response = await api.get<CheckDuplicateResponse>(`/auth/check-email?email=${email}`);
+  // return response.data;
+};
+
+// ===== 로그아웃 =====
+
 // 로그아웃 응답
 interface LogoutResponse {
   message: string;
