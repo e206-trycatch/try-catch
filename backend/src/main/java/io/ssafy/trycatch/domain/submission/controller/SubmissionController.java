@@ -1,7 +1,9 @@
 package io.ssafy.trycatch.domain.submission.controller;
 
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
+import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
 import io.ssafy.trycatch.domain.submission.service.SubmissionService;
+import io.ssafy.trycatch.global.common.ApiRespDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +15,7 @@ public class SubmissionController {
     private final SubmissionService submissionService;
 
     @PostMapping("/api/v1/rooms/{roomId}/submission")
-    public ResponseEntity<?> submission(
+    public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
             @PathVariable Long roomId,
             @RequestBody SubmissionReqDto request) {
 
@@ -33,7 +35,9 @@ public class SubmissionController {
         }
 
         Long userId = 1L; // 임시
-        return ResponseEntity.ok(submissionService.submit(roomId, userId, request));
+        return ResponseEntity.ok(
+                ApiRespDto.success(submissionService.submit(roomId, userId, request))
+        );
     }
 
     // 인프라 배포 확인용
