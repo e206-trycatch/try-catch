@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import backIcon from '../../assets/images/icons/back_icon.png';
 import trycatchLogo from '../../assets/images/trycatch_logo.png';
@@ -11,7 +11,14 @@ import LogOutMenu from './LogOutMenu';
 const Header = () => {
   const { isLogin, user, logout } = useStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
+
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <>
@@ -52,7 +59,7 @@ const Header = () => {
         >
           <SoundToggleButton />
           {isLogin ? (
-            <LogInMenu userName={user?.name} onLogout={logout} />
+            <LogInMenu userName={user?.nickname} onLogout={handleLogout} />
           ) : (
             <LogOutMenu />
           )}
