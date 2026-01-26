@@ -22,7 +22,7 @@ export default function CodeEditor({
     <Editor
       key={activeFile.id}
       width="100%"
-      height="calc(100vh - 36px)"
+      height="100%"
       language={activeFile.language ?? 'javascript'} // 활성화 된 파일이 있고, 언어가 있다면 그 값 쓰기
       value={code} // 에디터에 표시되는 텍스트
       theme="vs-dark"

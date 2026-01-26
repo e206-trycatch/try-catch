@@ -32,8 +32,8 @@ export default function GamePage() {
   }
 
   return (
-    <div>
-      <div>
+    <div className="flex w-full px-20">
+      <div className="w-1/4 min-w-0">
         <Explorer
           root={rootNode}
           expanded={ide.expanded}
@@ -41,13 +41,15 @@ export default function GamePage() {
           onOpenFile={ide.openFile}
         />
       </div>
-      <div>
+      <div className="flex flex-col w-3/4 min-w-0 min-h-0">
         <h1>code editor</h1>
-        <CodeEditor
-          activeFile={ide.activeFile}
-          code={ide.currentCode}
-          onChange={ide.setCurrentCode}
-        />
+        <div className="h-[580px]">
+          <CodeEditor
+            activeFile={ide.activeFile}
+            code={ide.currentCode}
+            onChange={ide.setCurrentCode}
+          />
+        </div>
       </div>
     </div>
   );
