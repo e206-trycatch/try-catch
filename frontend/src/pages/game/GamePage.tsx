@@ -37,8 +37,8 @@ export default function GamePage() {
 
   return (
     <div className=" w-full px-20">
-      <div className="flex">
-        <div className="w-1/4 min-w-0">
+      <div className="flex border border-gray-700 ">
+        <div className="w-1/4 min-w-0 bg-stone-900 border-r border-gray-700">
           <Explorer
             root={rootNode}
             expanded={ide.expanded}
@@ -47,8 +47,7 @@ export default function GamePage() {
           />
         </div>
         <div className="flex flex-col w-3/4 min-w-0 min-h-0">
-          <h1>code editor</h1>
-          <div className="h-[580px]">
+          <div className="h-[580px] bg-[#1E1E1E] ">
             <CodeEditor
               activeFile={ide.activeFile}
               code={ide.currentCode}
@@ -57,7 +56,7 @@ export default function GamePage() {
           </div>
         </div>
       </div>
-      <div>
+      <div className="border border-gray-700">
         <Terminal
           frontendErrorLog={frontendErrorLog}
           backendErrorLog={backendErrorLog}

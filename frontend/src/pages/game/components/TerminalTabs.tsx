@@ -7,7 +7,7 @@ type Props = {
 
 export default function TerminalTabs({ activeTab, onChangeTab }: Props) {
   return (
-    <div className="flex border-b border-gray-700 bg-gray-900 px-4 py-1">
+    <div className="flex bg-stone-900 px-4 py-1 border-b border-gray-700">
       <div className="flex justify-center items-center gap-2 mr-5">
         <img src={terminalIcon} alt="터미널" className="w-6 h-6" />
         <span className="text-white text-base font-normal font-['Umdot_11'] leading-4">

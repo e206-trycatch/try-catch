@@ -23,7 +23,7 @@ export default function Terminal({
     activeTab === 'Frontend' ? frontendErrorLog : backendErrorLog;
 
   return (
-    <div className="w-full h-64 relative bg-stone-900 outline outline-1 outline-zinc-800">
+    <div className="w-full h-64 relative bg-stone-900">
       <TerminalTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       <TerminalLogView log={currentLog} loading={logLoading} error={logError} />
     </div>
