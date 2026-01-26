@@ -7,7 +7,6 @@ const ModeSelectionPage = () => {
   const navigate = useNavigate();
 
   const { setMode } = useRoomStore();
-  
 
   const handleModeSelect = (mode: 'SINGLE' | 'MULTI') => {
     setMode(mode);
