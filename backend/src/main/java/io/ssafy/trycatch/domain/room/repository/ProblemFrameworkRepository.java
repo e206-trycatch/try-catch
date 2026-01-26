@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.room.repository;
 
+import io.micrometer.observation.ObservationFilter;
 import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface ProblemFrameworkRepository extends JpaRepository<ProblemFramewo
     // questId, frontendId, backendId로 ProblemFramework 조회
     Optional<ProblemFramework> findByQuestIdAndFrontendIdAndBackendIdAndIsDeleted(
             Long questId, Long frontendId, Long backendId, TrueOrFalse isDeleted);
+
+    Optional<ProblemFramework> findByIdAndIsDeleted(Long id, TrueOrFalse isDeleted);
 }
