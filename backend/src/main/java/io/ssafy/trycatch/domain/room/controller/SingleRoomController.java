@@ -1,11 +1,8 @@
 package io.ssafy.trycatch.domain.room.controller;
 
 import io.ssafy.trycatch.domain.room.dto.request.SingleRoomCreateReqDto;
-import io.ssafy.trycatch.domain.room.dto.response.QuestDetailRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.QuestStoryRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.SingleRoomCreateRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.*;
 import io.ssafy.trycatch.global.common.ApiRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +28,7 @@ public class SingleRoomController {
         );
     }
 
+    // 싱글 방 생성
     @PostMapping("/single")
     public ResponseEntity<ApiRespDto<SingleRoomCreateRespDto>> createSingleRoom(
             @RequestBody SingleRoomCreateReqDto request) {
@@ -59,6 +57,18 @@ public class SingleRoomController {
         List<QuestStoryRespDto> response = singleRoomService.getQuestStoryList(questId);
         return ResponseEntity.ok(
                 ApiRespDto.success("퀘스트 스토리를 불러왔습니다.", response)
+        );
+    }
+
+    @GetMapping("/{roomId}/quest/{questId}/files")
+    public ResponseEntity<ApiRespDto<ProblemFilesRespDto>> getProblemFiles(
+            @PathVariable Long roomId,
+            @PathVariable Long questId) {
+
+        ProblemFilesRespDto response = singleRoomService.getProblemFiles(roomId, questId);
+
+        return ResponseEntity.ok(
+                ApiRespDto.success("문제 파일 목록을 불러왔습니다.", response)
         );
     }
 }
