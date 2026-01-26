@@ -1,19 +1,78 @@
-import TriangleArrowIcon from '../../assets/images/icons/triangle-arrow-pixel.png';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { createRoom, fetchSingleSetting } from '../../api/roomApi';
+import SingleRoomSettingForm from '../../components/room-setting/SingleRoomSettingForm';
+import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
+import { useRoomStore } from '../../stores/useRoomStore';
+import { useStore } from '../../stores/useStore'; // 토큰 확인용
 
 const SingleRoomSettingPage = () => {
-  // 10px 픽셀 모서리 클립패드 값
-  const pixelClipPath =
-    'polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 10px calc(100% - 10px), 0 calc(100% - 10px))';
+  const navigate = useNavigate();
 
-  // 타이틀용 4px 픽셀 모서리 클립패드 값
-  const titleClipPath =
-    'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))';
+  const accessToken = useStore((s) => s.accessToken);
+  const { draft, validateDraft, buildCreatePayload, setAvailableFrameworks } =
+    useRoomStore();
+
+  useEffect(() => {
+    // themeId 없으면 흐름이 꼬인 거라 테마선택으로
+    if (!draft.themeId) {
+      navigate('/selection/theme');
+      return;
+    }
+
+    // 토큰 없으면 401 날 가능성이 높으니 로그인
+    if (!accessToken) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+
+    (async () => {
+      try {
+        const data = await fetchSingleSetting(draft.themeId!);
+
+        // result/availableFrameworks가 없으면 크래시 방지
+        const frameworks = data?.result?.availableFrameworks;
+        if (!frameworks) {
+          console.error('싱글 설정 응답 형태 확인 필요:', data);
+          alert(data?.message ?? '설정 데이터를 불러오지 못했습니다.');
+          return;
+        }
+
+        setAvailableFrameworks(frameworks);
+      } catch (e) {
+        console.error('싱글 설정 데이터 로드 실패:', e);
+        alert('설정 데이터를 불러오지 못했습니다.');
+      }
+    })();
+  }, [draft.themeId, accessToken, navigate, setAvailableFrameworks]);
+
+  const handleStartGame = async () => {
+    const validation = validateDraft();
+    if (!validation.ok) {
+      alert(validation.errors.join('\n'));
+      return;
+    }
+
+    const payload = buildCreatePayload();
+    if (!payload) {
+      alert('방 생성 정보가 올바르지 않습니다.');
+      return;
+    }
+
+    try {
+      const response = await createRoom(payload);
+      navigate(`/game/${response.room_id}`);
+    } catch (error) {
+      console.error('방 생성 실패:', error);
+      alert('방 생성에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-center items-center bg-[#030030]">
-      {/* 메인 컨테이너 영역 */}
       <div className="relative flex flex-col items-center">
-        {/* 싱글모드 설정 타이틀 */}
         <div
           className="w-[190px] h-[50px] bg-white flex items-center justify-center z-10 absolute -top-[25px]"
           style={{ clipPath: titleClipPath }}
@@ -23,64 +82,20 @@ const SingleRoomSettingPage = () => {
           </span>
         </div>
 
-        {/* 중앙 컨텐츠 박스 */}
         <div
           className="w-[830px] h-[450px] bg-[#353359] flex items-center justify-center relative pt-10"
           style={{ clipPath: pixelClipPath }}
         >
-          {/* 양쪽 세로 흰색 선 (이미지의 양 끝 흰색 바) */}
-          <div className="absolute left-[1px] top-[4px] bottom-[4px] w-[3px] bg-white opacity-90"></div>
-          <div className="absolute right-[1px] top-[4px] bottom-[4px] w-[3px] bg-white opacity-90"></div>
+          <div className="absolute left-[1px] top-[4px] bottom-[4px] w-[3px] bg-white opacity-90" />
+          <div className="absolute right-[1px] top-[4px] bottom-[4px] w-[3px] bg-white opacity-90" />
 
-          {/* 내부 설정 폼 */}
-          <div className="flex w-[550px] flex-col gap-[40px]">
-            {/* 테마 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <img src={TriangleArrowIcon} alt="arrow" className="w-4 h-4" />
-                <span className="text-white text-xl">테마</span>
-              </div>
-              <div className="flex w-[368px] h-[35px] items-center gap-2.5 [background:#FEFEFE] px-2.5 py-1 border-[2.5px] border-solid border-[rgba(3,0,48,0.50)]">
-                {/* 테마명은 이전 선택값에 따라 화면에 고정값으로 보여짐 */}
-                <span className="text-[#030030]/60 text-[16px]">
-                  프로젝트 에이아
-                </span>
-              </div>
-            </div>
-
-            {/* 포지션 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <img src={TriangleArrowIcon} alt="arrow" className="w-4 h-4" />
-                <span className="text-white text-xl">포지션</span>
-              </div>
-              <div className="w-[368px] flex justify-start">
-                <select className="text-[#030030] block h-[35px] w-[140px] bg-[#FEFEFE] border-[2.5px] border-[rgba(3,0,48,0.50)] px-2.5 py-0 leading-[35px] rounded-[5px]">
-                  <option>Frontend</option>
-                  <option>Backend</option>
-                </select>
-              </div>
-            </div>
-
-            {/* 프레임워크 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <img src={TriangleArrowIcon} alt="arrow" className="w-4 h-4" />
-                <span className="text-white text-xl">프레임워크</span>
-              </div>
-              <div className="w-[368px] flex justify-start">
-                <select className="text-[#030030] block h-[35px] w-[140px] bg-[#FEFEFE] border-[2.5px] border-[rgba(3,0,48,0.50)] px-2.5 py-0 leading-[35px] rounded-[5px]">
-                  <option>SpringBoot</option>
-                  <option>Django</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <SingleRoomSettingForm />
         </div>
 
         <div className="w-full flex justify-end mt-2">
           <button
             type="button"
+            onClick={handleStartGame}
             className="text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors bg-transparent border-none"
           >
             {'>>'} 싱글모드로 시작하기

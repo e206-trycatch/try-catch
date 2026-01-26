@@ -2,12 +2,23 @@ import React from 'react';
 
 import QuestDescriptionBox from '../../components/quest/QuestDescriptionBox';
 import { MOCK_THEMES } from '../../mocks/mockData';
+import { useRoomStore } from '../../stores/useRoomStore';
 
 const QuestDescriptionPage: React.FC = () => {
-  // mockData의 Theme 데이터를 직접 사용
-  const currentTheme = MOCK_THEMES[0];
+  const themeId = useRoomStore((state) => state.draft.themeId);
 
-  // Todo: 실제 데이터 연결 후 수정 사항 (배경 이미지, 앞 페이지 데이터 제대로 가져왔는지 등)
+  // draft.themeId 기반으로 테마 찾기
+  const currentTheme = MOCK_THEMES.find((theme) => theme.themeId === themeId);
+
+  // themeId가 없거나 테마를 찾지 못한 경우 처리
+  if (!themeId || !currentTheme) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center">
+        <p className="text-white">테마를 선택해주세요.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-screen h-screen flex items-center justify-center relative">
       <div className="flex items-center justify-center z-10">
