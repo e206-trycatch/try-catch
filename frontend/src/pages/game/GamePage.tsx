@@ -2,12 +2,16 @@ import { useMemo } from 'react';
 
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
+import Terminal from './components/Terminal';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
+import useTerminal from './hooks/useTerminal';
 import type { FileNode } from './types/ideTypes';
 
 export default function GamePage() {
   const { files, loading, error } = useFile();
+  const { frontendErrorLog, backendErrorLog, logLoading, logError } =
+    useTerminal();
 
   const rootNode = useMemo<FileNode>(
     () => ({
@@ -32,24 +36,34 @@ export default function GamePage() {
   }
 
   return (
-    <div className="flex w-full px-20">
-      <div className="w-1/4 min-w-0">
-        <Explorer
-          root={rootNode}
-          expanded={ide.expanded}
-          onToggleFolder={ide.toggleFolder}
-          onOpenFile={ide.openFile}
-        />
-      </div>
-      <div className="flex flex-col w-3/4 min-w-0 min-h-0">
-        <h1>code editor</h1>
-        <div className="h-[580px]">
-          <CodeEditor
-            activeFile={ide.activeFile}
-            code={ide.currentCode}
-            onChange={ide.setCurrentCode}
+    <div className=" w-full px-20">
+      <div className="flex">
+        <div className="w-1/4 min-w-0">
+          <Explorer
+            root={rootNode}
+            expanded={ide.expanded}
+            onToggleFolder={ide.toggleFolder}
+            onOpenFile={ide.openFile}
           />
         </div>
+        <div className="flex flex-col w-3/4 min-w-0 min-h-0">
+          <h1>code editor</h1>
+          <div className="h-[580px]">
+            <CodeEditor
+              activeFile={ide.activeFile}
+              code={ide.currentCode}
+              onChange={ide.setCurrentCode}
+            />
+          </div>
+        </div>
+      </div>
+      <div>
+        <Terminal
+          frontendErrorLog={frontendErrorLog}
+          backendErrorLog={backendErrorLog}
+          logLoading={logLoading}
+          logError={logError}
+        />
       </div>
     </div>
   );
