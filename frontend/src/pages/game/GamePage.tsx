@@ -1,17 +1,41 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { getQuest } from '../../api/questFile';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import Terminal from './components/Terminal';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
+import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 
 export default function GamePage() {
-  const { files, loading, error } = useFile();
-  const { frontendErrorLog, backendErrorLog, logLoading, logError } =
-    useTerminal();
+  const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadQuest = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
+        const data = await getQuest(1);
+        setQuestInfo(data);
+      } catch {
+        setError('문제 정보를 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQuest();
+  }, []);
+
+  const { files } = useFile(questInfo);
+  const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
 
   const rootNode = useMemo<FileNode>(
     () => ({
@@ -28,7 +52,7 @@ export default function GamePage() {
   const ide = useIde(rootNode);
 
   if (loading) {
-    return <div>파일 불러오는 중...</div>;
+    return <div>불러오는 중...</div>;
   }
 
   if (error) {
@@ -60,8 +84,6 @@ export default function GamePage() {
         <Terminal
           frontendErrorLog={frontendErrorLog}
           backendErrorLog={backendErrorLog}
-          logLoading={logLoading}
-          logError={logError}
         />
       </div>
     </div>
