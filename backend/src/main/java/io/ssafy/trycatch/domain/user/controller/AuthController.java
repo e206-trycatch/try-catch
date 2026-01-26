@@ -1,9 +1,15 @@
 package io.ssafy.trycatch.domain.user.controller;
 
+import io.ssafy.trycatch.domain.user.dto.request.LoginReqDto;
 import io.ssafy.trycatch.domain.user.dto.request.SignupReqDto;
 import io.ssafy.trycatch.domain.user.dto.response.DuplicateCheckRespDto;
+import io.ssafy.trycatch.domain.user.dto.response.LoginRespDto;
+import io.ssafy.trycatch.domain.user.dto.response.RefreshRespDto;
 import io.ssafy.trycatch.domain.user.dto.response.SignupRespDto;
 import io.ssafy.trycatch.domain.user.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +24,57 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+    // 로그인
+    @PostMapping("/login")
+    public ResponseEntity<LoginRespDto> login(
+            @Valid @RequestBody LoginReqDto request, HttpServletResponse response) { // cookie 정보 위해 HttpServletResponse 객체 필요
+        log.info("로그인 API 호출: {}", request.getLoginId());
+
+        AuthService.LoginResult result = authService.login(request);
+
+        Cookie refreshTokenCookie = new Cookie("refreshToken", result.refreshToken());
+        refreshTokenCookie.setHttpOnly(true);      // JavaScript 접근 불가
+        refreshTokenCookie.setSecure(false);       // 개발 환경: false, 운영 환경(HTTPS): true
+        refreshTokenCookie.setPath("/");           // 모든 경로에서 쿠키 전송
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);  // 7일 (초 단위)
+        response.addCookie(refreshTokenCookie);
+
+        return ResponseEntity.ok(LoginRespDto.success(result.accessToken(), result.user()));
+    }
+
+    // 토큰 재발급
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshRespDto> refresh(HttpServletRequest request) {
+        log.info("토큰 재발급 API 호출");
+
+        // 쿠키에서 Refresh Token 추출
+        String refreshToken = extractRefreshTokenFromCookie(request);
+
+        if (refreshToken == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(RefreshRespDto.fail("Refresh Token이 없습니다."));
+        }
+
+        RefreshRespDto response = authService.refresh(refreshToken);
+        return ResponseEntity.ok(response);
+    }
+
+    // 쿠키에서 Refresh Token 추출
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
+
 
     // 회원가입
     @PostMapping("/signup")
