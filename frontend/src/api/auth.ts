@@ -58,3 +58,19 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   // const response = await api.post<LoginResponse>('/auth/login', data);
   // return response.data;
 };
+
+// 로그아웃 응답
+interface LogoutResponse {
+  message: string;
+}
+
+// 로그아웃
+export const logout = async (): Promise<LogoutResponse> => {
+  // ===== 목 데이터 (백엔드 완료 전) =====
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return { message: '로그아웃 되었습니다.' };
+
+  // ===== 실제 API (백엔드 완료 후 주석 해제) =====
+  // const response = await api.post<LogoutResponse>('/auth/logout');
+  // return response.data;
+};

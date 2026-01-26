@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { logout as logoutApi } from '../api/auth';
+
 // 유저 정보 타입
 interface User {
   nickname: string;
@@ -14,7 +16,7 @@ interface AppState {
 
   // 액션
   login: (accessToken: string, user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -31,11 +33,18 @@ export const useStore = create<AppState>((set) => ({
       user,
     }),
 
-  // 로그아웃: 모든 인증 정보 초기화
-  logout: () =>
+  // 로그아웃: API 호출 후 인증 정보 초기화
+  logout: async () => {
+    try {
+      await logoutApi();
+    } catch (error) {
+      // API 실패해도 로그아웃 처리 (토큰 만료 등)
+      console.error('로그아웃 API 호출 실패:', error);
+    }
     set({
       isLogin: false,
       accessToken: null,
       user: null,
-    }),
+    });
+  },
 }));
