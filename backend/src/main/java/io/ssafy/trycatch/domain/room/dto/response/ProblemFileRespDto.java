@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.room.dto.response;
 
+import io.ssafy.trycatch.domain.room.enums.FileType;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,5 +27,5 @@ public class ProblemFileRespDto {
     private String code;
 
     // 파일 종류 (SOURCE/CONFIG/TEST/DOC/ASSET)
-    private String fileType;
+    private FileType fileType;
 }

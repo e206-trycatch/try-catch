@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.room.entity;
 
+import io.ssafy.trycatch.domain.room.enums.FileType;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import jakarta.persistence.*;
@@ -43,8 +44,9 @@ public class ProblemFile {
     private String code;
 
     // 파일 종류 (SOURCE/CONFIG/TEST/DOC/ASSET)
-    @Column(name = "file_type", nullable = false, columnDefinition = "ENUM('SOURCE','CONFIG','TEST','DOC','ASSET')")
-    private String fileType;
+    @Column(name = "file_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private FileType fileType;
 
     // 삭제 여부
     @Enumerated(EnumType.STRING)

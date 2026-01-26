@@ -1,6 +1,7 @@
 package io.ssafy.trycatch.global.config;
 
 import io.ssafy.trycatch.domain.room.entity.ProblemFile;
+import io.ssafy.trycatch.domain.room.enums.FileType;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
@@ -33,7 +34,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_react/src/App.js")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("import React from 'react';\nimport './App.css';\n\nfunction App() {\n  return (\n    <div className=\"App\">\n      <h1>Hello React</h1>\n    </div>\n  );\n}\n\nexport default App;")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -42,7 +43,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_react/package.json")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("{\n  \"name\": \"react-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  }\n}")
-                .fileType("CONFIG")
+                .fileType(FileType.CONFIG)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -52,7 +53,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_vue/src/App.vue")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("<template>\n  <div id=\"app\">\n    <h1>{{ title }}</h1>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      title: 'Hello Vue'\n    }\n  }\n}\n</script>")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -61,7 +62,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_vue/package.json")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("{\n  \"name\": \"vue-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"vue\": \"^3.0.0\"\n  }\n}")
-                .fileType("CONFIG")
+                .fileType(FileType.CONFIG)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -71,7 +72,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_spring/src/main/java/com/example/Application.java")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("package com.example;\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class Application {\n    public static void main(String[] args) {\n        SpringApplication.run(Application.class, args);\n    }\n}")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -80,7 +81,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_spring/pom.xml")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project>\n  <modelVersion>4.0.0</modelVersion>\n  <groupId>com.example</groupId>\n  <artifactId>backend</artifactId>\n  <version>1.0.0</version>\n</project>")
-                .fileType("CONFIG")
+                .fileType(FileType.CONFIG)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -90,7 +91,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_django/app.py")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("from django.http import HttpResponse\n\ndef index(request):\n    return HttpResponse('Hello Django')")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -99,7 +100,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_django/requirements.txt")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("Django==4.2.0")
-                .fileType("CONFIG")
+                .fileType(FileType.CONFIG)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -110,7 +111,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_react/src/App.js")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("import React from 'react';\nimport './App.css';\n\nfunction App() {\n  return (\n    <div className=\"App\">\n      <h1>Hello React</h1>\n    </div>\n  );\n}\n\nexport default App;")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -120,7 +121,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_spring/src/main/java/com/example/Application.java")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("package com.example;\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class Application {\n    public static void main(String[] args) {\n        SpringApplication.run(Application.class, args);\n    }\n}")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -131,7 +132,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_react/src/App.js")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("import React from 'react';\nimport './App.css';\n\nfunction App() {\n  return (\n    <div className=\"App\">\n      <h1>Hello React</h1>\n    </div>\n  );\n}\n\nexport default App;")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -141,7 +142,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_django/app.py")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("from django.http import HttpResponse\n\ndef index(request):\n    return HttpResponse('Hello Django')")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -152,7 +153,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_vue/src/App.vue")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("<template>\n  <div id=\"app\">\n    <h1>{{ title }}</h1>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      title: 'Hello Vue'\n    }\n  }\n}\n</script>")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -162,7 +163,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_spring/src/main/java/com/example/Application.java")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("package com.example;\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class Application {\n    public static void main(String[] args) {\n        SpringApplication.run(Application.class, args);\n    }\n}")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -173,7 +174,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("frontend_vue/src/App.vue")
                 .codeRole(FrameworkCategory.FRONTEND)
                 .code("<template>\n  <div id=\"app\">\n    <h1>{{ title }}</h1>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      title: 'Hello Vue'\n    }\n  }\n}\n</script>")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
@@ -183,7 +184,7 @@ public class ProblemFileDataInitializer implements CommandLineRunner {
                 .filePath("backend_django/app.py")
                 .codeRole(FrameworkCategory.BACKEND)
                 .code("from django.http import HttpResponse\n\ndef index(request):\n    return HttpResponse('Hello Django')")
-                .fileType("SOURCE")
+                .fileType(FileType.SOURCE)
                 .isDeleted(TrueOrFalse.F)
                 .build());
 
