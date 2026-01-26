@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { logout as logoutApi } from '../../api/auth';
 import backIcon from '../../assets/images/icons/back_icon.png';
 import trycatchLogo from '../../assets/images/trycatch_logo.png';
 import { useStore } from '../../stores/useStore';
@@ -10,21 +9,15 @@ import LogInMenu from './LogInMenu';
 import LogOutMenu from './LogOutMenu';
 
 const Header = () => {
-  const { isLogin, user, logout: storeLogout } = useStore();
+  const { isLogin, user, logout } = useStore();
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
 
   // 로그아웃 처리
   const handleLogout = async () => {
-    try {
-      await logoutApi();
-    } catch {
-      // API 실패해도 로그아웃 처리 (토큰 만료 등)
-    } finally {
-      storeLogout();
-      navigate('/');
-    }
+    await logout();
+    navigate('/');
   };
 
   return (
