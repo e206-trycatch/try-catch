@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getQuest } from '../../api/questFile';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
+import FileTabs from './components/FileTabs';
 import Terminal from './components/Terminal';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
@@ -71,6 +72,12 @@ export default function GamePage() {
           />
         </div>
         <div className="flex flex-col w-3/4 min-w-0 min-h-0">
+          <FileTabs
+            openTabs={ide.openTabs}
+            activeFileId={ide.activeFileId}
+            onSelectTab={ide.selectTab}
+            onCloseTab={ide.closeTab}
+          />
           <div className="h-[580px] bg-[#1E1E1E] ">
             <CodeEditor
               activeFile={ide.activeFile}

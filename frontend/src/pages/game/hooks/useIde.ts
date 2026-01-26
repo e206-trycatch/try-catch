@@ -91,6 +91,15 @@ export function useIde(root: FileNode) {
     setCurrentCode(fileCodes[file.id] ?? file.code ?? '빈 파일입니다.');
   };
 
+  const selectTab = (fileId: string) => {
+    if (fileId === activeFileId) return;
+
+    saveCurrentFile();
+
+    setActiveFileId(fileId);
+    setCurrentCode(fileCodes[fileId] ?? '빈 파일입니다.');
+  };
+
   const closeTab = (fileId: string) => {
     if (fileId === activeFileId) {
       saveCurrentFile();
@@ -128,6 +137,7 @@ export function useIde(root: FileNode) {
     activeFileId,
     openFile,
     closeTab,
+    selectTab,
 
     activeFile,
     currentCode,
