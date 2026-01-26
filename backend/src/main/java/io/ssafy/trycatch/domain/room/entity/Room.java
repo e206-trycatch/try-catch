@@ -87,4 +87,25 @@ public class Room {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void decreaseLife() {
+        if (this.life > 0) {
+            this.life--;
+        }
+    }
+
+    public void useHint() {
+        if (this.remainingHintCount > 0) {
+            this.remainingHintCount--;
+        }
+    }
+
+    public void startGame() {
+        this.status = RoomStatus.PLAYING;
+        this.startedAt = LocalDateTime.now();
+    }
+
+    public void endGame() {
+        this.status = RoomStatus.ENDED;
+    }
 }
