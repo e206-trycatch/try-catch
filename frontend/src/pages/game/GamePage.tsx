@@ -15,6 +15,7 @@ export default function GamePage() {
       name: 'root',
       type: 'folder' as const, // 값을 리터럴 타입으로 고정해서 타입이 넓어지는 걸 막는 문법
       path: '/',
+      role: null,
       children: files,
     }),
     [files], // files 값이 바뀔 때마다 실행하기

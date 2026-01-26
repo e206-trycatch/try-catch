@@ -1,4 +1,4 @@
-import type { FileNode, InitalCodeItem } from '../types/ideTypes';
+import type { FileNode, QuestFile } from '../types/ideTypes';
 
 const getFileLanguage = (filePath: string): string => {
   const fileName = filePath.split('/').filter(Boolean).at(-1) ?? '';
@@ -31,7 +31,7 @@ const getFileLanguage = (filePath: string): string => {
 
 // 폴더/파일 계층 구조의 트리를 생성한다.
 // 최상위 루트 노드(자식들 포함한 채)를 반환한다.
-export function buildFileTree(initialCode: InitalCodeItem[]): FileNode {
+export function buildFileTree(questFile: QuestFile[]): FileNode {
   // 최상위 로트 노드
   const root: FileNode = {
     id: 'root',
@@ -39,6 +39,7 @@ export function buildFileTree(initialCode: InitalCodeItem[]): FileNode {
     type: 'folder',
     path: '/',
     children: [],
+    role: null,
   };
 
   // 폴더 중복 방지
@@ -48,9 +49,10 @@ export function buildFileTree(initialCode: InitalCodeItem[]): FileNode {
   folderCache.set('/', root); // root 폴더 등록
 
   // 파일 객체들이 들어 있는 initialCode 배열 순회
-  for (const file of initialCode) {
+  for (const file of questFile) {
     // 경로를 분해한 결과
     // filter(Boolean) : falsy 값 제거
+    const role = file.codeRole;
     const parts = file.filePath.split('/').filter(Boolean);
     const fileName = parts.at(-1)!;
     const folderParts = parts.slice(0, -1);
@@ -76,6 +78,7 @@ export function buildFileTree(initialCode: InitalCodeItem[]): FileNode {
           name: folderName,
           type: 'folder',
           path: currentFolderPath,
+          role: role,
 
           children: [], // 하위 파일/폴더가 들어갈 배열
         };
@@ -92,6 +95,7 @@ export function buildFileTree(initialCode: InitalCodeItem[]): FileNode {
       name: fileName,
       type: 'file',
       path: file.filePath,
+      role: role,
 
       fileId: file.fileId,
       fileType: file.fileType,

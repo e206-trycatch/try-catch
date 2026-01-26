@@ -1,11 +1,22 @@
 export type NodeType = 'folder' | 'file';
+export type CodeRole = 'FRONTEND' | 'BACKEND' | null;
 
-// 백엔드에서 내려주는 데이터(initialCode) 타입 정의
-export interface InitalCodeItem {
+// 백엔드에서 내려주는 데이터(QuestFile) 타입 정의
+export interface QuestFile {
   fileId: number; // 파일 고유 id
   filePath: string; // 파일 경로
+  codeRole: CodeRole; // 역할
   fileType: string; // 파일 타입
   code: string; // 파일 코드
+}
+
+// 벡엔드에서 내려주는 데이터(QuestInfo) 타입 정의
+export interface QuestInfo {
+  problemFrameworkId: number;
+  frontendErrorLog: string;
+  backendErrorLog: string;
+
+  files: QuestFile[];
 }
 
 // 파일/폴더 트리 구조 타입 정의
@@ -16,6 +27,7 @@ export interface FileNode {
   name: string; // 화면에 보여줄 이름
   type: NodeType; // 노드 타입
   path: string; // 전체 경로
+  role: CodeRole;
 
   // node가 file일 때만 존재하는 값들
   fileId?: number;
