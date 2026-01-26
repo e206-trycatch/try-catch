@@ -1,23 +1,60 @@
-import { useState } from 'react';
+// pages/ThemeSelectionPage.tsx
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+// 실제 프로젝트 경로에 맞춰 import 경로를 확인해주세요.
 import { MOCK_THEMES, type Theme } from '../../mocks/mockData';
+import { useRoomStore } from '../../stores/useRoomStore';
 
 const ThemeSelectionPage = () => {
-  const [activeId, setActiveId] = useState<number>(MOCK_THEMES[0].themeId);
+  const navigate = useNavigate();
 
-  // 모서리 픽셀 느낌
+  // 1. Store에서 모드 상태와 세터 가져오기
+  const { selectedMode, setThemeId } = useRoomStore();
+
+  // 2. 테마 데이터는 import한 MOCK_THEMES 사용
+  // 현재 활성화된(확대된) 카드 ID 관리 (초기값: 첫 번째 테마)
+  const [activeId, setActiveId] = useState<number>(
+    MOCK_THEMES[0]?.themeId || 1,
+  );
+
+  // 3. 페이지 진입 시 예외 처리 (모드 미선택 시 되돌리기)
+  useEffect(() => {
+    if (!selectedMode) {
+      alert('모드 선택이 필요합니다.');
+      navigate('/mode-select');
+    }
+  }, [selectedMode, navigate]);
+
+  // 4. 테마 선택(START 버튼 클릭) 핸들러
+  const handleThemeSelect = (e: React.MouseEvent, themeId: number) => {
+    e.stopPropagation(); // 부모 div의 onClick(카드 확대) 이벤트 전파 방지
+
+    // 스토어에 테마 ID 저장
+    setThemeId(themeId);
+
+    // 모드에 따라 다음 경로 분기
+    if (selectedMode === 'SINGLE') {
+      navigate('/single-room-settings'); // 싱글: 방 설정 페이지
+    } else {
+      navigate('/multi-room-settings'); // 멀티: 방 설정 페이지
+    }
+  };
+
+  // 모서리 픽셀 스타일 (UI 요소)
   const pixelClipPath =
     'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))';
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-[900px] gap-6 p-4 mx-auto">
       <div className="blinking-text text-2xl font-normal leading-relaxed tracking-tight text-white mb-2">
-        모드를 선택해주세요.
+        플레이할 테마를 선택해주세요.
       </div>
 
       {/* 카드 컨테이너 */}
       <div className="flex flex-row items-stretch justify-center w-full h-[400px] gap-2">
         {MOCK_THEMES.map((theme: Theme) => {
+          // 데이터의 themeId와 현재 activeId 비교
           const isActive = activeId === theme.themeId;
 
           return (
@@ -37,13 +74,12 @@ const ThemeSelectionPage = () => {
                 clipPath: pixelClipPath,
               }}
             >
-              {/* 비활성화 카드에 #030030 필터 적용함 */}
+              {/* 비활성화 카드 어둡게 처리 */}
               {!isActive && (
                 <div className="absolute inset-0 z-10 bg-[#030030]/60 hover:bg-[#030030]/40 transition-colors duration-500" />
               )}
 
               {/* 활성화된 카드 하얀 테두리 */}
-              {/* 새 주석: inset-2를 적용하여 전체 카드 크기보다 안쪽으로 배치함 */}
               <div
                 className={`
                   absolute z-20 pointer-events-none transition-all duration-500
@@ -55,8 +91,7 @@ const ThemeSelectionPage = () => {
                   clipPath: pixelClipPath,
                 }}
               >
-                {/* 테마 내부 콘텐츠가 배경 이미지와 섞이지 않도록 */}
-                {/* 새 주석: 테두리 안쪽 영역도 클립패스를 유지하여 배경이 비치도록 투명도 조절 */}
+                {/* 내부 콘텐츠 배경 (투명도 유지) */}
                 <div
                   className="w-full h-full"
                   style={{
@@ -66,8 +101,7 @@ const ThemeSelectionPage = () => {
                 />
               </div>
 
-              {/* 테마 상세 내용 텍스트 잘보이게 opacity 조절 */}
-              {/* 새 주석: 테두리 위치에 맞춰 inset-2를 적용하여 하단 그라데이션 범위를 제한함 */}
+              {/* 텍스트 가독성을 위한 그라데이션 오버레이 */}
               <div
                 className={`
                 absolute inset-0 z-30 transition-opacity duration-500
@@ -76,7 +110,7 @@ const ThemeSelectionPage = () => {
                 style={{ clipPath: pixelClipPath }}
               />
 
-              {/* 카드 내부 콘텐츠*/}
+              {/* 테마 설명 텍스트 (상단) */}
               <div
                 className={`
                 absolute top-12 left-0 right-0 px-8 text-center transition-all duration-700 delay-100 z-40
@@ -88,7 +122,7 @@ const ThemeSelectionPage = () => {
                 </p>
               </div>
 
-              {/* Level, Name, Genre */}
+              {/* 하단 정보 영역 (Level, Name, Genre, Button) */}
               <div
                 className={`
                 absolute z-40 transition-all duration-500 w-full px-6
@@ -101,7 +135,7 @@ const ThemeSelectionPage = () => {
                   ${isActive ? 'flex-row justify-between' : 'flex-col items-center'}
                 `}
                 >
-                  {/* 왼쪽 레벨 표시(동그라미) */}
+                  {/* 왼쪽 레벨 표시 (원형) */}
                   <div
                     className={`
                     flex items-center justify-center bg-white text-black font-bold rounded-full transition-all duration-500
@@ -111,7 +145,7 @@ const ThemeSelectionPage = () => {
                     Lv.{theme.level}
                   </div>
 
-                  {/* 테마제목 & 장르 */}
+                  {/* 테마 제목 & 장르 */}
                   <div
                     className={`
                     flex flex-col text-white transition-all duration-500
@@ -142,12 +176,9 @@ const ThemeSelectionPage = () => {
                     </div>
                   </div>
 
-                  {/* START 버튼 */}
+                  {/* START 버튼 (로직 연결됨) */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      alert(`${theme.name} 시작!`);
-                    }}
+                    onClick={(e) => handleThemeSelect(e, theme.themeId)}
                     className={`
                       px-6 py-2 bg-white text-black font-bold text-xs
                       transition-all duration-500 shadow-lg hover:bg-yellow-400
