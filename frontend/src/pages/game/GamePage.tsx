@@ -2,9 +2,12 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getQuest } from '../../api/questFile';
+import Alarm from './components/Alarm';
+import Chat from './components/Chat';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
+import Hint from './components/hint';
 import MenuBar from './components/MenuBar';
 import Terminal from './components/Terminal';
 import { useFile } from './hooks/useFile';
@@ -84,13 +87,20 @@ export default function GamePage() {
             enable={{ right: true }} // 드래그 설정 - 오른쪽만
             className="bg-stone-900 border-r border-gray-700"
           >
-            <div className="h-full overflow-hidden">
-              <Explorer
-                root={rootNode}
-                expanded={ide.expanded}
-                onToggleFolder={ide.toggleFolder}
-                onOpenFile={ide.openFile}
-              />
+            <div className="h-full overflow-hidden p-5">
+              {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
+              {activeMenu === 'explorer' && (
+                <Explorer
+                  root={rootNode}
+                  expanded={ide.expanded}
+                  onToggleFolder={ide.toggleFolder}
+                  onOpenFile={ide.openFile}
+                />
+              )}
+
+              {activeMenu === 'chat' && <Chat />}
+              {activeMenu === 'hint' && <Hint />}
+              {activeMenu === 'alarm' && <Alarm />}
             </div>
           </Resizable>
 
