@@ -154,5 +154,6 @@ export function useIde(root: FileNode) {
     activeFile,
     currentCode,
     setCurrentCode,
+    saveCurrentFile,
   };
 }

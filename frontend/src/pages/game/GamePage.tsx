@@ -61,6 +61,13 @@ export default function GamePage() {
 
   const ide = useIde(rootNode);
 
+  const saveCode = (menu: SideMenu) => {
+    if (!ide.activeFile) return;
+
+    ide.saveCurrentFile();
+    setActiveMenu(menu);
+  };
+
   if (loading) {
     return <div>불러오는 중...</div>;
   }
@@ -73,7 +80,7 @@ export default function GamePage() {
     <div className=" flex w-full px-20 pt-[80px] pb-[40px] h-screen ">
       {/* 메뉴바 */}
       <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
-        <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
+        <MenuBar activeMenu={activeMenu} onChangeMenu={saveCode} />
       </div>
 
       {/* 파일탐색기 + 코드 편집기 + 터미널 */}
