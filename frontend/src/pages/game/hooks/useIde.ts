@@ -97,7 +97,7 @@ export function useIde(root: FileNode) {
     saveCurrentFile();
 
     setActiveFileId(fileId);
-    setCurrentCode(fileCodes[fileId] ?? '빈 파일입니다.');
+    setCurrentCode(fileCodes[fileId] ?? '파일을 찾을 수 없습니다.');
   };
 
   const closeTab = (fileId: string) => {
