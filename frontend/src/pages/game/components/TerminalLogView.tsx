@@ -13,5 +13,7 @@ export default function TerminalLogView({ log, loading, error }: Props) {
     <div className="p-4">{error}</div>;
   }
 
-  return <div className="p-4">{log}</div>;
+  return (
+    <div className="flex-1 overflow-auto whitespace-pre-wrap p-4">{log}</div>
+  );
 }
