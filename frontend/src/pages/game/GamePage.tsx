@@ -2,12 +2,9 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getQuest } from '../../api/questFile';
-import Alarm from './components/Alarm';
-import Chat from './components/Chat';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
-import Hint from './components/hint';
 import MenuBar from './components/MenuBar';
 import Terminal from './components/Terminal';
 import { useFile } from './hooks/useFile';
@@ -61,13 +58,6 @@ export default function GamePage() {
 
   const ide = useIde(rootNode);
 
-  const saveCode = (menu: SideMenu) => {
-    if (!ide.activeFile) return;
-
-    ide.saveCurrentFile();
-    setActiveMenu(menu);
-  };
-
   if (loading) {
     return <div>불러오는 중...</div>;
   }
@@ -80,7 +70,7 @@ export default function GamePage() {
     <div className=" flex w-full px-20 pt-[80px] pb-[40px] h-screen ">
       {/* 메뉴바 */}
       <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
-        <MenuBar activeMenu={activeMenu} onChangeMenu={saveCode} />
+        <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
       </div>
 
       {/* 파일탐색기 + 코드 편집기 + 터미널 */}
@@ -104,10 +94,6 @@ export default function GamePage() {
                   onOpenFile={ide.openFile}
                 />
               )}
-
-              {activeMenu === 'chat' && <Chat />}
-              {activeMenu === 'hint' && <Hint />}
-              {activeMenu === 'alarm' && <Alarm />}
             </div>
           </Resizable>
 
