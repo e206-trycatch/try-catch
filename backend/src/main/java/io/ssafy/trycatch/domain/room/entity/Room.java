@@ -108,4 +108,8 @@ public class Room {
     public void endGame() {
         this.status = RoomStatus.ENDED;
     }
+
+    public boolean isGameOver() {
+        return this.life <= 0;
+    }
 }
