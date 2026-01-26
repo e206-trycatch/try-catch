@@ -78,7 +78,7 @@ export default function GamePage() {
             onSelectTab={ide.selectTab}
             onCloseTab={ide.closeTab}
           />
-          <div className="h-[580px] bg-[#1E1E1E] ">
+          <div className="h-[580px] bg-[#1E1E1E]">
             <CodeEditor
               activeFile={ide.activeFile}
               code={ide.currentCode}

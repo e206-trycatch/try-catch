@@ -1,3 +1,4 @@
+import CodeFileIcon from '../../../assets/images/icons/code_file_icon.svg';
 import type { FileNode } from '../types/ideTypes';
 
 type Props = {
@@ -27,6 +28,7 @@ export default function FileTabs({
               ${active ? 'bg-white/10 text-white' : 'bg-transparent text-gray-400'}
     `}
           >
+            <img src={CodeFileIcon} alt="코드파일" className="w-5" />
             <span className="whitespace-nowrap overflow-hidden text-ellipsis">
               {tab.name}
             </span>
@@ -37,6 +39,7 @@ export default function FileTabs({
                 onCloseTab(tab.id);
               }}
               className="ml-auto bg-transparent border-none text-gray-400 hover:text-white text-base cursor-pointer"
+              aria-label={`${tab.id} 탭 닫기`}
             >
               x
             </button>
