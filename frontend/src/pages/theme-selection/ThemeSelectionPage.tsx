@@ -1,32 +1,30 @@
-// pages/ThemeSelectionPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// 실제 프로젝트 경로에 맞춰 import 경로를 확인해주세요.
 import { MOCK_THEMES, type Theme } from '../../mocks/mockData';
 import { useRoomStore } from '../../stores/useRoomStore';
 
 const ThemeSelectionPage = () => {
   const navigate = useNavigate();
 
-  // 1. Store에서 모드 상태와 세터 가져오기
-  const { selectedMode, setThemeId } = useRoomStore();
+  // Store에서 모드 상태와 세터 가져오기
+  const { draft, setThemeId } = useRoomStore();
+  const { mode } = draft;
 
-  // 2. 테마 데이터는 import한 MOCK_THEMES 사용
-  // 현재 활성화된(확대된) 카드 ID 관리 (초기값: 첫 번째 테마)
+  // 테마 데이터는 import한 MOCK_THEMES 사용
+  // - 현재 활성화된(확대된) 카드 ID 관리 (초기값: 첫 번째 테마)
   const [activeId, setActiveId] = useState<number>(
     MOCK_THEMES[0]?.themeId || 1,
   );
 
-  // 3. 페이지 진입 시 예외 처리 (모드 미선택 시 되돌리기)
+  // 페이지 진입 시 예외 처리 (모드 미선택 시 되돌리기)
   useEffect(() => {
-    if (!selectedMode) {
+    if (!mode) {
       alert('모드 선택이 필요합니다.');
-      navigate('/mode-select');
+      navigate('/selection/mode');
     }
-  }, [selectedMode, navigate]);
-
-  // 4. 테마 선택(START 버튼 클릭) 핸들러
+  }, [mode, navigate]);
+  // 테마 선택(START 버튼 클릭) 핸들러
   const handleThemeSelect = (e: React.MouseEvent, themeId: number) => {
     e.stopPropagation(); // 부모 div의 onClick(카드 확대) 이벤트 전파 방지
 
@@ -34,14 +32,14 @@ const ThemeSelectionPage = () => {
     setThemeId(themeId);
 
     // 모드에 따라 다음 경로 분기
-    if (selectedMode === 'SINGLE') {
-      navigate('/single-room-settings'); // 싱글: 방 설정 페이지
+    if (mode === 'SINGLE') {
+      navigate('/single-room-settings'); // 싱글 방 설정
     } else {
-      navigate('/multi-room-settings'); // 멀티: 방 설정 페이지
+      navigate('/multi-room-settings'); // 멀티 방 설정
     }
   };
 
-  // 모서리 픽셀 스타일 (UI 요소)
+  // 모서리 픽셀 스타일
   const pixelClipPath =
     'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))';
 
