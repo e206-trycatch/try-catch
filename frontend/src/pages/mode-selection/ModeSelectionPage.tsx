@@ -10,7 +10,7 @@ const ModeSelectionPage = () => {
 
   const handleModeSelect = (mode: 'SINGLE' | 'MULTI') => {
     setMode(mode);
-    navigate('/theme');
+    navigate('/selection/theme');
   };
 
   return (
