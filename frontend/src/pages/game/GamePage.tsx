@@ -20,6 +20,7 @@ import useTerminal from './hooks/useTerminal';
 import type { SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
+import { useStore } from '../../stores/useStore';
 
 type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
@@ -30,14 +31,15 @@ export default function GamePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
 
-  const { draft } = useRoomStore.getState();
+  const { draft, currentRoomId } = useRoomStore.getState();
+  const { accessToken } = useStore();
   useGameStore.getState().setGameState(draft.life, draft.hints);
 
   const submitCode = async () => {
-    const setRoomId = 1; // 임시 데이터
-    const frontFrameworkId = 1; // 임시 데이터
-    const backFrameworkId = 1; // 임시 데이터
-    const accessToken = '';
+    const setRoomId = currentRoomId;
+    const frontFrameworkId = draft.frontendId;
+    const backFrameworkId = draft.backendId;
+    const accessToken = accessToken;
 
     const requestBody: SubmissionRequest = {
       frontend: {
