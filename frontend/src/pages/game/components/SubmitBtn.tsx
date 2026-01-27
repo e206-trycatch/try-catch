@@ -7,13 +7,10 @@ type SubmitBtnProps = {
 export default function SubmitBtn({ onClick }: SubmitBtnProps) {
   return (
     <button
-      className="w-[200px] h-[60px] bg-center bg-no-repeat cursor-pointer text-black"
+      className="w-[95px] h-[45px] bg-center bg-no-repeat cursor-pointer text-black ml-auto"
       onClick={onClick}
       style={{
         backgroundImage: `url(${SubmitBgIcon})`,
-        position: 'absolute',
-        bottom: '0',
-        zIndex: '99',
       }}
       type="button"
     >

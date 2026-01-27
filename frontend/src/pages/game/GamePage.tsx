@@ -180,7 +180,9 @@ export default function GamePage() {
           </Resizable>
         </div>
       </div>
-      <SubmitBtn onClick={submitCode} />
+      <div className="flex w-full mt-4">
+        <SubmitBtn onClick={submitCode} />
+      </div>
     </div>
   );
 }
