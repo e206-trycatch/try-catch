@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResultStore } from '../../stores/useResultStore';
 import { fetchSubmissionResult } from '../../api/submissionApi';
+import ErrorDisplay from './components/ErrorDisplay';
 
 type ErrorType = 'NO_ACCESS' | 'NETWORK_ERROR' | 'NOT_FOUND' | null;
 
@@ -11,7 +12,7 @@ const ResultLoadingPage = () => {
   const storedResult = useResultStore((state) => state.submissionResult);
   const roomId = useResultStore((state) => state.roomId);
   const setSubmissionResult = useResultStore((state) => state.setSubmissionResult);
-  const clearStore = useResultStore((state) => state.clear); // handleGoToMain에서 사용
+  const clearStore = useResultStore((state) => state.clear);
 
   const [errorType, setErrorType] = useState<ErrorType>(null);
 
@@ -52,51 +53,37 @@ const ResultLoadingPage = () => {
     navigate('/');
   };
 
-  // 에러: 잘못된 접근
+  // 에러 처리
   if (errorType === 'NO_ACCESS') {
     return (
-      <div className="flex flex-col justify-center items-center h-screen gap-4">
-        <p className="text-red-500">잘못된 접근입니다.</p>
-        <p className="text-gray-400">문제 풀이 후 결과를 확인할 수 있습니다.</p>
-        <button
-          onClick={handleGoToMain}
-          className="px-6 py-3 border border-white text-white"
-        >
-          메인 페이지로 이동
-        </button>
-      </div>
+      <ErrorDisplay
+        title="잘못된 접근입니다."
+        message="문제 풀이 후 결과를 확인할 수 있습니다."
+        buttonText="메인 페이지로 이동"
+        onClick={handleGoToMain}
+      />
     );
   }
 
-  // 에러: 결과 없음
   if (errorType === 'NOT_FOUND') {
     return (
-      <div className="flex flex-col justify-center items-center h-screen gap-4">
-        <p className="text-red-500">결과를 찾을 수 없습니다.</p>
-        <p className="text-gray-400">제출 기록이 존재하지 않습니다.</p>
-        <button
-          onClick={handleGoToMain}
-          className="px-6 py-3 border border-white text-white"
-        >
-          메인 페이지로 이동
-        </button>
-      </div>
+      <ErrorDisplay
+        title="결과를 찾을 수 없습니다."
+        message="제출 기록이 존재하지 않습니다."
+        buttonText="메인 페이지로 이동"
+        onClick={handleGoToMain}
+      />
     );
   }
 
-  // 에러: 네트워크
   if (errorType === 'NETWORK_ERROR') {
     return (
-      <div className="flex flex-col justify-center items-center h-screen gap-4">
-        <p className="text-red-500">결과를 불러오는데 실패했습니다.</p>
-        <p className="text-gray-400">네트워크 연결을 확인해주세요.</p>
-        <button
-          onClick={refetch}
-          className="px-6 py-3 border border-white text-white"
-        >
-          다시 시도
-        </button>
-      </div>
+      <ErrorDisplay
+        title="결과를 불러오는데 실패했습니다."
+        message="네트워크 연결을 확인해주세요."
+        buttonText="다시 시도"
+        onClick={refetch}
+      />
     );
   }
 
