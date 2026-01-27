@@ -5,12 +5,12 @@ import GamePage from './pages/game/GamePage';
 import HomePage from './pages/home/HomePage';
 import LoginPage from './pages/login/LoginPage';
 import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
+import MyPage from './pages/mypage/MyPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
 import ResultLoadingPage from './pages/result/ResultLoadingPage';
 import ResultPage from './pages/result/ResultPage';
 import SignupPage from './pages/signup/SignupPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
-import MyPage from './pages/mypage/MyPage';
 
 function App() {
   return (
