@@ -139,7 +139,7 @@ const SignupPage = () => {
     setIsLoading(true);
 
     try {
-      await signup({ id, password, email, nickname });
+      await signup({ loginId: id, password, email, nickname });
       // 회원가입 성공 시 로그인 페이지로 이동
       navigate('/login');
     } catch (err: unknown) {

@@ -63,7 +63,7 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
 
 // 회원가입 요청
 interface SignupRequest {
-  id: string;
+  loginId: string;
   password: string;
   email: string;
   nickname: string;
@@ -83,7 +83,7 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
 
   // 성공 응답
   return {
-    loginId: data.id,
+    loginId: data.loginId,
     password: data.password,
     nickname: data.nickname,
   };
