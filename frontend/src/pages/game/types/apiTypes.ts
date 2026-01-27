@@ -15,7 +15,7 @@ export type SubmissionRequest = {
 };
 
 export type SubmissionResponse = {
-  data: {
+  response: {
     submissionId: number;
     roomId: number;
     questId: number;
@@ -33,7 +33,7 @@ export type SubmissionResponse = {
     }[];
     next: {
       hasNextQuest: boolean;
-      nextQuestId: number;
+      nextQuestId: number | null;
     };
   };
 };
