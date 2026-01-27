@@ -4,11 +4,13 @@ interface QuestDescriptionBoxProps {
   questId: number;
   themeName: string;
   questDescription: string;
+  onStart: () => void;
 }
 
 const QuestDescriptionBox: React.FC<QuestDescriptionBoxProps> = ({
   questId,
   questDescription,
+  onStart,
 }) => {
   return (
     <div className="w-[599px] h-[119px] [filter:drop-shadow(0_0_10px_rgba(254,254,254,0.25))]">
@@ -21,10 +23,12 @@ const QuestDescriptionBox: React.FC<QuestDescriptionBoxProps> = ({
             {questDescription}
           </div>
         </div>
-        <div className="w-[91px] h-[22px] shrink-0 text-[#FEFEFE] [-webkit-text-stroke-width:0.2px] [-webkit-text-stroke-color:#000] text-lg font-normal leading-4 tracking-[-0.7px]">
+        <button
+          onClick={onStart}
+          className="w-[91px] h-[22px] shrink-0 text-[#FEFEFE] [-webkit-text-stroke-width:0.2px] [-webkit-text-stroke-color:#000] text-lg font-normal leading-4 tracking-[-0.7px] cursor-pointer hover:text-white/80 transition-colors bg-transparent border-none"
+        >
           START!
-          {/* Todo: 연결 후 button으로 추후 수정해야 함 */}
-        </div>
+        </button>
       </div>
     </div>
   );

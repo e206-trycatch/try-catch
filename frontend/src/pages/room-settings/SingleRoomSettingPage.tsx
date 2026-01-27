@@ -92,7 +92,7 @@ const SingleRoomSettingPage = () => {
     try {
       const response = await createRoom(payload);
       setRoomId(response.roomId); // 생성된 방 ID 저장
-      navigate(`/game/${response.roomId}`);
+      navigate('/quest-description'); // 퀘스트 설명 페이지로 이동
     } catch (error) {
       console.error('방 생성 실패:', error);
       alert('방 생성에 실패했습니다. 다시 시도해주세요.');
