@@ -1,5 +1,6 @@
 import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { codeSubmission } from '../../api/codeSubmission';
 import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
@@ -20,6 +21,7 @@ import type { FileNode } from './types/ideTypes';
 type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
 export default function GamePage() {
+  const navigate = useNavigate();
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +55,7 @@ export default function GamePage() {
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
       console.log('제출 성공');
       console.log(result);
+      navigate(`/result/loading`);
     } catch (e) {
       console.error('제출 실패', e);
     }

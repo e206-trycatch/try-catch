@@ -24,7 +24,7 @@ export type SubmissionResponse = {
     score: number;
     executionTimeMs: number;
     roomState: {
-      life: number;
+      remainingLife: number;
       remainingHintCount: number;
     };
     roles: {
