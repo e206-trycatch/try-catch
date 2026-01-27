@@ -69,7 +69,7 @@ function App() {
         {/* 테마 */}
         <Route path="/selection/theme" element={<ThemeSelectionPage />} />
         {/* 퀘스트 */}
-        <Route path="/selection/quest" element={<QuestDescriptionPage />} />
+        <Route path="/quest-description" element={<QuestDescriptionPage />} />
         {/* 싱글모드 방 설정 */}
         <Route
           path="/single-room-settings"
