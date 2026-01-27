@@ -1,8 +1,8 @@
 // api.ts
 // Axios 공통 설정
 
-import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
 import { useStore } from '../stores/useStore';
 

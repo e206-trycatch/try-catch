@@ -15,7 +15,7 @@ type SingleSettingResponse = {
 };
 
 type CreateRoomResponse = {
-  room_id: string;
+  roomId: number;
 };
 
 export const fetchSingleSetting = async (themeId: number) => {
@@ -26,6 +26,6 @@ export const fetchSingleSetting = async (themeId: number) => {
 };
 
 export const createRoom = async (payload: CreateRoomRequest) => {
-  const { data } = await api.post<CreateRoomResponse>('/rooms', payload);
-  return data;
+  const { data } = await api.post<{ result: CreateRoomResponse }>('/rooms/single', payload);
+  return data.result;
 };
