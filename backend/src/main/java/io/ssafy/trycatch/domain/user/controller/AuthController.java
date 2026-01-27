@@ -7,6 +7,7 @@ import io.ssafy.trycatch.domain.user.dto.response.LoginRespDto;
 import io.ssafy.trycatch.domain.user.dto.response.RefreshRespDto;
 import io.ssafy.trycatch.domain.user.dto.response.SignupRespDto;
 import io.ssafy.trycatch.domain.user.service.AuthService;
+import io.ssafy.trycatch.global.common.ApiRespDto;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -74,7 +75,21 @@ public class AuthController {
         return null;
     }
 
+    // 로그아웃
+    @PostMapping("/logout")
+    public ResponseEntity<ApiRespDto<Void>> logout(HttpServletResponse response) {
+        log.info("로그아웃 API 호출");
 
+        // Refresh Token 쿠키 삭제
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        response.addCookie(refreshTokenCookie);
+
+        return ResponseEntity.ok(ApiRespDto.success("로그아웃이 완료되었습니다.", null));
+    }
 
     // 회원가입
     @PostMapping("/signup")
