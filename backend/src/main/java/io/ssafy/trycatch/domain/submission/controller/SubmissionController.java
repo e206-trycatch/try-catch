@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.submission.controller;
 
+import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
 import io.ssafy.trycatch.domain.submission.service.SubmissionService;
@@ -62,4 +63,20 @@ public class SubmissionController {
         return (Long) authentication.getPrincipal();
     }
 
+    /**
+     * 재도전을 위한 문제 파일 조회
+     */
+    @GetMapping("/api/v1/rooms/{roomId}/submissions/{submissionId}")
+    public ResponseEntity<ApiRespDto<ProblemFilesRespDto>> getProblemFiles(
+            @PathVariable Long roomId,
+            @PathVariable Long submissionId) {
+        Long userId = getCurrentUserId();
+
+        return ResponseEntity.ok(
+                ApiRespDto.success(
+                        "문제 파일 목록을 불러왔습니다.",
+                        submissionService.getProblemFilesForRetry(roomId, submissionId, userId)
+                )
+        );
+    }
 }

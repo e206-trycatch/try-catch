@@ -1,8 +1,14 @@
 package io.ssafy.trycatch.domain.submission.service;
 
+import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
+import io.ssafy.trycatch.domain.room.entity.ProblemFile;
 import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
 import io.ssafy.trycatch.domain.room.entity.Quest;
 import io.ssafy.trycatch.domain.room.entity.Room;
+import io.ssafy.trycatch.domain.room.enums.FileType;
+import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
+import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
 import io.ssafy.trycatch.domain.room.repository.ProblemFrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.QuestRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
@@ -40,6 +46,7 @@ public class SubmissionService {
     private final GptScoringService gptScoringService;
     private final ProblemFrameworkRepository problemFrameworkRepository;
     private final QuestRepository questRepository;
+    private final ProblemFileRepository problemFileRepository;
 
     private static final String FRONTEND_RUBRIC = """
             - 요구사항(문제 설명) 충족 여부
@@ -503,5 +510,108 @@ public class SubmissionService {
             private String roleName;
             private Long frameworkId;
         }
+    }
+
+    /**
+     * 재도전을 위한 문제 파일 목록 조회
+     * - 해당 submission의 제출 코드 (SubmissionFile)
+     * - 해당 problemFramework의 DOC 파일 (ProblemFile)
+     */
+    @Transactional(readOnly = true)
+    public ProblemFilesRespDto getProblemFilesForRetry(Long roomId, Long submissionId, Long userId) {
+        // 1. Room 존재 확인
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 2. Submission 조회 및 권한 확인
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.SUBMISSION_NOT_FOUND));
+
+        // 권한 체크: 본인의 제출인지, 같은 방인지 확인
+        validateSubmissionAccess(submission, userId, roomId);
+        
+        // 3. ProblemFramework 조회
+        Long problemFrameworkId = submission.getProblemFrameworkId();
+        ProblemFramework problemFramework = problemFrameworkRepository
+                .findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException("문제 프레임워크를 찾을 수 없습니다."));
+
+        // 4. 같은 시간에 제출된 모든 submission 조회 (Frontend + Backend)
+        List<Submission> allSubmissions = submissionRepository
+                .findByRoomIdAndUserIdAndSubmittedAtOrderByIdAsc(
+                        roomId, userId, submission.getSubmittedAt()
+                );
+
+        // 5. 제출 파일들 조회 (SOURCE, CONFIG 등)
+        List<ProblemFileRespDto> submittedFiles = new ArrayList<>();
+        for (Submission sub : allSubmissions) {
+            List<SubmissionFile> files = submissionFileRepository
+                    .findBySubmissionIdAndIsDeleted(sub.getId(), TrueOrFalse.F);
+
+            // SubmissionFile -> ProblemFileRespDto 변환
+            files.stream()
+                    .filter(f -> f.getFileType() != SubmissionFile.FileType.DOC) // DOC 제외
+                    .forEach(file -> submittedFiles.add(
+                            ProblemFileRespDto.builder()
+                                    .fileId(file.getId())
+                                    .filePath(file.getFilePath())
+                                    .codeRole(convertCodeRole(file.getCodeRole()))
+                                    .code(file.getCode())
+                                    .fileType(convertFileType(file.getFileType()))
+                                    .build()
+                    ));
+        }
+
+        // 6. DOC 파일 조회 (ProblemFile에서)
+        List<ProblemFile> docFiles = problemFileRepository
+                .findByProblemFrameworkIdAndFileTypeAndIsDeleted(
+                        problemFrameworkId, FileType.DOC, TrueOrFalse.F
+                );
+
+        // ProblemFile -> ProblemFileRespDto 변환
+        List<ProblemFileRespDto> docFileDtos = docFiles.stream()
+                .map(file -> ProblemFileRespDto.builder()
+                        .fileId(file.getId())
+                        .filePath(file.getFilePath())
+                        .codeRole(file.getCodeRole())
+                        .code(file.getCode())
+                        .fileType(file.getFileType())
+                        .build())
+                .toList();
+
+        // 7. 모든 파일 합치기 (제출 파일 + DOC 파일)
+        List<ProblemFileRespDto> allFiles = new ArrayList<>();
+        allFiles.addAll(submittedFiles);
+        allFiles.addAll(docFileDtos);
+
+        // 8. 응답 생성
+        return ProblemFilesRespDto.builder()
+                .problemFrameworkId(problemFrameworkId)
+                .frontendErrorLog(problemFramework.getFrontendErrorLog())
+                .backendErrorLog(problemFramework.getBackendErrorLog())
+                .files(allFiles)
+                .build();
+    }
+
+    private void validateSubmissionAccess(Submission submission, Long userId, Long roomId) {
+        if (!submission.getUserId().equals(userId)) { // 본인의 제출이 아닌 경우
+            throw new CustomException(ErrorCode.UNAUTHORIZED_SUBMISSION_ACCESS);
+        }
+
+        if (!submission.getRoomId().equals(roomId)) { // 같은 방의 제출이 아닌 경우
+            throw new CustomException(ErrorCode.UNAUTHORIZED_SUBMISSION_ACCESS);
+        }
+    }
+
+    // SubmissionFile.CodeRole -> FrameworkCategory 변환
+    private FrameworkCategory convertCodeRole(SubmissionFile.CodeRole codeRole) {
+        return codeRole == SubmissionFile.CodeRole.FRONTEND
+                ? FrameworkCategory.FRONTEND
+                : FrameworkCategory.BACKEND;
+    }
+
+    // SubmissionFile.FileType -> FileType 변환
+    private FileType convertFileType(SubmissionFile.FileType fileType) {
+        return FileType.valueOf(fileType.name());
     }
 }
