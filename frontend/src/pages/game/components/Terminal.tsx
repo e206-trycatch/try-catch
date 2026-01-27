@@ -16,9 +16,14 @@ export default function Terminal({ frontendErrorLog, backendErrorLog }: Props) {
     activeTab === 'Frontend' ? frontendErrorLog : backendErrorLog;
 
   return (
-    <div className="w-full h-64 relative bg-stone-900">
-      <TerminalTabs activeTab={activeTab} onChangeTab={setActiveTab} />
-      <TerminalLogView log={currentLog} />
+    <div className="flex flex-col w-full h-full bg-stone-900">
+      <div className="shrink-0 border-b border-gray-700">
+        <TerminalTabs activeTab={activeTab} onChangeTab={setActiveTab} />
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        <TerminalLogView log={currentLog} />
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
 import SignupPage from './pages/signup/SignupPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
+import MyPage from './pages/mypage/MyPage';
 
 function App() {
   return (
@@ -28,6 +29,8 @@ function App() {
         {/* 게임 */}
         <Route path="/game" element={<GamePage />} />
         <Route path="/signup" element={<SignupPage />} />
+        {/* 마이페이지 */}
+        <Route path="/mypage" element={<MyPage />} />
       </Route>
     </Routes>
   );

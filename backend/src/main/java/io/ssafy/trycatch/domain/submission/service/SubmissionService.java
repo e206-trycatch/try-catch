@@ -1,6 +1,10 @@
 package io.ssafy.trycatch.domain.submission.service;
 
+import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
+import io.ssafy.trycatch.domain.room.entity.Quest;
 import io.ssafy.trycatch.domain.room.entity.Room;
+import io.ssafy.trycatch.domain.room.repository.ProblemFrameworkRepository;
+import io.ssafy.trycatch.domain.room.repository.QuestRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
 import io.ssafy.trycatch.domain.submission.dto.response.ScoreResult;
@@ -9,6 +13,7 @@ import io.ssafy.trycatch.domain.submission.entity.Submission;
 import io.ssafy.trycatch.domain.submission.entity.SubmissionFile;
 import io.ssafy.trycatch.domain.submission.repository.SubmissionFileRepository;
 import io.ssafy.trycatch.domain.submission.repository.SubmissionRepository;
+import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +32,8 @@ public class SubmissionService {
     private final SubmissionFileRepository submissionFileRepository;
     private final RoomRepository roomRepository;
     private final GptScoringService gptScoringService;
+    private final ProblemFrameworkRepository problemFrameworkRepository;
+    private final QuestRepository questRepository;
 
     private static final String FRONTEND_RUBRIC = """
             - 요구사항(문제 설명) 충족 여부
@@ -42,6 +49,7 @@ public class SubmissionService {
             - 명백한 컴파일/런타임 오류 가능성 여부
             """;
 
+    @Transactional
     public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request) {
         // 1단계: DB 작업 (트랜잭션 내)
         SubmissionContext context = createSubmissions(roomId, userId, request);
@@ -211,16 +219,69 @@ public class SubmissionService {
         } else {
             // 실패 시 life 감소
             room.decreaseLife();
+            Long currentQuestId = getCurrentQuestId(submissions.get(0).getProblemFrameworkId());
             return buildFailResponse(
                     submissions.get(0).getId(),
                     room.getId(),
-                    room.getThemeId(), // TODO: questId 로직 추가
+                    currentQuestId,
                     averageScore,
                     totalExecutionTime,
                     room,
                     errorLog
             );
         }
+    }
+
+    // problemFrameworkId로 questId 조회
+    private Long getCurrentQuestId(Long problemFrameworkId) {
+        return problemFrameworkRepository.findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
+                .map(ProblemFramework::getQuestId)
+                .orElse(null);
+    }
+
+    // 다음 퀘스트 정보 조회
+    private SubmissionRespDto.NextQuest getNextQuestInfo(Long problemFrameworkId) {
+        // 1. 현재 ProblemFramework에서 questId 조회
+        ProblemFramework currentProblemFramework = problemFrameworkRepository
+                .findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
+                .orElse(null);
+
+        if (currentProblemFramework == null) {
+            return SubmissionRespDto.NextQuest.builder()
+                    .hasNextQuest(false)
+                    .nextQuestId(null)
+                    .build();
+        }
+
+        // 2. 현재 Quest 조회
+        Quest currentQuest = questRepository.findById(currentProblemFramework.getQuestId())
+                .orElse(null);
+
+        if (currentQuest == null) {
+            return SubmissionRespDto.NextQuest.builder()
+                    .hasNextQuest(false)
+                    .nextQuestId(null)
+                    .build();
+        }
+
+        // 3. 다음 Quest 조회
+        Quest nextQuest = questRepository.findNextQuest(
+                currentQuest.getThemeId(),
+                currentQuest.getQuestOrder(),
+                TrueOrFalse.F
+        ).orElse(null);
+
+        if (nextQuest == null) {
+            return SubmissionRespDto.NextQuest.builder()
+                    .hasNextQuest(false)
+                    .nextQuestId(null)
+                    .build();
+        }
+
+        return SubmissionRespDto.NextQuest.builder()
+                .hasNextQuest(true)
+                .nextQuestId(nextQuest.getId())
+                .build();
     }
 
     // DOC만 합치기 (문제 설명)
@@ -251,6 +312,8 @@ public class SubmissionService {
             Room room,
             List<SubmissionRespDto.RoleInfo> roles
     ) {
+        Long problemFrameworkId = roles.isEmpty() ? null : roles.get(0).getFrameworkId();
+        SubmissionRespDto.NextQuest nextQuest = getNextQuestInfo(problemFrameworkId);
         return SubmissionRespDto.builder()
                 .submissionId(submissionId)
                 .roomId(roomId)
@@ -262,10 +325,7 @@ public class SubmissionService {
                         .remainingHintCount(room.getRemainingHintCount())
                         .build())
                 .roles(roles)
-                .next(SubmissionRespDto.NextQuest.builder()
-                        .hasNextQuest(true) // TODO: 실제 다음 퀘스트 확인 로직
-                        .nextQuestId(22L) // TODO: 실제 다음 퀘스트 ID
-                        .build())
+                .next(nextQuest)
                 .build();
     }
 

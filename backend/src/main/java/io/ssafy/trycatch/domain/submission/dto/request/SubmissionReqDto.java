@@ -22,7 +22,6 @@ public class SubmissionReqDto {
     @Getter
     @NoArgsConstructor
     public static class FileItem {
-        private Long fileId;
         private String filePath;
         private String fileType;
         private String code;

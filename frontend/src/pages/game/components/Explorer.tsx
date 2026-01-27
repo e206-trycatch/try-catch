@@ -16,7 +16,7 @@ export default function Explorer({
 }: Props) {
   return (
     <div>
-      <div className="p-3">EXPLORER</div>
+      <div>EXPLORER</div>
 
       <Node
         node={root}
