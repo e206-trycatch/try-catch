@@ -12,7 +12,8 @@ export const useAudio = (
   options?: { loop?: boolean },
 ) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { isMuted, volume, setTrack, setIsPlaying } = useSoundStore();
+  const { isMuted, volume, setTrack, setIsPlaying, hasUserInteracted } =
+    useSoundStore();
 
   // 오디오 요소 생성 및 트랙 설정
   useEffect(() => {
@@ -25,21 +26,22 @@ export const useAudio = (
     // 새 오디오 요소 생성
     const audio = new Audio(trackUrl);
     audio.loop = options?.loop ?? true;
-    audio.volume = isMuted ? 0 : volume;
+    audio.volume = volume;
     audioRef.current = audio;
 
     // 현재 트랙 설정
     setTrack(trackUrl);
 
-    // 자동 재생 시도 (브라우저 정책에 따라 실패할 수 있음..)
+    // 자동 재생 시도 (사용자 인터렉션이 있고 음소거 상태가 아닐 때만)
     const playAudio = async () => {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch (error) {
-        // 자동 재생이 차단된 경우 사용자 인터랙션 후 재생
-        console.log('자동 재생 실패. 사용자 인터렉션 필요함.', error);
-        setIsPlaying(false);
+      if (hasUserInteracted && !isMuted) {
+        try {
+          await audio.play();
+          setIsPlaying(true);
+        } catch (error) {
+          console.log('자동 재생 실패:', error);
+          setIsPlaying(false);
+        }
       }
     };
 
@@ -51,21 +53,43 @@ export const useAudio = (
       audio.src = '';
       audioRef.current = null;
       setIsPlaying(false);
+      setTrack(null);
     };
-  }, [trackUrl, options?.loop, setTrack, setIsPlaying, isMuted, volume]);
+  }, [
+    trackUrl,
+    options?.loop,
+    setTrack,
+    setIsPlaying,
+    hasUserInteracted,
+    isMuted,
+    volume,
+  ]);
 
   // 음소거/볼륨 변경 반영
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
+      if (isMuted) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.volume = volume;
+        if (hasUserInteracted) {
+          audioRef.current.play().catch(() => {
+            setIsPlaying(false);
+          });
+          setIsPlaying(true);
+        }
+      }
     }
-  }, [isMuted, volume]);
+  }, [isMuted, volume, hasUserInteracted, setIsPlaying]);
 
   // 수동 제어 함수 반환
   return {
     play: () => {
-      if (audioRef.current) {
-        audioRef.current.play();
+      if (audioRef.current && !isMuted) {
+        audioRef.current.play().catch(() => {
+          setIsPlaying(false);
+        });
         setIsPlaying(true);
       }
     },
