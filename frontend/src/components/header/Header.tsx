@@ -24,7 +24,7 @@ const Header = () => {
     <>
       <GlobalAudioPlayer />
       <header
-        className="w-full flex items-center fixed top-0 left-0 z-10 text-white"
+        className="w-full flex items-center absolute top-0 left-0 z-10 text-white"
         style={{ padding: '24px 80px' }}
       >
         {/* 좌측 로고 영역 */}

@@ -5,7 +5,8 @@ import { useSoundStore } from '../../stores/useSoundStore';
 
 const GlobalAudioPlayer = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { isMuted, setAudioRef } = useSoundStore();
+  const { isMuted, setAudioRef, hasUserInteracted, setHasUserInteracted } =
+    useSoundStore();
   const hasInteracted = useRef(false);
 
   useEffect(() => {
@@ -15,23 +16,10 @@ const GlobalAudioPlayer = () => {
     audioRef.current = audio;
     setAudioRef(audio);
 
-    // 즉시 재생 시도
-    // - 브라우저 정책으로 인해 안될 수도 있으나, 시도
-    if (!isMuted) {
-      audio.play().then(() => {
-        hasInteracted.current = true;
-      });
-    }
-
-    // 사용자 첫 인터렉션 감지 (자동재생 실패 대비)
+    // 사용자 첫 인터렉션 감지
     const handleFirstInteraction = async () => {
-      if (!hasInteracted.current && !isMuted) {
-        hasInteracted.current = true;
-        try {
-          await audio.play();
-        } catch (error) {
-          console.log('자동 재생 실패: ', error);
-        }
+      if (!hasUserInteracted) {
+        setHasUserInteracted(); // store에서 자동 on 처리
       }
     };
 
@@ -47,14 +35,17 @@ const GlobalAudioPlayer = () => {
       audio.pause();
       audio.src = '';
     };
-  }, [setAudioRef, isMuted]);
+  }, [setAudioRef, hasUserInteracted, setHasUserInteracted]);
 
+  // isMuted 상태에 따른 오디오 재생/일시정지 처리
   useEffect(() => {
     if (audioRef.current) {
       if (isMuted) {
         audioRef.current.pause();
-      } else if (hasInteracted.current) {
-        audioRef.current.play().catch(console.log);
+      } else {
+        audioRef.current.play().catch((error) => {
+          console.log('재생 실패: ', error);
+        });
       }
     }
   }, [isMuted]);
