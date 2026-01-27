@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.ssafy.trycatch.domain.user.mapper.UserMapper">
+
+    <!-- 제출 기록 조회 -->
+    <select id="findSubmissionHistory" resultType="io.ssafy.trycatch.domain.user.dto.response.SubmissionHistoryRespDto$SubmissionHistory">
+        SELECT
+            s.id AS submissionId,
+            r.mode AS gameMode,
+            t.name AS themeName,
+            f.name AS frameworkName,
+            s.execution_time AS executionTime,
+            s.submitted_at AS submittedAt
+        FROM submission s
+                 INNER JOIN room r ON s.room_id = r.id
+                 INNER JOIN theme t ON r.theme_id = t.id
+                 INNER JOIN problem_framework pf ON s.problem_framework_id = pf.id
+                 LEFT JOIN framework f ON f.id = COALESCE(pf.frontend_id, pf.backend_id)
+        WHERE s.user_id = #{userId}
+          AND s.status = 'SUCCESS'
+          AND s.is_deleted = 'F'
+        ORDER BY s.submitted_at DESC
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 전체 개수 조회 -->
+    <select id="countSubmissionHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM submission s
+        WHERE s.user_id = #{userId}
+          AND s.status = 'SUCCESS'
+          AND s.is_deleted = 'F'
+    </select>
+
+</mapper>

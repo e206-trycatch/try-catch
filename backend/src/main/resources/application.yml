@@ -16,6 +16,12 @@ spring:
         show_sql: true
         format_sql: false
 
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: io.ssafy.trycatch.domain
+  configuration:
+    map-underscore-to-camel-case: true
+
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}
