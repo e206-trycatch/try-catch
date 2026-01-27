@@ -46,7 +46,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() { // 다른 도메인에서 API 호출 허용
         CorsConfiguration configuration = new CorsConfiguration();
-        기존 설정 (원복 시 주석 해제)
+        // 기존 설정 (원복 시 주석 해제)
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "https://i14e206.p.ssafy.io"
