@@ -3,7 +3,7 @@
 /* ! 전역 스타일 설정 */
 @font-face {
   font-family: 'Umdot';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/Umdot12.woff2')
+  src: url('./assets/fonts/Umdot11.woff')
     format('woff2');
   font-weight: normal;
   font-display: swap;
