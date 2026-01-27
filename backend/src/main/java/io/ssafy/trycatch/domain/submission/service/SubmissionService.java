@@ -14,6 +14,8 @@ import io.ssafy.trycatch.domain.submission.entity.SubmissionFile;
 import io.ssafy.trycatch.domain.submission.repository.SubmissionFileRepository;
 import io.ssafy.trycatch.domain.submission.repository.SubmissionRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
+import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_NOT_FOUND;
+import static io.ssafy.trycatch.global.exception.ErrorCode.SUBMISSION_NOT_FOUND;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -54,6 +60,11 @@ public class SubmissionService {
         // 1단계: DB 작업 (트랜잭션 내)
         SubmissionContext context = createSubmissions(roomId, userId, request);
         Room room = context.getRoom();
+
+        if (room.getLife() <= 0) {
+            throw new CustomException(ErrorCode.GAMEOVER);
+        }
+
         // 2단계: GPT 채점 (트랜잭션 밖 - 외부 API 호출)
         List<ScoreResult> scoreResults = scoreSubmissions(context, room);
 
@@ -61,10 +72,99 @@ public class SubmissionService {
         return updateAndBuildResponse(context, scoreResults);
     }
 
+    @Transactional(readOnly = true)
+    public SubmissionRespDto getSubmission(Long roomId, Long userId) {
+        // 1. Room 조회
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        // 2. 해당 방의 가장 최근 제출 조회
+        Submission latestSubmission = submissionRepository
+                .findTopByRoomIdAndUserIdOrderBySubmittedAtDesc(roomId, userId)
+                .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
+
+        // 3. 해당 제출의 모든 파일 조회 (Frontend + Backend)
+        List<Submission> allSubmissions = submissionRepository
+                .findByRoomIdAndUserIdAndSubmittedAtOrderByIdAsc(
+                        roomId, userId, latestSubmission.getSubmittedAt()
+                );
+
+        // 4. Role 정보 구성
+        List<SubmissionRespDto.RoleInfo> roles = allSubmissions.stream()
+                .map(submission -> {
+                    Long problemFrameworkId = submission.getProblemFrameworkId();
+
+                    // Frontend/Backend 판단 (간단하게 처리)
+                    List<SubmissionFile> files = submissionFileRepository
+                            .findBySubmissionIdAndIsDeleted(submission.getId(), TrueOrFalse.F);
+
+                    String role = files.stream()
+                            .anyMatch(f -> f.getCodeRole() == SubmissionFile.CodeRole.FRONTEND)
+                            ? "FRONTEND" : "BACKEND";
+
+                    return SubmissionRespDto.RoleInfo.builder()
+                            .role(role)
+                            .frameworkId(problemFrameworkId)
+                            .build();
+                })
+                .toList();
+
+        // 5. 평균 점수 계산
+        int averageScore = (int) allSubmissions.stream()
+                .mapToInt(s -> s.getScore() != null ? s.getScore() : 0)
+                .average()
+                .orElse(0);
+
+        // 6. 전체 실행 시간 합계
+        long totalExecutionTime = allSubmissions.stream()
+                .mapToLong(s -> s.getExecutionTime() != null ? s.getExecutionTime() : 0L)
+                .sum();
+
+        // 7. 성공 여부 판단
+        boolean allSuccess = allSubmissions.stream()
+                .allMatch(s -> s.getStatus() == Submission.Status.SUCCESS);
+
+        // 8. 에러 로그 수집
+        String errorLog = allSubmissions.stream()
+                .map(Submission::getErrorLog)
+                .filter(log -> log != null && !log.isEmpty())
+                .collect(Collectors.joining("\n"));
+
+        // 9. Quest 정보 조회
+        Long problemFrameworkId = latestSubmission.getProblemFrameworkId();
+        Long questId = getCurrentQuestId(problemFrameworkId);
+        Integer questOrder = getCurrentQuestOrder(problemFrameworkId);
+
+        // 10. 응답 생성
+        if (allSuccess) {
+            return buildSuccessResponse(
+                    latestSubmission.getId(),
+                    roomId,
+                    questId,
+                    questOrder,
+                    averageScore,
+                    totalExecutionTime,
+                    room,
+                    roles
+            );
+        } else {
+            return buildFailResponse(
+                    latestSubmission.getId(),
+                    roomId,
+                    questId,
+                    questOrder,
+                    averageScore,
+                    totalExecutionTime,
+                    room,
+                    errorLog
+            );
+        }
+    }
+
     @Transactional
     public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request) {
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         SubmissionContext context = new SubmissionContext(room);
 
@@ -206,11 +306,16 @@ public class SubmissionService {
                 .collect(Collectors.joining("\n"));
 
         Room room = context.getRoom();
+        Long problemFrameworkId = submissions.get(0).getProblemFrameworkId();
+        Long currentQuestId = getCurrentQuestId(submissions.get(0).getProblemFrameworkId());
+        Integer currentQuestOrder = getCurrentQuestOrder(problemFrameworkId);
 
         if (allSuccess) {
             return buildSuccessResponse(
                     submissions.get(0).getId(),
                     room.getId(),
+                    currentQuestId,
+                    currentQuestOrder,
                     averageScore,
                     totalExecutionTime,
                     room,
@@ -219,17 +324,29 @@ public class SubmissionService {
         } else {
             // 실패 시 life 감소
             room.decreaseLife();
-            Long currentQuestId = getCurrentQuestId(submissions.get(0).getProblemFrameworkId());
             return buildFailResponse(
                     submissions.get(0).getId(),
                     room.getId(),
                     currentQuestId,
+                    currentQuestOrder,
                     averageScore,
                     totalExecutionTime,
                     room,
                     errorLog
             );
         }
+    }
+
+    private Integer getCurrentQuestOrder(Long problemFrameworkId) {
+        ProblemFramework pf = problemFrameworkRepository
+                .findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
+                .orElse(null);
+
+        if (pf == null) return null;
+
+        return questRepository.findById(pf.getQuestId())
+                .map(Quest::getQuestOrder)
+                .orElse(null);
     }
 
     // problemFrameworkId로 questId 조회
@@ -307,6 +424,8 @@ public class SubmissionService {
     private SubmissionRespDto buildSuccessResponse(
             Long submissionId,
             Long roomId,
+            Long questId,
+            Integer currentQuestOrder,
             int score,
             long executionTime,
             Room room,
@@ -317,6 +436,8 @@ public class SubmissionService {
         return SubmissionRespDto.builder()
                 .submissionId(submissionId)
                 .roomId(roomId)
+                .questId(questId)
+                .questOrder(currentQuestOrder)
                 .status("SUCCESS")
                 .score(score)
                 .executionTimeMs(executionTime)
@@ -333,6 +454,7 @@ public class SubmissionService {
             Long submissionId,
             Long roomId,
             Long questId,
+            Integer currentQuestOrder,
             int score,
             long executionTime,
             Room room,
@@ -344,6 +466,7 @@ public class SubmissionService {
                 .submissionId(submissionId)
                 .roomId(roomId)
                 .questId(questId)
+                .questOrder(currentQuestOrder)
                 .status("FAIL")
                 .score(score)
                 .executionTimeMs(executionTime)

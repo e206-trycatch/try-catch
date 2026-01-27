@@ -14,7 +14,7 @@ public class SubmissionRespDto {
     private Long submissionId;
     private Long roomId;
     private Long questId;
-    private Long questOrder;
+    private Integer questOrder;
     private String status;
     private Integer score;
     private Long executionTimeMs;
