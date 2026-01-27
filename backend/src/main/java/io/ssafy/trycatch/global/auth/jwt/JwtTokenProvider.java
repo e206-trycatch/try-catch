@@ -56,6 +56,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim("type","refresh")
                 .issuedAt(now)
                 .expiration(validity)
                 .signWith(key)
