@@ -144,6 +144,7 @@ export function useIde(root: FileNode) {
   return {
     expanded,
     toggleFolder,
+    fileCodes,
 
     openTabs,
     activeFileId,
