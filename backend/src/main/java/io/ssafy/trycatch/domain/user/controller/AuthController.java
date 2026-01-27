@@ -38,7 +38,7 @@ public class AuthController {
         refreshTokenCookie.setHttpOnly(true);      // JavaScript 접근 불가
         refreshTokenCookie.setSecure(false);       // 개발 환경: false, 운영 환경(HTTPS): true
         refreshTokenCookie.setPath("/");           // 모든 경로에서 쿠키 전송
-        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);  // 7일 (초 단위)
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);  // 7일
         response.addCookie(refreshTokenCookie);
 
         return ResponseEntity.ok(LoginRespDto.success(result.accessToken(), result.user()));
