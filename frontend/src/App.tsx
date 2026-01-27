@@ -12,6 +12,7 @@ import MyPage from './pages/mypage/MyPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
 import ResultLoadingPage from './pages/result/ResultLoadingPage';
 import ResultPage from './pages/result/ResultPage';
+import SingleRoomSettingPage from './pages/room-settings/SingleRoomSettingPage';
 import SignupPage from './pages/signup/SignupPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import { useStore } from './stores/useStore';
@@ -61,17 +62,21 @@ function App() {
         <Route path="/" element={<HomePage />} />
         {/* 로그인/회원가입 */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
         {/* 모드 */}
-        <Route path="/mode" element={<ModeSelectionPage />} />
+        <Route path="/selection/mode" element={<ModeSelectionPage />} />
         {/* 테마 */}
-        <Route path="/theme" element={<ThemeSelectionPage />} />
+        <Route path="/selection/theme" element={<ThemeSelectionPage />} />
         {/* 퀘스트 */}
-        <Route path="/quest" element={<QuestDescriptionPage />} />
-
+        <Route path="/selection/quest" element={<QuestDescriptionPage />} />
+        {/* 싱글모드 방 설정 */}
+        <Route
+          path="/single-room-settings"
+          element={<SingleRoomSettingPage />}
+        />
         {/* 게임 */}
         <Route path="/game" element={<GamePage />} />
-        <Route path="/signup" element={<SignupPage />} />
         {/* 결과 */}
         <Route path="/result/loading" element={<ResultLoadingPage />} />
         <Route path="/result" element={<ResultPage />} />

@@ -376,6 +376,15 @@ export const buildProblemSelectionContext = (
 // 문제 Types (ERD 참고)
 export type FileType = 'SOURCE' | 'CONFIG' | 'TEST' | 'DOC' | 'ASSET';
 
+export interface Problem {
+  problemId: number;
+  questId: number;
+  title: string;
+  description: string;
+  difficulty: number;
+  files: ProblemFile[];
+}
+
 export interface ProblemFile {
   fileId: number;
   problemId: number;
@@ -385,4 +394,9 @@ export interface ProblemFile {
 
   codeRole: CodeRole;
   isReadOnly: boolean;
+
+  createAt?: string;
+  updatedAt?: string;
+  fileName?: string;
+  extension?: string;
 }
