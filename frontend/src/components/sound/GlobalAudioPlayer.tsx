@@ -7,7 +7,6 @@ const GlobalAudioPlayer = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { isMuted, setAudioRef, hasUserInteracted, setHasUserInteracted } =
     useSoundStore();
-  const hasInteracted = useRef(false);
 
   useEffect(() => {
     const audio = new Audio(mainBgm);

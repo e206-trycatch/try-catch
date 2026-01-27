@@ -1,26 +1,32 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface SoundStore {
-  // 상태
+interface SoundState {
   isMuted: boolean;
   audioRef: HTMLAudioElement | null;
-  hasUserInteracted?: boolean; // 사용자가 한번이라도 인터렉션 했는지
-  userWantsSound: boolean; // 사용자가 소리켜기 원하는지
+  hasUserInteracted: boolean;
+  userWantsSound: boolean;
+  volume: number;
+  currentTrack: string | null;
+  isPlaying: boolean;
   setAudioRef: (audio: HTMLAudioElement) => void;
-
-  // 액션
   toggleMute: () => void;
   setHasUserInteracted: () => void;
+  setVolume: (volume: number) => void;
+  setTrack: (track: string | null) => void;
+  setIsPlaying: (isPlaying: boolean) => void;
 }
 
-export const useSoundStore = create<SoundStore>()(
+export const useSoundStore = create<SoundState>()(
   persist(
     (set, get) => ({
-      isMuted: true, // 초기엔 음소거 상태
+      isMuted: true,
       audioRef: null,
       hasUserInteracted: false,
-      userWantsSound: true, // 사용자가 기본적으로 소리를 원한다고 가정
+      userWantsSound: true,
+      volume: 0.5,
+      currentTrack: null,
+      isPlaying: false,
 
       setAudioRef: (audio) => set({ audioRef: audio }),
 
@@ -28,15 +34,14 @@ export const useSoundStore = create<SoundStore>()(
         const currentMuted = get().isMuted;
         set({
           isMuted: !currentMuted,
-          userWantsSound: currentMuted, // off+on => true, on+off => false
+          userWantsSound: currentMuted,
           hasUserInteracted: true,
         });
       },
 
       setHasUserInteracted: () => {
-        const { hasUserInteracted, userWantsSound, isMuted } = get();
+        const { hasUserInteracted, userWantsSound } = get();
         if (!hasUserInteracted && userWantsSound) {
-          // 첫 인터렉션이고 사용자가 소리 원하는 경우에만 자동 on
           set({
             hasUserInteracted: true,
             isMuted: false,
@@ -45,12 +50,19 @@ export const useSoundStore = create<SoundStore>()(
           set({ hasUserInteracted: true });
         }
       },
+
+      setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
+
+      setTrack: (track) => set({ currentTrack: track }),
+
+      setIsPlaying: (isPlaying) => set({ isPlaying }),
     }),
     {
-      name: 'sound-storage', // 로컬스토리지 키
+      name: 'sound-storage',
       partialize: (state) => ({
         userWantsSound: state.userWantsSound,
         hasUserInteracted: state.hasUserInteracted,
+        volume: state.volume,
       }),
     },
   ),
