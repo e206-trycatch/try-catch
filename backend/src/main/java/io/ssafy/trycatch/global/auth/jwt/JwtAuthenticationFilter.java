@@ -22,30 +22,25 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        String method = request.getMethod();
-        String origin = request.getHeader("Origin");
-
-        log.info("=== shouldNotFilter 체크 ===");
-        log.info("Method: {}, URI: {}, Origin: {}", method, path, origin);
-
-        boolean result = "OPTIONS".equals(method) || path.startsWith("/api/v1/auth/");
-        log.info("shouldNotFilter 결과: {}", result);
-        return result;
-    }
+//
+//    @Override
+//    protected boolean shouldNotFilter(HttpServletRequest request) {
+//        String path = request.getRequestURI();
+//        String method = request.getMethod();
+//        String origin = request.getHeader("Origin");
+//
+//        log.info("=== shouldNotFilter 체크 ===");
+//        log.info("Method: {}, URI: {}, Origin: {}", method, path, origin);
+//
+//        boolean result = "OPTIONS".equals(method) || path.startsWith("/api/v1/auth/");
+//        log.info("shouldNotFilter 결과: {}", result);
+//        return result;
+//    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        log.info("=== JWT Filter 실행 ===");
-        log.info("Method: {}, URI: {}, Origin: {}",
-                request.getMethod(),
-                request.getRequestURI(),
-                request.getHeader("Origin"));
 
         // 토큰 추출
         String token = resolveToken(request);
