@@ -5,7 +5,7 @@ export type FilePayload = {
 };
 
 export type RolePayload = {
-  problemFrameworkId: number;
+  problemFrameworkId: number | null;
   files: FilePayload[];
 };
 
