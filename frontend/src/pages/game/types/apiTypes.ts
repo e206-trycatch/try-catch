@@ -14,8 +14,24 @@ export type SubmissionRequest = {
   backend: RolePayload;
 };
 
+export type RoomState = {
+  remainingLife: number;
+  remainingHintCount: number;
+};
+
+export type Roles = {
+  role: 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
+  frameworkId: number;
+};
+
+export type Next = {
+  hasNextQuest: boolean;
+  nextQuestId: number | null;
+};
+
 export type SubmissionResponse = {
-  response: {
+  message: string;
+  result: {
     submissionId: number;
     roomId: number;
     questId: number;
@@ -23,17 +39,23 @@ export type SubmissionResponse = {
     status: 'SUCCESS' | 'FAIL' | null;
     score: number;
     executionTimeMs: number;
-    roomState: {
-      remainingLife: number;
-      remainingHintCount: number;
-    };
-    roles: {
-      role: 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
-      frameworkId: number;
-    }[];
-    next: {
-      hasNextQuest: boolean;
-      nextQuestId: number | null;
-    };
+    roomState: RoomState;
+    roles: Roles[];
+    next: Next;
   };
+};
+
+export type SubmissionResult = {
+  submissionId: number;
+  roomId: number;
+  questId: number;
+  questOrder: number;
+  status: 'SUCCESS' | 'FAIL' | null;
+  score: number;
+  executionTimeMs: number;
+  remainingLife: number;
+  remainingHintCount: number;
+  roles: Roles[];
+  hasNextQuest: boolean;
+  nextQuestId: number | null;
 };

@@ -8,6 +8,7 @@ import { getQuest } from '../../api/questFile';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
+import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
@@ -62,6 +63,7 @@ export default function GamePage() {
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
       console.log('제출 성공');
       console.log(result);
+      useSubmissionStore.getState().setResult(result.data);
       navigate(`/result/loading`);
       useGameStore
         .getState()
@@ -82,7 +84,7 @@ export default function GamePage() {
         setError(null);
 
         // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
-        const data = await getQuest(1, 1);
+        const data = await getQuest(1, currentRoomId);
         setQuestInfo(data);
       } catch {
         setError('문제 정보를 불러오지 못했습니다.');
@@ -92,7 +94,7 @@ export default function GamePage() {
     };
 
     loadQuest();
-  }, []);
+  }, [currentRoomId]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
