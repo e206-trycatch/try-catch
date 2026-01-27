@@ -14,6 +14,7 @@ public class SubmissionRespDto {
     private Long submissionId;
     private Long roomId;
     private Long questId;
+    private Long questOrder;
     private String status;
     private Integer score;
     private Long executionTimeMs;
@@ -26,10 +27,7 @@ public class SubmissionRespDto {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class RoomState {
-        // 성공 시
-        private Integer life;
-        // 실패 시
-        private Integer lifeAfter;
+        private Integer remainingLife;
         private Integer remainingHintCount;
     }
 

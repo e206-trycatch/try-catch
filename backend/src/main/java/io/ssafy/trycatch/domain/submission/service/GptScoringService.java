@@ -1,6 +1,7 @@
 package io.ssafy.trycatch.domain.submission.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.ssafy.trycatch.domain.room.entity.Room;
 import io.ssafy.trycatch.domain.submission.dto.request.GptReqDto;
 import io.ssafy.trycatch.domain.submission.dto.response.GptRespDto;
 import io.ssafy.trycatch.domain.submission.dto.response.ScoreResult;
@@ -11,6 +12,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -30,20 +33,35 @@ public class GptScoringService {
     @Value("${gpt.api.model}")
     private String gptModel;
 
-    public ScoreResult scoreSubmission(String problemDoc, String submittedSource, String rubric) {
+    public ScoreResult scoreSubmission(String problemDoc, String submittedSource, String rubric, Room room) {
         try {
             String prompt = buildPrompt(problemDoc, submittedSource, rubric);
             GptRespDto response = callGptApi(prompt);
-            return parseScoreResult(response);
+            return parseScoreResult(response, room);
         } catch (Exception e) {
             log.error("GPT 채점 중 오류 발생", e);
             return ScoreResult.builder()
                     .success(false)
                     .score(0)
                     .errorLog("채점 시스템 오류: " + e.getMessage())
-                    .executionTime(0L)
+                    .executionTime(calculateExecutionTime(room))
                     .build();
         }
+    }
+
+    private long calculateExecutionTime(Room room) {
+        if (room == null || room.getStartedAt() == null) {
+            return 0L;
+        }
+        Duration duration = Duration.between(room.getStartedAt(), LocalDateTime.now());
+        long hours = duration.toHours();
+        long minutes = duration.toMinutesPart();
+        long seconds = duration.toSecondsPart();
+        long millis = duration.toMillis();
+
+        log.info("소요 시간: {}시간 {}분 {}초 (총 {}ms)", hours, minutes, seconds, millis);
+
+        return millis;
     }
 
     private String buildPrompt(String problemDoc, String submittedSource, String rubric) {
@@ -63,7 +81,9 @@ public class GptScoringService {
 
         return String.format("""
             너는 "정적 코드 채점기"다. 코드를 실행/컴파일하지 않는다.
+            아래 [문제 설명]과 [채점 기준]을 기준으로 [제출 코드]를 평가하라.
             하지만 컴파일러처럼, 텍스트만으로도 명백히 판단 가능한 컴파일 오류를 반드시 찾아야 한다.
+            문제를 설명을 보고 문제대로 채점을 진행해라.
             
             절대 규칙(매우 중요):
             - 너는 추정/선의 해석을 하면 안 된다. 코드에 근거가 없으면 FAIL이다.
@@ -94,14 +114,15 @@ public class GptScoringService {
             
             판정:
             - 위 절차 1~4 중 하나라도 FAIL이면 success=false, score=0.
-            - 모두 PASS이면 success=true, score는 80~100 정수.
+            - 모두 PASS이면 success=true, score는 1~100 정수.
             - success=true인 경우 errorLog는 반드시 ""(빈 문자열).
+            - errorLog는 컴파일 했을 때, 실제 에러 로그에 뜨는 것을 간략하게 다듬어서 보여준다. 예시 결과처럼 안 뜬 경우에는 예시 결과와 일치하지 않는다고 보여준다. 어느 부분이 틀렸는지 알려주지 않고 답도 알려주지 않는다.
             
             출력 JSON 스키마(키는 정확히 이 3개만):
             {
               "success": false,
               "score": 0,
-              "errorLog": ""
+              "errorLog": "Method 'POST' is not supported. 응답 결과가 예시 응답 결과와 일치하지 않습니다."
             }
             
             [문제 설명]
@@ -128,7 +149,6 @@ public class GptScoringService {
                                 "You are a code grading system. Respond with valid JSON only. Do not wrap in markdown."),
                         new GptReqDto.Message("user", prompt)
                 ))
-                .temperature(0.2)
                 .build();
 
 
@@ -148,7 +168,7 @@ public class GptScoringService {
         return response.getBody();
     }
 
-    private ScoreResult parseScoreResult(GptRespDto response) {
+    private ScoreResult parseScoreResult(GptRespDto response, Room room) {
         String content = null;
         try {
             content = response.getChoices().get(0).getMessage().getContent();
@@ -180,7 +200,7 @@ public class GptScoringService {
             if (score < 0) score = 0;
             if (score > 100) score = 100;
 
-            long execTime = raw.getExecutionTime() == null ? 0L : raw.getExecutionTime();
+            long execTime = calculateExecutionTime(room);
 
             return ScoreResult.builder()
                     .success(success)
