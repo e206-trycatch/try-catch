@@ -7,6 +7,7 @@ import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
+import { useStore } from '../../stores/useStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
@@ -20,7 +21,6 @@ import useTerminal from './hooks/useTerminal';
 import type { SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
-import { useStore } from '../../stores/useStore';
 
 type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
@@ -39,7 +39,6 @@ export default function GamePage() {
     const setRoomId = currentRoomId;
     const frontFrameworkId = draft.frontendId;
     const backFrameworkId = draft.backendId;
-    const accessToken = accessToken;
 
     const requestBody: SubmissionRequest = {
       frontend: {
