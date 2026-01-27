@@ -68,7 +68,7 @@ export default function GamePage() {
         setError(null);
 
         // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
-        const data = await getQuest(1);
+        const data = await getQuest(1, 1);
         setQuestInfo(data);
       } catch {
         setError('문제 정보를 불러오지 못했습니다.');
