@@ -5,9 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { codeSubmission } from '../../api/codeSubmission';
 import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
+import { useGameStore } from '../../stores/useGameStore';
+import { useRoomStore } from '../../stores/useRoomStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
+import GameInfoBar from './components/GameInfoBar';
 import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
@@ -25,14 +28,17 @@ export default function GamePage() {
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
+
+  const { draft } = useRoomStore.getState();
+  useGameStore.getState().setGameState(draft.life, draft.hints);
 
   const submitCode = async () => {
     const setRoomId = 1; // 임시 데이터
     const frontFrameworkId = 1; // 임시 데이터
     const backFrameworkId = 1; // 임시 데이터
     const accessToken = '';
+
     const requestBody: SubmissionRequest = {
       frontend: {
         problemFrameworkId: frontFrameworkId,
@@ -56,6 +62,12 @@ export default function GamePage() {
       console.log('제출 성공');
       console.log(result);
       navigate(`/result/loading`);
+      useGameStore
+        .getState()
+        .setGameState(
+          result.data.roomState.remainingLife,
+          result.data.roomState.remainingHintCount,
+        );
     } catch (e) {
       console.error('제출 실패', e);
     }
@@ -106,8 +118,11 @@ export default function GamePage() {
   }
 
   return (
-    <div className="w-full px-20 pt-[80px] pb-[40px] h-screen">
-      <div className=" flex w-full h-full">
+    <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
+      <div className="flex w-full h-[45px] gap-[48px] mb-[10px] shrink-0">
+        <GameInfoBar />
+      </div>
+      <div className=" flex flex-1 w-full h-full">
         {/* 메뉴바 */}
         <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
           <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />

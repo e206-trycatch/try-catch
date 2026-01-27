@@ -12,6 +12,7 @@ export default function SubmitBtn({ onClick }: SubmitBtnProps) {
       style={{
         backgroundImage: `url(${SubmitBgIcon})`,
         position: 'absolute',
+        bottom: '0',
         zIndex: '99',
       }}
       type="button"
