@@ -5,7 +5,7 @@ export type FilePayload = {
 };
 
 export type RolePayload = {
-  problemFrameworkId: number;
+  problemFrameworkId: number | null;
   files: FilePayload[];
 };
 
@@ -14,8 +14,24 @@ export type SubmissionRequest = {
   backend: RolePayload;
 };
 
+export type RoomState = {
+  remainingLife: number;
+  remainingHintCount: number;
+};
+
+export type Roles = {
+  role: 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
+  frameworkId: number;
+};
+
+export type Next = {
+  hasNextQuest: boolean;
+  nextQuestId: number | null;
+};
+
 export type SubmissionResponse = {
-  data: {
+  message: string;
+  result: {
     submissionId: number;
     roomId: number;
     questId: number;
@@ -23,17 +39,21 @@ export type SubmissionResponse = {
     status: 'SUCCESS' | 'FAIL' | null;
     score: number;
     executionTimeMs: number;
-    roomState: {
-      remainingLife: number;
-      remainingHintCount: number;
-    };
-    roles: {
-      role: 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
-      frameworkId: number;
-    }[];
-    next: {
-      hasNextQuest: boolean;
-      nextQuestId: number;
-    };
+    roomState: RoomState;
+    roles: Roles[];
+    next: Next;
   };
+};
+
+// SubmissionResult는 SubmissionResponse의 result에서 roomState와 next를 제외한 타입에
+// remainingLife, remainingHintCount, hasNextQuest, nextQuestId를 추가한 타입
+// Omit<T, K> => T 타입에서 K 필드들 제거
+export type SubmissionResult = Omit<
+  SubmissionResponse['result'],
+  'roomState' | 'next'
+> & {
+  remainingLife: number;
+  remainingHintCount: number;
+  hasNextQuest: boolean;
+  nextQuestId: number | null;
 };

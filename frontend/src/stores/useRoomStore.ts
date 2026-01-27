@@ -52,11 +52,13 @@ export interface CreateRoomRequest {
 
 interface RoomCreationState {
   draft: RoomDraft;
+  currentRoomId: number | null;
 
   // 서버에서 받아오는 프레임워크 목록 저장
   availableFrameworks: AvailableFrameworks | null;
   setAvailableFrameworks: (data: AvailableFrameworks) => void;
   clearAvailableFrameworks: () => void;
+  setRoomId: (id: number | string) => void;
 
   // 동작
   setMode: (mode: GameMode) => void;
@@ -112,6 +114,7 @@ export const useRoomStore = create<RoomCreationState>()(
   persist(
     (set, get) => ({
       draft: DEFAULT_DRAFT,
+      currentRoomId: null,
 
       availableFrameworks: null,
 
@@ -155,6 +158,9 @@ export const useRoomStore = create<RoomCreationState>()(
         }),
 
       clearAvailableFrameworks: () => set({ availableFrameworks: null }),
+
+      setRoomId: (id) =>
+        set({ currentRoomId: typeof id === 'string' ? parseInt(id, 10) : id }),
 
       setMode: (mode) =>
         set((s) => ({
@@ -314,6 +320,7 @@ export const useRoomStore = create<RoomCreationState>()(
         set({
           draft: DEFAULT_DRAFT,
           availableFrameworks: null,
+          currentRoomId: null,
         }),
     }),
     {

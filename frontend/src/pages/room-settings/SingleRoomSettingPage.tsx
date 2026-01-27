@@ -26,8 +26,13 @@ const SingleRoomSettingPage = () => {
   const navigate = useNavigate();
 
   const accessToken = useStore((s) => s.accessToken);
-  const { draft, validateDraft, buildCreatePayload, setAvailableFrameworks } =
-    useRoomStore();
+  const {
+    draft,
+    validateDraft,
+    buildCreatePayload,
+    setAvailableFrameworks,
+    setRoomId,
+  } = useRoomStore();
 
   useEffect(() => {
     // themeId 없으면 흐름이 꼬인 거라 테마선택으로
@@ -86,6 +91,7 @@ const SingleRoomSettingPage = () => {
 
     try {
       const response = await createRoom(payload);
+      setRoomId(response.room_id); // 생성된 방 ID 저장
       navigate(`/game/${response.room_id}`);
     } catch (error) {
       console.error('방 생성 실패:', error);

@@ -7,6 +7,8 @@ import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
+import { useStore } from '../../stores/useStore';
+import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
@@ -30,14 +32,16 @@ export default function GamePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
 
+  // 현재의 값 한 번 가져오기
   const { draft } = useRoomStore.getState();
+  const { accessToken } = useStore();
   useGameStore.getState().setGameState(draft.life, draft.hints);
-
+  // 상태가 변경될 때 마다 자동으로 컴포넌트가 업데이트 된다.
+  const currentRoomId = useRoomStore((state) => state.currentRoomId);
   const submitCode = async () => {
-    const setRoomId = 1; // 임시 데이터
-    const frontFrameworkId = 1; // 임시 데이터
-    const backFrameworkId = 1; // 임시 데이터
-    const accessToken = '';
+    const setRoomId = currentRoomId;
+    const frontFrameworkId = draft.frontendId;
+    const backFrameworkId = draft.backendId;
 
     const requestBody: SubmissionRequest = {
       frontend: {
@@ -61,6 +65,7 @@ export default function GamePage() {
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
       console.log('제출 성공');
       console.log(result);
+      useSubmissionStore.getState().setResult(result.data);
       navigate(`/result/loading`);
       useGameStore
         .getState()
@@ -70,6 +75,7 @@ export default function GamePage() {
         );
     } catch (e) {
       console.error('제출 실패', e);
+      alert('코드 제출에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
@@ -80,7 +86,7 @@ export default function GamePage() {
         setError(null);
 
         // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
-        const data = await getQuest(1, 1);
+        const data = await getQuest(1, currentRoomId);
         setQuestInfo(data);
       } catch {
         setError('문제 정보를 불러오지 못했습니다.');
@@ -90,7 +96,7 @@ export default function GamePage() {
     };
 
     loadQuest();
-  }, []);
+  }, [currentRoomId]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);

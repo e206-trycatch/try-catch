@@ -3,9 +3,9 @@ import axios from 'axios';
 import type { SubmissionRequest } from '../pages/game/types/apiTypes';
 
 export async function codeSubmission(
-  roomId: number,
+  roomId: number | null,
   body: SubmissionRequest,
-  accessToken?: string,
+  accessToken?: string | null,
 ) {
   const res = await axios.post(`/api/v1/rooms/${roomId}/submissions`, body, {
     headers: {
