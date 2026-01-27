@@ -39,15 +39,10 @@ export interface RoomDraft {
 }
 
 export interface CreateRoomRequest {
-  theme_id: number;
-  mode: GameMode;
-
-  room_name?: string; // 빈 값일 때 보내지 않음
-  frontend_id?: number | null;
-  backend_id?: number | null;
-
-  life?: number;
-  hints?: number;
+  themeId: number;
+  position: string;
+  frontId: number | null;
+  backId: number | null;
 }
 
 interface RoomCreationState {
@@ -280,38 +275,14 @@ export const useRoomStore = create<RoomCreationState>()(
         const v = get().validateDraft();
         if (!v.ok) return null;
 
-        const {
-          mode,
-          themeId,
-          roomName,
-          position,
-          selectedFrameworkId,
-          life,
-          hints,
-        } = get().draft;
+        const { themeId, position, selectedFrameworkId } = get().draft;
 
         const payload: CreateRoomRequest = {
-          mode: mode!,
-          theme_id: themeId!,
+          themeId: themeId!,
+          position: position!,
+          frontId: position === 'FRONTEND' ? selectedFrameworkId : null,
+          backId: position === 'BACKEND' ? selectedFrameworkId : null,
         };
-
-        if (roomName.trim()) payload.room_name = roomName.trim();
-
-        // position에 따라 FE/BE 중 하나만 채워서 보냄
-        if (mode === 'SINGLE') {
-          if (position === 'FRONTEND') {
-            payload.frontend_id = selectedFrameworkId;
-            // backend_id는 굳이 보내지 않아도 됨
-          } else if (position === 'BACKEND') {
-            payload.backend_id = selectedFrameworkId;
-          }
-        } else {
-          // 멀티에서 FE/BE 둘 다 선택하는 설정이기 때문에
-          // 기존처럼 draft.frontendId/backendId를 사용해서 추후 수정해야 함.
-        }
-
-        payload.life = life;
-        payload.hints = hints;
 
         return payload;
       },
