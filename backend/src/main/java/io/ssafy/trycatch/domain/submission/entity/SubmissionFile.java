@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.submission.entity;
 
+import io.ssafy.trycatch.global.common.TrueOrFalse;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,16 +46,16 @@ public class SubmissionFile {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "is_deleted", nullable = false)
-    private Submission.IsDeleted isDeleted = Submission.IsDeleted.F;
+    private TrueOrFalse isDeleted = TrueOrFalse.F;
 
     // 소프트 삭제
     public void delete() {
-        this.isDeleted = Submission.IsDeleted.T;
+        this.isDeleted = TrueOrFalse.T;
     }
 
     // 복구
     public void restore() {
-        this.isDeleted = Submission.IsDeleted.F;
+        this.isDeleted = TrueOrFalse.F;
     }
 
     @Builder
@@ -73,9 +74,5 @@ public class SubmissionFile {
 
     public enum FileType {
         SOURCE, CONFIG, TEST, DOC, ASSET
-    }
-
-    public enum IsDeleted {
-        T, F
     }
 }

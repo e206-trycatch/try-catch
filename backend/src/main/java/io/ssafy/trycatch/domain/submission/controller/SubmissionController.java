@@ -6,6 +6,8 @@ import io.ssafy.trycatch.domain.submission.service.SubmissionService;
 import io.ssafy.trycatch.global.common.ApiRespDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,7 +20,7 @@ public class SubmissionController {
     public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
             @PathVariable Long roomId,
             @RequestBody SubmissionReqDto request) {
-
+        Long userId = getCurrentUserId();
         // FRONTEND position인 경우
         if (request.getFrontend() != null && request.getBackend() == null) {
             // frontend만 처리
@@ -34,9 +36,18 @@ public class SubmissionController {
             // frontend + backend 둘 다 처리
         }
 
-        Long userId = 1L; // 임시
         return ResponseEntity.ok(
                 ApiRespDto.success(submissionService.submit(roomId, userId, request))
+        );
+    }
+
+    @GetMapping("/api/v1/rooms/{roomId}/submission")
+    public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
+            @PathVariable Long roomId) {
+        Long userId = getCurrentUserId();
+
+        return ResponseEntity.ok(
+                ApiRespDto.success(submissionService.getSubmission(roomId, userId))
         );
     }
 
@@ -44,6 +55,11 @@ public class SubmissionController {
     @GetMapping("/api/v1/test/test")
     public ResponseEntity<?> test() {
         return ResponseEntity.ok("test success");
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (Long) authentication.getPrincipal();
     }
 
 }
