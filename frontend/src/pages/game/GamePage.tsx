@@ -32,10 +32,12 @@ export default function GamePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
 
-  const { draft, currentRoomId } = useRoomStore.getState();
+  // 현재의 값 한 번 가져오기
+  const { draft } = useRoomStore.getState();
   const { accessToken } = useStore();
   useGameStore.getState().setGameState(draft.life, draft.hints);
-
+  // 상태가 변경될 때 마다 자동으로 컴포넌트가 업데이트 된다.
+  const currentRoomId = useRoomStore((state) => state.currentRoomId);
   const submitCode = async () => {
     const setRoomId = currentRoomId;
     const frontFrameworkId = draft.frontendId;

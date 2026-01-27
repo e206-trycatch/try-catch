@@ -45,17 +45,15 @@ export type SubmissionResponse = {
   };
 };
 
-export type SubmissionResult = {
-  submissionId: number;
-  roomId: number;
-  questId: number;
-  questOrder: number;
-  status: 'SUCCESS' | 'FAIL' | null;
-  score: number;
-  executionTimeMs: number;
+// SubmissionResult는 SubmissionResponse의 result에서 roomState와 next를 제외한 타입에
+// remainingLife, remainingHintCount, hasNextQuest, nextQuestId를 추가한 타입
+// Omit<T, K> => T 타입에서 K 필드들 제거
+export type SubmissionResult = Omit<
+  SubmissionResponse['result'],
+  'roomState' | 'next'
+> & {
   remainingLife: number;
   remainingHintCount: number;
-  roles: Roles[];
   hasNextQuest: boolean;
   nextQuestId: number | null;
 };
