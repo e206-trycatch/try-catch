@@ -53,9 +53,9 @@ public class SubmissionService {
     public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request) {
         // 1단계: DB 작업 (트랜잭션 내)
         SubmissionContext context = createSubmissions(roomId, userId, request);
-
+        Room room = context.getRoom();
         // 2단계: GPT 채점 (트랜잭션 밖 - 외부 API 호출)
-        List<ScoreResult> scoreResults = scoreSubmissions(context);
+        List<ScoreResult> scoreResults = scoreSubmissions(context, room);
 
         // 3단계: 결과 업데이트 및 응답 생성 (트랜잭션 내)
         return updateAndBuildResponse(context, scoreResults);
@@ -142,7 +142,7 @@ public class SubmissionService {
     }
 
     // GPT 채점 (트랜잭션 밖)
-    private List<ScoreResult> scoreSubmissions(SubmissionContext context) {
+    private List<ScoreResult> scoreSubmissions(SubmissionContext context, Room room) {
         List<ScoreResult> results = new ArrayList<>();
 
         for (SubmissionContext.SubmissionData data : context.getSubmissionDataList()) {
@@ -150,7 +150,7 @@ public class SubmissionService {
             String submittedSource = combineSource(data.getFiles());
             String rubric = data.getRoleName().equals("FRONTEND") ? FRONTEND_RUBRIC : BACKEND_RUBRIC;
 
-            ScoreResult score = gptScoringService.scoreSubmission(problemDoc, submittedSource, rubric);
+            ScoreResult score = gptScoringService.scoreSubmission(problemDoc, submittedSource, rubric, room);
             results.add(score);
         }
 

@@ -26,7 +26,7 @@ gpt:
   api:
     url: ${GMS_BACK_BASE_URL}
     key: ${GMS_API_KEY}
-    model: ${GMS_BACK_API_MODEL}
+    model: gpt-5-mini
 
 # 로깅 설정
 logging:
