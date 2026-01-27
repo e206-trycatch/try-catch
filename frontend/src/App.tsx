@@ -6,6 +6,8 @@ import HomePage from './pages/home/HomePage';
 import LoginPage from './pages/login/LoginPage';
 import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
+import ResultLoadingPage from './pages/result/ResultLoadingPage';
+import ResultPage from './pages/result/ResultPage';
 import SignupPage from './pages/signup/SignupPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import MyPage from './pages/mypage/MyPage';
@@ -29,6 +31,9 @@ function App() {
         {/* 게임 */}
         <Route path="/game" element={<GamePage />} />
         <Route path="/signup" element={<SignupPage />} />
+        {/* 결과 */}
+        <Route path="/result/loading" element={<ResultLoadingPage />} />
+        <Route path="/result" element={<ResultPage />} />
         {/* 마이페이지 */}
         <Route path="/mypage" element={<MyPage />} />
       </Route>
