@@ -1,5 +1,7 @@
+import { useNavigate } from 'react-router-dom';
 import VHSEffect from '../../components/effects/VHSEffect';
 import VHSStyles from '../../components/effects/VHSStyles';
+import { useStore } from '../../stores/useStore';
 
 const logoText = 'try - catch!';
 const charCount = logoText.length;
@@ -8,7 +10,16 @@ const displayTime = 2;
 const totalCycle = charCount * typingDuration * 2 + displayTime;
 
 const HomePage = () => {
-  // useAudio 제거 - GlobalAudioPlayer가 관리
+  const navigate = useNavigate();
+  const isLogin = useStore((state) => state.isLogin);
+
+  const handleStartClick = () => {
+    if (isLogin) {
+      navigate('/selection/mode');
+    } else {
+      navigate('/login');
+    }
+  };
 
   const generateKeyframes = (charIndex: number, reverseIndex: number) => {
     const typeInStart = ((charIndex * typingDuration) / totalCycle) * 100;
@@ -70,7 +81,7 @@ const HomePage = () => {
             clipPath:
               'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))',
           }}
-          onClick={() => console.log('Start clicked')}
+          onClick={handleStartClick}
         >
           Start
         </button>
