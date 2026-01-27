@@ -1,10 +1,7 @@
 package io.ssafy.trycatch.domain.room.service;
 
 import io.ssafy.trycatch.domain.room.dto.request.SingleRoomCreateReqDto;
-import io.ssafy.trycatch.domain.room.dto.response.QuestDetailRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.QuestStoryRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.SingleRoomCreateRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.*;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
@@ -33,6 +30,9 @@ public class SingleRoomService {
     private final RoomRepository roomRepository;
     private final QuestRepository questRepository;
     private final QuestStoryRepository questStoryRepository;
+    private final ProblemFrameworkRepository problemFrameworkRepository;
+    private final ProblemFileRepository problemFileRepository;
+
     // 싱글 모드 방 설정
     public SingleRoomSettingRespDto getSingleRoomSettings(Long themeId) {
         Theme selectedTheme = getThemeById(themeId);
@@ -159,7 +159,7 @@ public class SingleRoomService {
                         "존재하지 않는 프레임워크입니다. frameworkId: " + frameworkId));
     }
 
-    private String generateRoomName(String themeName) {
+    private String generateRoomName(String themeName)    {
         return themeName + " - 싱글 플레이";
     }
 
@@ -214,5 +214,119 @@ public class SingleRoomService {
                         .content(story.getContent())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public ProblemFilesRespDto getProblemFiles(Long roomId, Long questId) {
+        // 1. Room 조회
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+
+        // 2. Room에서 frontendId, backendId 추출
+        Long frontendId = room.getFrontendId();
+        Long backendId = room.getBackendId();
+
+        // 3. frontendId/backendId 유무로 position 판단 (✅ 수정!)
+        String position = determinePosition(frontendId, backendId);
+
+
+        // 4. position에 따라 ProblemFramework 조회
+        ProblemFramework problemFramework = findProblemFrameworkByPosition(
+                questId, position, frontendId, backendId);
+
+        // 5. ProblemFile 목록 조회
+        List<ProblemFile> allFiles = problemFileRepository
+                .findByProblemFrameworkIdAndIsDeletedOrderByFilePath(
+                        problemFramework.getId(), TrueOrFalse.F);
+
+        // 6. Room의 position에 따라 파일 필터링
+        List<ProblemFile> filteredFiles = filterFilesByPosition(allFiles, position);
+
+        log.info("문제 파일 목록 조회 완료 - problemFrameworkId: {}, totalFiles: {}, filteredFiles: {}",
+                problemFramework.getId(), allFiles.size(), filteredFiles.size());
+
+        // 7. DTO 변환
+        List<ProblemFileRespDto> fileDtos = filteredFiles.stream()
+                .map(file -> ProblemFileRespDto.builder()
+                        .fileId(file.getId())
+                        .filePath(file.getFilePath())
+                        .codeRole(file.getCodeRole())
+                        .code(file.getCode())
+                        .fileType(file.getFileType())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 8. 응답 생성
+        return ProblemFilesRespDto.builder()
+                .problemFrameworkId(problemFramework.getId())
+                .frontendErrorLog(problemFramework.getFrontendErrorLog())
+                .backendErrorLog(problemFramework.getBackendErrorLog())
+                .files(fileDtos)
+                .build();
+    }
+
+    // frontendId/backendId 유무로 position 판단
+    private String determinePosition(Long frontendId, Long backendId) {
+        if (frontendId != null && backendId != null) {
+            return "FULLSTACK";
+        } else if (frontendId != null && backendId == null) {
+            return "FRONTEND";
+        } else if (frontendId == null && backendId != null) {
+            return "BACKEND";
+        } else {
+            throw new IllegalArgumentException("frontendId와 backendId가 모두 null입니다.");
+        }
+    }
+
+    // position에 따라 ProblemFramework 조회
+    private ProblemFramework findProblemFrameworkByPosition(
+            Long questId, String position, Long frontendId, Long backendId) {
+
+        switch (position) {
+            case "FRONTEND":
+                // 프론트엔드: frontendId만 있고 backendId는 null
+                return problemFrameworkRepository
+                        .findByQuestIdAndFrontendIdAndBackendIdAndIsDeleted(
+                                questId, frontendId, null, TrueOrFalse.F)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "해당 퀘스트의 문제 정보를 찾을 수 없습니다. questId: " + questId));
+
+            case "BACKEND":
+                // 백엔드: backendId만 있고 frontendId는 null
+                return problemFrameworkRepository
+                        .findByQuestIdAndFrontendIdAndBackendIdAndIsDeleted(
+                                questId, null, backendId, TrueOrFalse.F)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "해당 퀘스트의 문제 정보를 찾을 수 없습니다. questId: " + questId));
+
+            case "FULLSTACK":
+                // 풀스택: 둘 다 있어야 함
+                return problemFrameworkRepository
+                        .findByQuestIdAndFrontendIdAndBackendIdAndIsDeleted(
+                                questId, frontendId, backendId, TrueOrFalse.F)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "해당 퀘스트의 문제 정보를 찾을 수 없습니다. questId: " + questId));
+
+            default:
+                throw new IllegalArgumentException("올바르지 않은 포지션입니다: " + position);
+        }
+    }
+
+    // position에 따라 파일 필터링
+    private List<ProblemFile> filterFilesByPosition(List<ProblemFile> files, String position) {
+        if ("FRONTEND".equals(position)) {
+            // FRONTEND만
+            return files.stream()
+                    .filter(file -> FrameworkCategory.FRONTEND.equals(file.getCodeRole()))
+                    .collect(Collectors.toList());
+        } else if ("BACKEND".equals(position)) {
+            // BACKEND만
+            return files.stream()
+                    .filter(file -> FrameworkCategory.BACKEND.equals(file.getCodeRole()))
+                    .collect(Collectors.toList());
+        } else {
+            // FULLSTACK - 모든 파일
+            return files;
+        }
     }
 }
