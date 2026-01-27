@@ -1,5 +1,7 @@
 services:
   spring-boot:
+    env_file:
+        - .env
     build:
       context: ./backend
       dockerfile: Dockerfile

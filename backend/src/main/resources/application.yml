@@ -19,9 +19,14 @@ spring:
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity: 86400000      # 24시간
+  access-token-validity: 1800000      # 30분
   refresh-token-validity: 604800000   # 7일
 
+gpt:
+  api:
+    url: ${GMS_BACK_BASE_URL}
+    key: ${GMS_API_KEY}
+    model: gpt-5-mini
 
 # 로깅 설정
 logging:

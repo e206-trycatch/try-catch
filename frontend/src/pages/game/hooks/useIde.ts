@@ -88,7 +88,28 @@ export function useIde(root: FileNode) {
 
     setActiveFileId(file.id); // 클릭한 파일을 현재 작업 중인 파일로 지정하기
 
-    setCurrentCode(fileCodes[file.id] ?? file.code ?? '빈 파일입니다.');
+    const code = fileCodes[file.id] ?? file.code ?? '';
+
+    if (fileCodes[file.id] === undefined && file.code === undefined) {
+      setCurrentCode('');
+    }
+    setCurrentCode(code);
+  };
+
+  const selectTab = (fileId: string) => {
+    if (fileId === activeFileId) return;
+
+    saveCurrentFile();
+
+    setActiveFileId(fileId);
+
+    const code = fileCodes[fileId];
+
+    if (code === undefined) {
+      setCurrentCode('');
+    } else {
+      setCurrentCode(code);
+    }
   };
 
   const closeTab = (fileId: string) => {
@@ -123,14 +144,17 @@ export function useIde(root: FileNode) {
   return {
     expanded,
     toggleFolder,
+    fileCodes,
 
     openTabs,
     activeFileId,
     openFile,
     closeTab,
+    selectTab,
 
     activeFile,
     currentCode,
     setCurrentCode,
+    saveCurrentFile,
   };
 }

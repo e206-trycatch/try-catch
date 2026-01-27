@@ -26,7 +26,7 @@ export default function CodeEditor({
       language={activeFile.language ?? 'javascript'} // 활성화 된 파일이 있고, 언어가 있다면 그 값 쓰기
       value={code} // 에디터에 표시되는 텍스트
       theme="vs-dark"
-      options={{ minimap: { enabled: false } }}
+      options={{ minimap: { enabled: false }, fontSize: 16 }}
       onChange={(f) => onChange(f ?? '')}
     />
   );

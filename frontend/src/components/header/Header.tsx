@@ -24,7 +24,7 @@ const Header = () => {
     <>
       <GlobalAudioPlayer />
       <header
-        className="w-full flex items-center fixed top-0 left-0 z-10 text-white"
+        className="w-full flex items-center absolute top-0 left-0 z-10 text-white"
         style={{ padding: '24px 80px' }}
       >
         {/* 좌측 로고 영역 */}
@@ -51,10 +51,10 @@ const Header = () => {
         {/* 우측 메뉴 영역 */}
         <nav
           className="flex items-center ml-auto"
-          style={{ 
-            gap: '1.5vw', 
+          style={{
+            gap: '1.5vw',
             letterSpacing: '-0.05vw',
-            fontSize: 'max(14px, 1vw)' // 확대해도 커지지 않되, 최소 크기는 보장
+            fontSize: 'max(14px, 1vw)', // 확대해도 커지지 않되, 최소 크기는 보장
           }}
         >
           <SoundToggleButton />
