@@ -1,7 +1,10 @@
 package io.ssafy.trycatch.global.exception;
 
+import io.ssafy.trycatch.global.common.ApiRespDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -29,21 +32,20 @@ public class GlobalExceptionHandler {
 
     // Validation 관련 예외 처리
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException e) {
-        Map<String, String> errors = new HashMap<>();
-        e.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage())
-        );
+    public ResponseEntity<ApiRespDto<?>> handleValidationException(
+            MethodArgumentNotValidException e) {
 
-        log.error("Validation Error: {}", errors);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "입력값이 올바르지 않습니다");
-        response.put("result", errors);
+        // 에러 메시지 추출해서 ApiRespDto 형태로 반환
+        String errorMessage = e.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("입력값이 올바르지 않습니다");
 
         return ResponseEntity
-                .badRequest()
-                .body(response);
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiRespDto.error(errorMessage));
     }
 
     // 기타 예외 처리
