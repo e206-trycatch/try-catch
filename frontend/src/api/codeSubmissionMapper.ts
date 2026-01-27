@@ -14,7 +14,7 @@ export function buildFilesRequestData({ node, fileCodes, role }: Props) {
     if (n.type === 'file' && n.role === role) {
       result.push({
         filePath: n.path,
-        fileType: n.fileType ?? 'SOURCE',
+        fileType: n.fileType ?? '',
         code: fileCodes[n.id] ?? '',
       });
     }
