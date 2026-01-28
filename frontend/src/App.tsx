@@ -35,7 +35,7 @@ function App() {
           nickname: data.result.nickname,
           profileUrl: data.result.profileUrl,
         });
-      } catch (error) {
+      } catch {
         // 실패 → 비로그인 상태로 진행 (리다이렉트 없음)
         console.log('자동 로그인 실패 - 비로그인 상태로 진행');
       } finally {
