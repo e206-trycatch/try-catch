@@ -53,10 +53,20 @@ export default function GamePage() {
 
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
-    ide.saveFile(); // 현재 편집 중인 파일 모두 저장
     const setRoomId = Number(roomId);
     const frontFrameworkId = frontId;
     const backFrameworkId = backId;
+
+    // 현재 활성 파일과 openTabs의 코드를 모두 모으기
+    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+
+    if (ide.activeFileId) {
+      allFileCodes[ide.activeFileId] = ide.currentCode;
+    }
+
+    ide.openTabs.forEach((f) => {
+      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
+    });
 
     const requestBody: SubmissionRequest = {};
 
@@ -65,7 +75,7 @@ export default function GamePage() {
         problemFrameworkId: frontFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
-          fileCodes: ide.fileCodes,
+          fileCodes: allFileCodes,
           role: 'FRONTEND',
         }),
       };
@@ -75,7 +85,7 @@ export default function GamePage() {
         problemFrameworkId: backFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
-          fileCodes: ide.fileCodes,
+          fileCodes: allFileCodes,
           role: 'BACKEND',
         }),
       };

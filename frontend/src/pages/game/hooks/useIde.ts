@@ -50,22 +50,6 @@ export function useIde(root: FileNode) {
     }));
   };
 
-  const saveFile = () => {
-    if (!activeFileId) return;
-
-    setFileCodes((prev) => ({
-      ...prev,
-      [activeFileId]: currentCode,
-    }));
-
-    openTabs.forEach((f) => {
-      setFileCodes((prev) => ({
-        ...prev,
-        [f.id]: prev[f.id] ?? f.code ?? '',
-      }));
-    });
-  };
-
   // 폴더를 클릭했을 때 열고 닫는 기능
   const toggleFolder = (folderId: string) => {
     setExpanded((prev) => {
@@ -172,6 +156,5 @@ export function useIde(root: FileNode) {
     currentCode,
     setCurrentCode,
     saveCurrentFile,
-    saveFile,
   };
 }
