@@ -175,17 +175,19 @@ public class SubmissionService {
 
         SubmissionContext context = new SubmissionContext(room);
 
+        Long problemFrameworkId = request.getProblemFrameworkId();
+
         // Frontend 제출 처리
         if (request.getFrontend() != null) {
             processRoleSubmission(
-                    roomId, userId, request.getFrontend(), "FRONTEND", context
+                    roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context
             );
         }
 
         // Backend 제출 처리
         if (request.getBackend() != null) {
             processRoleSubmission(
-                    roomId, userId, request.getBackend(), "BACKEND", context
+                    roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context
             );
         }
 
@@ -197,13 +199,14 @@ public class SubmissionService {
             Long userId,
             SubmissionReqDto.SubmissionItem item,
             String roleName,
+            Long problemFrameworkId,
             SubmissionContext context
     ) {
         // Submission 생성 및 저장
         Submission submission = Submission.builder()
                 .userId(userId)
                 .roomId(roomId)
-                .problemFrameworkId(item.getProblemFrameworkId())
+                .problemFrameworkId(problemFrameworkId)
                 .status(Submission.Status.FAIL)
                 .build();
         submission = submissionRepository.save(submission);
@@ -212,7 +215,7 @@ public class SubmissionService {
         List<SubmissionFile> files = saveSubmissionFiles(submission.getId(), item.getFiles());
 
         // Context에 정보 저장
-        context.addSubmission(submission, files, roleName, item.getProblemFrameworkId());
+        context.addSubmission(submission, files, roleName, problemFrameworkId);
     }
 
     private List<SubmissionFile> saveSubmissionFiles(Long submissionId, List<SubmissionReqDto.FileItem> files) {
