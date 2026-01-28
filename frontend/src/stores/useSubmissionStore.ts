@@ -5,6 +5,8 @@ import type { SubmissionRequest } from '../pages/game/types/apiTypes';
 // 상태 구조
 interface SubmissionState {
   result: SubmissionRequest | null;
+  roomId: string | null;
+  setRoomId: (id: string) => void;
   setResult: (data: SubmissionRequest) => void;
   clearResult: () => void;
 }
@@ -14,6 +16,8 @@ interface SubmissionState {
 // 안에 우리가 관리하는 상태와 상태를 변경하는 함수를 정의
 export const useSubmissionStore = create<SubmissionState>((set) => ({
   result: null,
+  roomId: null,
+  setRoomId: (id) => set({ roomId: id }),
 
   setResult: (data) => set({ result: data }),
 
