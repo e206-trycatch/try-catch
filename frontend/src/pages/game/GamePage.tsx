@@ -53,6 +53,7 @@ export default function GamePage() {
 
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
+    ide.saveFile(); // 현재 편집 중인 파일 모두 저장
     const setRoomId = Number(roomId);
     const frontFrameworkId = frontId;
     const backFrameworkId = backId;
