@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { codeSubmission } from '../../api/codeSubmission';
 import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
+import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
@@ -34,9 +35,14 @@ export default function GamePage() {
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
   const [frontId, setFrontId] = useState<number | null>(null);
   const [backId, setBackId] = useState<number | null>(null);
-
-  // 초기 게임 상태 설정
   const { accessToken } = useStore();
+  // 게임 시작 알리기
+  useEffect(() => {
+    if (!roomId || !accessToken) return;
+
+    startGame(Number(roomId), accessToken);
+  }, [roomId, accessToken]);
+  // 초기 게임 상태 설정
   useEffect(() => {
     const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
     if (!draft) {
