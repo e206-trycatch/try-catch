@@ -110,7 +110,8 @@ export default function GamePage() {
 
         const data = await getQuest(questId, roomId);
         setQuestInfo(data);
-      } catch {
+      } catch (e) {
+        console.error('문제 정보 로드 실패:', e);
         setError('문제 정보를 불러오지 못했습니다.');
       } finally {
         setLoading(false);
