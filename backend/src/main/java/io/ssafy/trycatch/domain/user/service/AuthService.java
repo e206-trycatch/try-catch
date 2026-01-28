@@ -87,17 +87,14 @@ public class AuthService {
         }
 
         // User 테이블에 insert
-        User user = new User(
-                null,  // id (자동 생성)
-                request.getLoginId(),
-                passwordEncoder.encode(request.getPassword()),
-                request.getNickname(),
-                request.getEmail(),
-                null,  // profileUrl
-                null,  // createdAt (자동)
-                null,  // updatedAt (자동)
-                TrueOrFalse.F
-        );
+        User user = User.builder()
+                .loginId(request.getLoginId())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .nickname(request.getNickname())
+                .email(request.getEmail())
+                .profileUrl("https://drive.google.com/file/d/1Vm-D394jwwYs9fiuR53qogyhGvTJX2BD/view?usp=drive_link")
+                .isDeleted(TrueOrFalse.F)
+                .build();
 
         User savedUser = userRepository.save(user);
         log.info("회원가입 완료: {}", savedUser.getId());
