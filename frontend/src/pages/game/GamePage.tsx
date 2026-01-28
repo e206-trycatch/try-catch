@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission } from '../../api/codeSubmission';
-import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
+import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
@@ -22,6 +22,7 @@ import useTerminal from './hooks/useTerminal';
 import type { SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
+import { buildFilesRequestData } from './utils/codeSubmissionMapper';
 
 type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
@@ -34,9 +35,14 @@ export default function GamePage() {
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
   const [frontId, setFrontId] = useState<number | null>(null);
   const [backId, setBackId] = useState<number | null>(null);
-
-  // 초기 게임 상태 설정
   const { accessToken } = useStore();
+  // 게임 시작 알리기
+  useEffect(() => {
+    if (!roomId || !accessToken) return;
+
+    startGame(Number(roomId), accessToken);
+  }, [roomId, accessToken]);
+  // 초기 게임 상태 설정
   useEffect(() => {
     const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
     if (!draft) {
@@ -57,6 +63,17 @@ export default function GamePage() {
     const frontFrameworkId = frontId;
     const backFrameworkId = backId;
 
+    // 현재 활성 파일과 openTabs의 코드를 모두 모으기
+    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+
+    if (ide.activeFileId) {
+      allFileCodes[ide.activeFileId] = ide.currentCode;
+    }
+
+    ide.openTabs.forEach((f) => {
+      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
+    });
+
     const requestBody: SubmissionRequest = {};
 
     if (frontFrameworkId !== null) {
@@ -64,7 +81,7 @@ export default function GamePage() {
         problemFrameworkId: frontFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
-          fileCodes: ide.fileCodes,
+          fileCodes: allFileCodes,
           role: 'FRONTEND',
         }),
       };
@@ -74,21 +91,30 @@ export default function GamePage() {
         problemFrameworkId: backFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
-          fileCodes: ide.fileCodes,
+          fileCodes: allFileCodes,
           role: 'BACKEND',
         }),
       };
     }
     try {
       console.log('Submitting:', { setRoomId, requestBody });
-      const result = await codeSubmission(setRoomId, requestBody, accessToken);
-      console.log('제출 성공', result);
-      useSubmissionStore.getState().setResult(result);
-      const roomState = result.result?.roomState;
-      if (roomState) {
+      const res = await codeSubmission(setRoomId, requestBody, accessToken);
+      console.log('제출 성공', res);
+      const { result } = res.result;
+      console.log('result', result);
+      if (result.roomState) {
         useGameStore
           .getState()
-          .setGameState(roomState.remainingLife, roomState.remainingHintCount);
+          .setGameState(
+            result.roomState.remainingLife,
+            result.roomState.remainingHintCount,
+          );
+      }
+
+      if (result.status === 'SUCCESS') {
+        useSubmissionStore.getState().setSuccessResult(result);
+      } else {
+        useSubmissionStore.getState().setFailResult(result);
       }
       navigate(`/result/loading`);
     } catch (e) {
