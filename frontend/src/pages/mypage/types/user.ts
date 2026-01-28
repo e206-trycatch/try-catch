@@ -1,15 +1,14 @@
-// 프로필 데이터
+// 프로필 데이터 (백엔드 UserProfileRespDto 기준)
 export interface Profile {
+  id: number;
   loginId: string;
   nickname: string;
   email: string;
   profileUrl: string;
-  createdAt: string;
 }
 
 // 프로필 응답
 export interface ProfileResponse {
-  status: number;
   message: string;
   result: Profile | null;
 }
@@ -24,9 +23,8 @@ export interface EscapeRecord {
   submittedAt: string; // "2025-01-20 14:32:15" 형식
 }
 
-// 제출 기록 응답
+// 제출 기록 응답 (임시: 백엔드 연동 시 수정 필요)
 export interface SubmissionsResponse {
-  status: number;
   message: string;
   result: {
     content: EscapeRecord[];

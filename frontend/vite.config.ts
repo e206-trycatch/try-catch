@@ -14,7 +14,7 @@ export default defineConfig({
       // '/api'로 시작하는 모든 요청을 백엔드 서버로 전달
       // 예: localhost:5173/api/v1/users → localhost:8081/api/v1/users
       '/api': {
-        target: 'http://localhost:8081', // 백엔드 서버 주소
+        target: 'https://i14e206.p.ssafy.io/', // 백엔드 서버 주소
         changeOrigin: true, // 요청 헤더의 Host를 target 주소로 변경 (CORS 우회)
       },
     },
