@@ -15,6 +15,7 @@ public class RefreshRespDto {
     @Builder
     public static class Result {
         private String accessToken;
+        private String nickname;
         private String profileUrl;
     }
 
@@ -23,6 +24,7 @@ public class RefreshRespDto {
                 .message("토큰이 재발급되었습니다.")
                 .result(Result.builder()
                         .accessToken(accessToken)
+                        .nickname(user.getNickname())
                         .profileUrl(user.getProfileUrl())
                         .build())
                 .build();
