@@ -91,13 +91,13 @@ export default function GamePage() {
       console.log('제출 성공');
       console.log(result);
       useSubmissionStore.getState().setResult(result.data);
-      navigate(`/result/loading`);
       useGameStore
         .getState()
         .setGameState(
           result.data.roomState.remainingLife,
           result.data.roomState.remainingHintCount,
         );
+      navigate(`/result/loading`);
     } catch (e) {
       console.error('제출 실패', e);
       alert('코드 제출에 실패했습니다. 잠시 후 다시 시도해주세요.');
