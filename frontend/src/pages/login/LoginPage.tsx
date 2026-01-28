@@ -158,7 +158,10 @@ const LoginPage = () => {
         {/* 회원가입 링크 */}
         <div className="text-center mt-6 text-sm">
           <span className="text-gray-400">아직 회원이 아니신가요?</span>{' '}
-          <Link to="/signup" className="text-white underline hover:text-gray-300">
+          <Link
+            to="/signup"
+            className="text-white underline hover:text-gray-300"
+          >
             회원가입하러 가기
           </Link>
         </div>
