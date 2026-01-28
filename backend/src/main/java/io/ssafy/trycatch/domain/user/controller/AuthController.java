@@ -55,7 +55,7 @@ public class AuthController {
         if (refreshToken == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(RefreshRespDto.fail("Refresh Token이 없습니다."));
+                    .body(RefreshRespDto.fail("로그인이 필요합니다."));
         }
 
         RefreshRespDto response = authService.refresh(refreshToken);
