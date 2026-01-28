@@ -70,6 +70,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // /auth/login 요청은 토큰 재발급 불필요 (로그인 실패는 그대로 에러 반환)
+    if (originalRequest.url?.includes('/auth/login')) {
+      return Promise.reject(error);
+    }
+
     // /refresh 요청 자체가 실패 → 로그아웃
     if (originalRequest.url?.includes('/auth/refresh')) {
       await useStore.getState().logout();

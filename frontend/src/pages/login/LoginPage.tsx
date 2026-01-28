@@ -37,6 +37,9 @@ const LoginPage = () => {
           profileUrl: response.result.profileUrl,
         });
         navigate('/');
+      } else {
+        // 로그인 실패 (아이디/비밀번호 불일치)
+        setError('아이디와 비밀번호를 확인하세요.');
       }
     } catch (err: unknown) {
       // 에러 처리
@@ -158,7 +161,10 @@ const LoginPage = () => {
         {/* 회원가입 링크 */}
         <div className="text-center mt-6 text-sm">
           <span className="text-gray-400">아직 회원이 아니신가요?</span>{' '}
-          <Link to="/signup" className="text-white underline hover:text-gray-300">
+          <Link
+            to="/signup"
+            className="text-white underline hover:text-gray-300"
+          >
             회원가입하러 가기
           </Link>
         </div>
