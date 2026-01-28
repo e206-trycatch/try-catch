@@ -33,17 +33,57 @@ public class GptScoringService {
     @Value("${gpt.api.model}")
     private String gptModel;
 
-    public ScoreResult scoreSubmission(String problemDoc, String submittedSource, String rubric, Room room) {
+    /**
+     * 코드 품질 검증 (개별 채점)
+     */
+    public ScoreResult scoreQuality(
+            String problemDoc,
+            String submittedSource,
+            String rubric,
+            String roleName,
+            String expectedFramework,
+            String expectedLanguage,
+            Room room) {
         try {
-            String prompt = buildPrompt(problemDoc, submittedSource, rubric);
+            String prompt = buildQualityPrompt(
+                    problemDoc,
+                    submittedSource,
+                    rubric,
+                    roleName,
+                    expectedFramework,
+                    expectedLanguage
+            );
             GptRespDto response = callGptApi(prompt);
             return parseScoreResult(response, room);
         } catch (Exception e) {
-            log.error("GPT 채점 중 오류 발생", e);
+            log.error("GPT 품질 채점 중 오류 발생", e);
             return ScoreResult.builder()
                     .success(false)
                     .score(0)
                     .errorLog("채점 시스템 오류: " + e.getMessage())
+                    .executionTime(calculateExecutionTime(room))
+                    .build();
+        }
+    }
+
+    /**
+     * API 계약 검증 (Fullstack 통합 채점)
+     */
+    public ScoreResult verifyApiContract(
+            String problemDoc,
+            String frontendCode,
+            String backendCode,
+            Room room) {
+        try {
+            String prompt = buildApiContractPrompt(problemDoc, frontendCode, backendCode);
+            GptRespDto response = callGptApi(prompt);
+            return parseScoreResult(response, room);
+        } catch (Exception e) {
+            log.error("GPT API 계약 검증 중 오류 발생", e);
+            return ScoreResult.builder()
+                    .success(false)
+                    .score(0)
+                    .errorLog("API 계약 검증 오류: " + e.getMessage())
                     .executionTime(calculateExecutionTime(room))
                     .build();
         }
@@ -64,7 +104,17 @@ public class GptScoringService {
         return millis;
     }
 
-    private String buildPrompt(String problemDoc, String submittedSource, String rubric) {
+    /**
+     * 품질 검증 프롬프트
+     */
+    private String buildQualityPrompt(
+            String problemDoc,
+            String submittedSource,
+            String rubric,
+            String roleName,
+            String expectedFramework,
+            String expectedLanguage
+    ) {
         String safeProblemDoc = (problemDoc == null || problemDoc.isBlank())
                 ? "문제 설명이 제공되지 않았습니다."
                 : problemDoc;
@@ -75,72 +125,159 @@ public class GptScoringService {
 
         String safeRubric = (rubric == null || rubric.isBlank())
                 ? """
-               - 요구사항(문제 설명) 충족 여부
-               - REST API 설계(경로/메서드/응답 형태) 타당성
-               - 명백한 컴파일 오류 가능성 여부
-               """
+                - 요구사항(문제 설명) 충족 여부
+                - REST API 설계(경로/메서드/응답 형태) 타당성
+                - 명백한 컴파일 오류 가능성 여부
+                """
                 : rubric;
 
         String safeSource = (submittedSource == null) ? "" : submittedSource;
 
+        String roleValidation = roleName.equals("FRONTEND")
+                ? String.format("""
+                **코드 역할 및 프레임워크 검증:**
+                이 문제는 Frontend 코드를 요구하며, 반드시 %s (%s)로 작성되어야 한다.
+                
+                1. Backend 코드 패턴이 있는지 확인:
+                   - @RestController, @Service, @Repository, @Entity
+                   - Spring/Django/Express 등 Backend 프레임워크
+                   → 발견 시 즉시 FAIL: "Frontend 코드를 제출해야 합니다."
+                
+                2. 올바른 Frontend 프레임워크인지 확인:
+                   - 요구: %s
+                   → 다른 프레임워크 발견 시 FAIL: "%s 프레임워크를 사용해야 합니다."
+                
+                3. 기능 구현 검증:
+                   - 문제에서 요구한 UI 요소가 구현되었는가?
+                   - 상태 관리가 적절한가?
+                   - 이벤트 핸들러가 제대로 연결되었는가?
+                   - API 호출 코드가 있는가? (경로는 검증하지 않음)
+                """, expectedFramework, expectedLanguage, expectedFramework, expectedFramework)
+                : String.format("""
+                **코드 역할 및 프레임워크 검증:**
+                이 문제는 Backend 코드를 요구하며, 반드시 %s (%s)로 작성되어야 한다.
+                
+                1. Frontend 코드 패턴이 있는지 확인:
+                   - Vue 컴포넌트 (<template>, <script>)
+                   - React 컴포넌트 (useState, useEffect, JSX)
+                   → 발견 시 즉시 FAIL: "Backend 코드를 제출해야 합니다."
+                
+                2. 올바른 Backend 프레임워크인지 확인:
+                   - 요구: %s
+                   → 다른 프레임워크 발견 시 FAIL: "%s 프레임워크를 사용해야 합니다."
+                
+                3. 기능 구현 검증:
+                   - 문제에서 요구한 비즈니스 로직이 구현되었는가?
+                   - DB 조회/저장 로직이 있는가?
+                   - 예외 처리가 적절한가?
+                   - API 엔드포인트가 정의되어 있는가? (경로 일치는 검증하지 않음)
+                """, expectedFramework, expectedLanguage, expectedFramework, expectedFramework);
+
         return String.format("""
-            너는 "정적 코드 채점기"다. 코드를 실행/컴파일하지 않는다.
-            아래 [문제 설명]과 [채점 기준]을 기준으로 [제출 코드]를 평가하라.
-            하지만 컴파일러처럼, 텍스트만으로도 명백히 판단 가능한 컴파일 오류를 반드시 찾아야 한다.
-            문제를 설명을 보고 문제대로 채점을 진행해라.
+                너는 "코드 품질 검증기"다.
+                
+                %s
+                
+                절대 규칙:
+                - 코드에 근거가 없으면 FAIL
+                - 응답은 JSON만 출력
+                - API 경로나 Method 일치 여부는 검증하지 않는다 (다음 단계에서 검증됨)
+                
+                판정:
+                - 위 검증 중 하나라도 FAIL이면 success=false, score=0
+                - 모두 PASS이면 success=true, score는 1~100 정수
+                - success=true인 경우 errorLog는 ""(빈 문자열)
+                - errorLog는 컴파일 했을 때, 실제 에러 로그에 뜨는 것을 간략하게 다듬어서 보여준다. 예시 결과처럼 안 뜬 경우에는 예시 결과와 일치하지 않는다고 알려준다. 어느 부분이 틀렸는지 알려주지 않고 답도 알려주지 않는다.
+                  어느 부분이 응답 결과와 다른지도 알려주지 않는다.
+                
+                출력 JSON:
+                {
+                  "success": false,
+                  "score": 0,
+                  "errorLog": "Method 'POST' is not supported. 응답 결과가 예시 응답 결과와 일치하지 않습니다."
+                }
+                
+                [문제 설명]
+                %s
+                
+                [채점 기준]
+                %s
+                
+                [제출 코드]
+                %s
+                """, roleValidation, safeProblemDoc, safeRubric, safeSource);
+    }
+
+    /**
+     * API 계약 검증 프롬프트
+     */
+    private String buildApiContractPrompt(
+            String problemDoc,
+            String frontendCode,
+            String backendCode) {
+
+        return String.format("""
+            너는 "API 계약 검증기"다.
             
-            절대 규칙(매우 중요):
-            - 너는 추정/선의 해석을 하면 안 된다. 코드에 근거가 없으면 FAIL이다.
-            - 아래 "정적 검증 절차"를 반드시 수행하고, 수행 결과를 바탕으로만 PASS/FAIL을 결정하라.
+            **목표: Frontend와 Backend가 같은 API를 사용하고 있는가?**
+            
+            검증 항목:
+            
+            1. API 경로 일치:
+               - Frontend의 fetch/axios 경로
+               - Backend의 @GetMapping/@PostMapping 경로
+               → 정확히 일치하는가?
+            
+            2. HTTP Method 일치:
+               - Frontend의 method (GET, POST, PUT, DELETE)
+               - Backend의 매핑 어노테이션
+               → 일치하는가?
+            
+            3. Request Body 형식 일치 (POST/PUT인 경우):
+               - Frontend가 보내는 JSON 필드
+               - Backend DTO의 필드
+               → 필드명이 일치하는가?
+            
+            4. Response 형식 기본 일치:
+               - Backend 반환 타입의 필드
+               - Frontend가 사용하는 필드
+               → 주요 필드가 일치하는가?
+            
+            절대 규칙:
+            - 코드 품질은 검증하지 않는다 (이미 1단계에서 검증됨)
+            - "협업 시 API 명세를 맞췄는가?"만 확인
             - 응답은 JSON만 출력하라. 다른 텍스트 금지.
             
-            정적 검증 절차:
-            
-            1) 엔드포인트 검증
-            - 검증 스펙의 endpoint.method / endpoint.path와
-              컨트롤러의 최종 매핑 결과를 비교한다.
-            - 하나라도 불일치하면 FAIL.
-            
-            2) 응답 JSON 직렬화 검증
-            - 검증 스펙의 responseType 클래스에 대해
-              requiredGetters 목록의 모든 public getter 존재 여부를 확인한다.
-            - 하나라도 없으면 FAIL.
-            
-            3) 호출-정의 매칭
-            - 제출 코드에서 requiredSetters에 포함된 메서드 호출을 찾는다.
-            - 호출된 메서드가 responseType 클래스에 정의되어 있지 않으면
-              컴파일 오류로 간주하고 FAIL.
-            
-            4) 예시 응답 값 검증
-            - expectedResponse에 정의된 값이
-              코드 상에서 명시적으로 세팅되지 않으면 FAIL.
-            
-            
             판정:
-            - 위 절차 1~4 중 하나라도 FAIL이면 success=false, score=0.
-            - 모두 PASS이면 success=true, score는 1~100 정수.
-            - success=true인 경우 errorLog는 반드시 ""(빈 문자열).
-            - errorLog는 컴파일 했을 때, 실제 에러 로그에 뜨는 것을 간략하게 다듬어서 보여준다. 예시 결과처럼 안 뜬 경우에는 예시 결과와 일치하지 않는다고 알려준다. 어느 부분이 틀렸는지 알려주지 않고 답도 알려주지 않는다.
-            어느 부분이 응답 결과와 다른지도 알려주지 않는다.
+            - 위 검증 항목 중 하나라도 불일치하면 success=false, score=0
+            - 모두 일치하면 success=true, score=100 (고정)
+            - success=false인 경우에만 errorLog 작성
+            - success=true인 경우 errorLog는 반드시 ""(빈 문자열)
+            - errorLog는 간략하게 작성. 예: "API 경로가 일치하지 않습니다.", "HTTP Method가 일치하지 않습니다."
+            - 어느 부분이 틀렸는지 구체적으로 알려주지 않고, 답도 알려주지 않는다.
+            
+            FAIL 예시:
+            - Frontend: GET /api/users, Backend: POST /api/users → errorLog: "HTTP Method가 일치하지 않습니다."
+            - Frontend: /api/users, Backend: /api/user → errorLog: "API 경로가 일치하지 않습니다."
+            - Frontend가 {name, age} 전송, Backend는 {username, age} 받음 → errorLog: "요청 데이터 형식이 일치하지 않습니다."
             
             출력 JSON 스키마(키는 정확히 이 3개만):
             {
               "success": false,
               "score": 0,
-              "errorLog": "Method 'POST' is not supported. 응답 결과가 예시 응답 결과와 일치하지 않습니다."
+              "errorLog": "API 경로가 일치하지 않습니다."
             }
             
             [문제 설명]
             %s
             
-            [채점 기준]
+            [Frontend 코드 (API 호출 부분)]
             %s
             
-            [제출 코드]
+            [Backend 코드 (API 제공 부분)]
             %s
-            """, safeProblemDoc, safeRubric, safeSource);
+            """, problemDoc, frontendCode, backendCode);
     }
-
 
     private GptRespDto callGptApi(String prompt) {
         HttpHeaders headers = new HttpHeaders();
@@ -155,7 +292,6 @@ public class GptScoringService {
                         new GptReqDto.Message("user", prompt)
                 ))
                 .build();
-
 
         HttpEntity<GptReqDto> entity = new HttpEntity<>(request, headers);
 
@@ -195,9 +331,8 @@ public class GptScoringService {
             // 정책 2: FAIL이면 점수는 무조건 0
             int score = success ? rawScore : 0;
 
-            // 정책 3: success=true인데 score가 0 이하이면 FAIL로 강등 + 0점
+            // 정책 3: success=true인데 score가 0 이하이면 점수를 1로 보정
             if (success && score <= 0) {
-//                success = false;
                 score = 1;
             }
 
@@ -219,8 +354,6 @@ public class GptScoringService {
             throw new RuntimeException("채점 결과 파싱 실패", e);
         }
     }
-
-
 
     private String extractJsonObject(String content) {
         if (content == null) {
