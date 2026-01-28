@@ -329,4 +329,53 @@ public class SingleRoomService {
             return files;
         }
     }
+
+    // 게임 시작 (상태 변경 및 시작 시간 기록)
+    @Transactional
+    public void startGame(Long roomId) {
+        Room room = findRoomById(roomId);
+        room.startGame(); // 엔티티의 비즈니스 로직 호출
+        log.info("게임 시작 - roomId: {}, status: {}", roomId, room.getStatus());
+    }
+
+    // 힌트 사용 (개수 차감)
+    @Transactional
+    public int useHint(Long roomId) {
+        Room room = findRoomById(roomId);
+        room.useHint(); // 엔티티의 비즈니스 로직 호출
+        log.info("힌트 사용 - roomId: {}, 남은 힌트: {}", roomId, room.getRemainingHintCount());
+        return room.getRemainingHintCount();
+    }
+
+    // 생명 감소 (틀렸을 때 호출)
+    @Transactional
+    public Map<String, Object> decreaseLife(Long roomId) {
+        Room room = findRoomById(roomId);
+        room.decreaseLife();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("remainingLife", room.getLife());
+        result.put("isGameOver", room.isGameOver());
+
+        if (room.isGameOver()) {
+            room.endGame();
+            log.info("게임 오버 - roomId: {}", roomId);
+        }
+
+        return result;
+    }
+
+    // 게임 수동 종료
+    @Transactional
+    public void endGame(Long roomId) {
+        Room room = findRoomById(roomId);
+        room.endGame();
+        log.info("게임 종료 - roomId: {}", roomId);
+    }
+
+    private Room findRoomById(Long roomId) {
+        return roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+    }
 }

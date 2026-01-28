@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
@@ -69,6 +70,34 @@ public class SingleRoomController {
 
         return ResponseEntity.ok(
                 ApiRespDto.success("문제 파일 목록을 불러왔습니다.", response)
+        );
+    }
+
+    // 게임 시작
+    @PostMapping("/{roomId}/start")
+    public ResponseEntity<ApiRespDto<String>> startGame(@PathVariable Long roomId) {
+        singleRoomService.startGame(roomId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("게임이 시작되었습니다.", null)
+        );
+    }
+
+    // 힌트 사용
+    @PostMapping("/{roomId}/hint")
+    public ResponseEntity<ApiRespDto<Map<String, Integer>>> useHint(@PathVariable Long roomId) {
+        int remaining = singleRoomService.useHint(roomId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("힌트를 사용했습니다.", Map.of("remainingHintCount", remaining))
+        );
+    }
+    
+
+    // 게임 종료
+    @PostMapping("/{roomId}/end")
+    public ResponseEntity<ApiRespDto<String>> stopGame(@PathVariable Long roomId) {
+        singleRoomService.endGame(roomId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("게임이 종료되었습니다.", null)
         );
     }
 }
