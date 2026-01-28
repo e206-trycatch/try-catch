@@ -1,6 +1,6 @@
 import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission } from '../../api/codeSubmission';
 import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
@@ -27,40 +27,58 @@ type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
 export default function GamePage() {
   const navigate = useNavigate();
+  const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
+  const [frontId, setFrontId] = useState<number | null>(null);
+  const [backId, setBackId] = useState<number | null>(null);
 
-  // 현재의 값 한 번 가져오기
-  const { draft } = useRoomStore.getState();
+  // 초기 게임 상태 설정
   const { accessToken } = useStore();
-  useGameStore.getState().setGameState(draft.life, draft.hints);
-  // 상태가 변경될 때 마다 자동으로 컴포넌트가 업데이트 된다.
-  const currentRoomId = useRoomStore((state) => state.currentRoomId);
-  const submitCode = async () => {
-    const setRoomId = currentRoomId;
-    const frontFrameworkId = draft.frontendId;
-    const backFrameworkId = draft.backendId;
+  useEffect(() => {
+    const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
+    if (!draft) {
+      setError('유효하지 않은 접근입니다. 처음부터 시작해주세요.');
+      return;
+    }
 
-    const requestBody: SubmissionRequest = {
-      frontend: {
+    if (draft) {
+      useGameStore.getState().setGameState(draft.life, draft.hints); // 초기 목숨과 힌트 수 설정
+      setFrontId(draft.frontendId);
+      setBackId(draft.backendId);
+    }
+  }, [roomId]);
+
+  // 제출 버튼을 눌렀을 때 실행되는 함수
+  const submitCode = async () => {
+    const setRoomId = Number(roomId);
+    const frontFrameworkId = frontId;
+    const backFrameworkId = backId;
+
+    const requestBody: SubmissionRequest = {};
+
+    if (frontFrameworkId !== null) {
+      requestBody.frontend = {
         problemFrameworkId: frontFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
           fileCodes: ide.fileCodes,
           role: 'FRONTEND',
         }),
-      },
-      backend: {
+      };
+    }
+    if (backFrameworkId !== null) {
+      requestBody.backend = {
         problemFrameworkId: backFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
           fileCodes: ide.fileCodes,
           role: 'BACKEND',
         }),
-      },
-    };
+      };
+    }
     try {
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
       console.log('제출 성공');
@@ -85,8 +103,12 @@ export default function GamePage() {
         setLoading(true);
         setError(null);
 
-        // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
-        const data = await getQuest(1, currentRoomId);
+        if (!roomId || !questId) {
+          setError('필수 정보가 없습니다.');
+          return;
+        }
+
+        const data = await getQuest(questId, roomId);
         setQuestInfo(data);
       } catch {
         setError('문제 정보를 불러오지 못했습니다.');
@@ -96,7 +118,7 @@ export default function GamePage() {
     };
 
     loadQuest();
-  }, [currentRoomId]);
+  }, [roomId, questId]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
