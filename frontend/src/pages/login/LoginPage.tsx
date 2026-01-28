@@ -37,9 +37,6 @@ const LoginPage = () => {
           profileUrl: response.result.profileUrl,
         });
         navigate('/');
-      } else {
-        // 로그인 실패 (아이디/비밀번호 불일치)
-        setError('아이디와 비밀번호를 확인하세요.');
       }
     } catch (err: unknown) {
       // 에러 처리
