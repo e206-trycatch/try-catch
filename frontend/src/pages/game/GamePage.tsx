@@ -39,6 +39,11 @@ export default function GamePage() {
   const { accessToken } = useStore();
   useEffect(() => {
     const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
+    if (!draft) {
+      setError('유효하지 않은 접근입니다. 처음부터 시작해주세요.');
+      return;
+    }
+
     if (draft) {
       useGameStore.getState().setGameState(draft.life, draft.hints); // 초기 목숨과 힌트 수 설정
       setFrontId(draft.frontendId);
@@ -52,24 +57,28 @@ export default function GamePage() {
     const frontFrameworkId = frontId;
     const backFrameworkId = backId;
 
-    const requestBody: SubmissionRequest = {
-      frontend: {
+    const requestBody: SubmissionRequest = {};
+
+    if (frontFrameworkId !== null) {
+      requestBody.frontend = {
         problemFrameworkId: frontFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
           fileCodes: ide.fileCodes,
           role: 'FRONTEND',
         }),
-      },
-      backend: {
+      };
+    }
+    if (backFrameworkId !== null) {
+      requestBody.backend = {
         problemFrameworkId: backFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
           fileCodes: ide.fileCodes,
           role: 'BACKEND',
         }),
-      },
-    };
+      };
+    }
     try {
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
       console.log('제출 성공');
