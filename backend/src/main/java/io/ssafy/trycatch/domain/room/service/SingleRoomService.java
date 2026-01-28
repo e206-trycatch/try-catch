@@ -4,9 +4,7 @@ import io.ssafy.trycatch.domain.room.dto.request.SingleRoomCreateReqDto;
 import io.ssafy.trycatch.domain.room.dto.response.*;
 import io.ssafy.trycatch.domain.room.dto.response.SingleRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.*;
-import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
-import io.ssafy.trycatch.domain.room.enums.RoomMode;
-import io.ssafy.trycatch.domain.room.enums.RoomStatus;
+import io.ssafy.trycatch.domain.room.enums.*;
 import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +30,7 @@ public class SingleRoomService {
     private final QuestStoryRepository questStoryRepository;
     private final ProblemFrameworkRepository problemFrameworkRepository;
     private final ProblemFileRepository problemFileRepository;
+    private final RoomUserRepository roomUserRepository;
 
     // 싱글 모드 방 설정
     public SingleRoomSettingRespDto getSingleRoomSettings(Long themeId) {
@@ -81,7 +80,7 @@ public class SingleRoomService {
 
     // 싱글 방 생성
     @Transactional
-    public SingleRoomCreateRespDto createSingleRoom(SingleRoomCreateReqDto request) {
+    public SingleRoomCreateRespDto createSingleRoom(Long userId, SingleRoomCreateReqDto request) {
 
         Theme theme = validateTheme(request.getThemeId());
 
@@ -104,11 +103,15 @@ public class SingleRoomService {
 
         Room savedRoom = roomRepository.save(room);
 
+        RoomPosition roomPosition = RoomPosition.valueOf(request.getPosition());
+        createSingleRoomUser(userId, savedRoom.getId(), roomPosition);
+
         SingleRoomCreateRespDto response = SingleRoomCreateRespDto.builder()
                 .roomId(savedRoom.getId()).build();
 
         return response;
     }
+
 
     // 테마 존재 여부 검증
     private Theme validateTheme(Long themeId) {
@@ -328,5 +331,18 @@ public class SingleRoomService {
             // FULLSTACK - 모든 파일
             return files;
         }
+    }
+    private void createSingleRoomUser(Long userId, Long roomId, RoomPosition position) {
+        RoomUser roomUser = RoomUser.builder()
+                .userId(userId)
+                .roomId(roomId)
+                .position(position)
+                .role(RoomRole.HOST) // 싱글은 본인이 방장
+                .isReady(TrueOrFalse.T) // 싱글은 생성 즉시 준비 완료 상태
+                .isDeleted(TrueOrFalse.F)
+                .build();
+
+        roomUserRepository.save(roomUser);
+        log.info("싱글 방 유저 생성 완료 - userId: {}, roomId: {}", userId, roomId);
     }
 }
