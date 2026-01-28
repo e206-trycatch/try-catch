@@ -68,7 +68,10 @@ public class GptScoringService {
         String safeProblemDoc = (problemDoc == null || problemDoc.isBlank())
                 ? "문제 설명이 제공되지 않았습니다."
                 : problemDoc;
-        log.info("문제 설명 : {}", safeProblemDoc);
+        String preview = safeProblemDoc.length() > 100
+                ? safeProblemDoc.substring(0, 100) + "..."
+                : safeProblemDoc;
+        log.info("문제 설명 (미리보기): {}", preview);
 
         String safeRubric = (rubric == null || rubric.isBlank())
                 ? """
