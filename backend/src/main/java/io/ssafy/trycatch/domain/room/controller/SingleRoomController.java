@@ -6,6 +6,7 @@ import io.ssafy.trycatch.global.common.ApiRespDto;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,8 +33,9 @@ public class SingleRoomController {
     // 싱글 방 생성
     @PostMapping("/single")
     public ResponseEntity<ApiRespDto<SingleRoomCreateRespDto>> createSingleRoom(
+            @AuthenticationPrincipal Long userId,
             @RequestBody SingleRoomCreateReqDto request) {
-        SingleRoomCreateRespDto response = singleRoomService.createSingleRoom(request);
+        SingleRoomCreateRespDto response = singleRoomService.createSingleRoom(userId, request);
         return ResponseEntity.ok(
                 ApiRespDto.success("싱글 방이 생성되었습니다.", response));
     }
