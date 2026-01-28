@@ -148,7 +148,7 @@ export default function GamePage() {
       <div className="flex w-full h-[45px] gap-[48px] mb-[10px] shrink-0">
         <GameInfoBar />
       </div>
-      <div className=" flex flex-1 w-full h-full">
+      <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
         {/* 메뉴바 */}
         <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
           <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
@@ -198,6 +198,7 @@ export default function GamePage() {
             enable={{ top: true }}
             className="shrink-0 border border-gray-700 overflow-hidden"
             minHeight={50}
+            maxHeight={500}
           >
             <Terminal
               frontendErrorLog={frontendErrorLog}
