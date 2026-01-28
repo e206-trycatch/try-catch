@@ -238,11 +238,12 @@ public class SubmissionService {
             return SubmissionFile.CodeRole.FRONTEND;
         }
 
-        if (filePath.contains("/frontend/")
+        if (filePath.contains("/frontend")
                 || filePath.contains("/components/")
-                || (filePath.contains("/src/") && filePath.endsWith(".jsx"))) {
+                || filePath.endsWith(".jsx") || filePath.endsWith(".vue")) {
             return SubmissionFile.CodeRole.FRONTEND;
-        } else if (filePath.contains("/backend/") || filePath.contains("/java/")) {
+        } else if (filePath.contains("/backend")
+                || filePath.endsWith(".java") || filePath.endsWith(".py")) {
             return SubmissionFile.CodeRole.BACKEND;
         }
         return SubmissionFile.CodeRole.FRONTEND;
@@ -253,7 +254,8 @@ public class SubmissionService {
         List<ScoreResult> results = new ArrayList<>();
 
         for (SubmissionContext.SubmissionData data : context.getSubmissionDataList()) {
-            String problemDoc = combineDoc(data.getFiles());
+            Long problemFrameworkId = data.getFrameworkId();
+            String problemDoc = getProblemDoc(problemFrameworkId);
             String submittedSource = combineSource(data.getFiles());
             String rubric = data.getRoleName().equals("FRONTEND") ? FRONTEND_RUBRIC : BACKEND_RUBRIC;
 
@@ -406,6 +408,20 @@ public class SubmissionService {
                 .hasNextQuest(true)
                 .nextQuestId(nextQuest.getId())
                 .build();
+    }
+
+    /**
+     * ProblemFile에서 DOC 파일 가져오기
+     */
+    private String getProblemDoc(Long problemFrameworkId) {
+        List<ProblemFile> docFiles = problemFileRepository
+                .findByProblemFrameworkIdAndFileTypeAndIsDeleted(
+                        problemFrameworkId, FileType.DOC, TrueOrFalse.F
+                );
+
+        return docFiles.stream()
+                .map(file -> String.format("## DOC: %s\n%s\n\n", safe(file.getFilePath()), safe(file.getCode())))
+                .collect(Collectors.joining());
     }
 
     // DOC만 합치기 (문제 설명)
