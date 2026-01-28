@@ -42,16 +42,21 @@ export default function GamePage() {
 
     startGame(Number(roomId), accessToken);
   }, [roomId, accessToken]);
-  // 초기 게임 상태 설정
+  // 초기 게임 상태 설정 (새 방 진입 시에만)
   useEffect(() => {
-    const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
+    const { draft } = useRoomStore.getState();
+    const { currentRoomId } = useGameStore.getState();
+
     if (!draft) {
       setError('유효하지 않은 접근입니다. 처음부터 시작해주세요.');
       return;
     }
 
-    if (draft) {
-      useGameStore.getState().setGameState(draft.life, draft.hints); // 초기 목숨과 힌트 수 설정
+    // 새 방 진입 시에만 draft에서 초기화 (실패 후 재도전 시에는 현재 값 유지)
+    if (currentRoomId !== Number(roomId)) {
+      useGameStore
+        .getState()
+        .initializeForRoom(Number(roomId), draft.life, draft.hints);
     }
   }, [roomId]);
 

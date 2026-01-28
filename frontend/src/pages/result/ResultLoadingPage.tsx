@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { codeSubmission } from '../../api/codeSubmission';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -19,6 +20,8 @@ const ResultLoadingPage = () => {
     (state) => state.setSubmissionResult,
   );
 
+  const setGameState = useGameStore((state) => state.setGameState);
+
   const submitCode = () => {
     if (!roomId || !codeResult) return;
 
@@ -27,6 +30,10 @@ const ResultLoadingPage = () => {
       .then((res) => {
         console.log(res);
         setSubmissionResult(res.result);
+        setGameState(
+          res.result.roomState.remainingLife,
+          res.result.roomState.remainingHintCount,
+        );
         navigate('/result', { replace: true });
       })
       .catch(() => {
@@ -49,6 +56,10 @@ const ResultLoadingPage = () => {
         if (ignore) return;
         console.log(res);
         setSubmissionResult(res.result);
+        setGameState(
+          res.result.roomState.remainingLife,
+          res.result.roomState.remainingHintCount,
+        );
         navigate('/result', { replace: true });
       })
       .catch(() => {

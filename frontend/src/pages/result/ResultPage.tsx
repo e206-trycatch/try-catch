@@ -1,9 +1,10 @@
 // 결과 페이지
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { useResultStore } from '../../stores/useResultStore';
-import SuccessResult from './components/SuccessResult';
 import FailResult from './components/FailResult';
+import SuccessResult from './components/SuccessResult';
 
 const ResultPage = () => {
   const navigate = useNavigate();

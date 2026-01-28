@@ -1,6 +1,9 @@
 // 성공 결과 컴포넌트
 import { useNavigate } from 'react-router-dom';
+
+import { useGameStore } from '../../../stores/useGameStore';
 import { useResultStore } from '../../../stores/useResultStore';
+import { useRoomStore } from '../../../stores/useRoomStore';
 import { formatTime } from '../../../utils/utils';
 import type { SuccessSubmissionResult } from '../types/resultTypes';
 // TODO: 아이콘 추가 후 import 활성화
@@ -18,6 +21,11 @@ const SuccessResult = ({ result }: Props) => {
   const handleNext = () => {
     clearStore();
     if (next.hasNextQuest) {
+      // 다음 문제로 넘어가면 draft로 초기화 하기
+      const { draft } = useRoomStore.getState();
+      if (draft) {
+        useGameStore.getState().setGameState(draft.life, draft.hints);
+      }
       navigate(`/game/${roomId}/${next.nextQuestId}`);
     } else {
       navigate('/');
@@ -35,9 +43,7 @@ const SuccessResult = ({ result }: Props) => {
         <span className="text-green-400 text-4xl font-bold">SUCCESS!</span>
       </div>
 
-      <p className="text-white">
-        총 소요시간 {formatTime(executionTimeMs)}
-      </p>
+      <p className="text-white">총 소요시간 {formatTime(executionTimeMs)}</p>
 
       <button
         onClick={handleNext}
