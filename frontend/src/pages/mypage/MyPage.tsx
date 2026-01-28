@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useStore } from '../../stores/useStore';
 import { getProfile, getSubmissions } from '../../api/user';
 import type { Profile, EscapeRecord } from './types/user';
@@ -9,20 +10,6 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import ProfileSection from './ProfileSection';
 import EscapeRecordSection from './EscapeRecordSection';
-
-// API 응답 검증 헬퍼 함수
-type ApiResponse = { status: number; result: unknown };
-type ErrorMessages = { notFound: string; failed: string };
-
-const validateResponse = (
-  res: ApiResponse,
-  errorMessages: ErrorMessages
-): string | null => {
-  if (res.status === 401) return 'UNAUTHORIZED';
-  if (res.status === 404) return errorMessages.notFound;
-  if (res.status !== 200 || !res.result) return errorMessages.failed;
-  return null; // 성공
-};
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -50,41 +37,39 @@ const MyPage = () => {
         // 두 API 동시 호출
         const [profileRes, submissionsRes] = await Promise.all([
           getProfile(),
-          getSubmissions({ page: 0, size: 999 }),
+          getSubmissions({ page: 1, size: 999 }),
         ]);
 
-        // 프로필 응답 검증
-        const profileError = validateResponse(profileRes, {
-          notFound: '프로필 정보를 찾을 수 없습니다.',
-          failed: '프로필 정보를 불러오는데 실패했습니다.',
-        });
-
-        // 제출 기록 응답 검증
-        const submissionsError = validateResponse(submissionsRes, {
-          notFound: '제출 기록을 찾을 수 없습니다.',
-          failed: '제출 기록을 불러오는데 실패했습니다.',
-        });
-
-        // 인증 실패 → 로그인 이동
-        if (profileError === 'UNAUTHORIZED' || submissionsError === 'UNAUTHORIZED') {
-          navigate('/login');
-          return;
-        }
-
-        // 에러 처리
-        const error = profileError || submissionsError;
-        if (error) {
-          setError(error);
+        // 성공: 결과가 없으면 에러 처리
+        if (!profileRes.result) {
+          setError('프로필 정보를 찾을 수 없습니다.');
           setIsLoading(false);
           return;
         }
 
-        // 성공
+        if (!submissionsRes.result) {
+          setError('제출 기록을 찾을 수 없습니다.');
+          setIsLoading(false);
+          return;
+        }
+
         setProfile(profileRes.result);
-        setRecords(submissionsRes.result!.content);
+        setRecords(submissionsRes.result.content);
         setIsLoading(false);
       } catch (err) {
-        // 네트워크 오류 (서버 다운, 타임아웃 등)
+        // axios 에러 처리
+        if (axios.isAxiosError(err)) {
+          const status = err.response?.status;
+          if (status === 401) {
+            navigate('/login');
+            return;
+          }
+          if (status === 404) {
+            setError('정보를 찾을 수 없습니다.');
+            setIsLoading(false);
+            return;
+          }
+        }
         setError('서버에 연결할 수 없습니다.');
         setIsLoading(false);
       }
