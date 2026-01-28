@@ -64,8 +64,17 @@ const SignupPage = () => {
       setIsIdChecked(true);
       setIsIdAvailable(response.result.available);
       setIdMessage(response.message);
-    } catch {
-      setIdMessage('중복 확인 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number; data?: { message?: string } } };
+
+      if (error.response?.status === 409) {
+        // 중복인 경우
+        setIsIdChecked(true);
+        setIsIdAvailable(false);
+        setIdMessage(error.response.data?.message || '이미 사용 중인 아이디입니다.');
+      } else {
+        setIdMessage('중복 확인 중 오류가 발생했습니다.');
+      }
     }
   };
 
@@ -81,8 +90,17 @@ const SignupPage = () => {
       setIsNicknameChecked(true);
       setIsNicknameAvailable(response.result.available);
       setNicknameMessage(response.message);
-    } catch {
-      setNicknameMessage('중복 확인 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number; data?: { message?: string } } };
+
+      if (error.response?.status === 409) {
+        // 중복인 경우
+        setIsNicknameChecked(true);
+        setIsNicknameAvailable(false);
+        setNicknameMessage(error.response.data?.message || '이미 사용 중인 닉네임입니다.');
+      } else {
+        setNicknameMessage('중복 확인 중 오류가 발생했습니다.');
+      }
     }
   };
 
@@ -98,8 +116,17 @@ const SignupPage = () => {
       setIsEmailChecked(true);
       setIsEmailAvailable(response.result.available);
       setEmailMessage(response.message);
-    } catch {
-      setEmailMessage('중복 확인 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number; data?: { message?: string } } };
+
+      if (error.response?.status === 409) {
+        // 중복인 경우
+        setIsEmailChecked(true);
+        setIsEmailAvailable(false);
+        setEmailMessage(error.response.data?.message || '이미 사용 중인 이메일입니다.');
+      } else {
+        setEmailMessage('중복 확인 중 오류가 발생했습니다.');
+      }
     }
   };
 
