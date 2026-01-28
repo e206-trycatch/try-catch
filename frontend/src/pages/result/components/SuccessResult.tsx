@@ -13,12 +13,12 @@ interface Props {
 const SuccessResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
-  const { questOrder, executionTimeMs, next } = result;
+  const { roomId, questOrder, executionTimeMs, next } = result;
 
   const handleNext = () => {
     clearStore();
     if (next.hasNextQuest) {
-      navigate(`/quest?questId=${next.nextQuestId}`);
+      navigate(`/game/${roomId}/${next.nextQuestId}`);
     } else {
       navigate('/');
     }

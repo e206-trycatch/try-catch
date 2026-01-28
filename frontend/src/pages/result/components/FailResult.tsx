@@ -16,13 +16,14 @@ const FailResult = ({ result }: Props) => {
   const clearStore = useResultStore((state) => state.clear);
   const [showError, setShowError] = useState(false);
 
-  const { questId, questOrder, executionTimeMs, roomState, errorLog } = result;
+  const { roomId, questId, questOrder, executionTimeMs, roomState, errorLog } =
+    result;
   const { remainingLife } = roomState;
   const isGameOver = remainingLife === 0;
 
   const handleRetry = () => {
     clearStore();
-    navigate(`/game?questId=${questId}`);
+    navigate(`/game/${roomId}/${questId}`);
   };
 
   const handleGoToMain = () => {
