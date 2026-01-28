@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.user.dto.response;
 
+import io.ssafy.trycatch.domain.user.entity.User;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -14,13 +15,15 @@ public class RefreshRespDto {
     @Builder
     public static class Result {
         private String accessToken;
+        private String profileUrl;
     }
 
-    public static RefreshRespDto success(String accessToken) {
+    public static RefreshRespDto success(String accessToken, User user) {
         return RefreshRespDto.builder()
                 .message("토큰이 재발급되었습니다.")
                 .result(Result.builder()
                         .accessToken(accessToken)
+                        .profileUrl(user.getProfileUrl())
                         .build())
                 .build();
     }

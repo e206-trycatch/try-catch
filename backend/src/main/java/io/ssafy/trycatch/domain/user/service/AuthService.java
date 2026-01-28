@@ -60,8 +60,7 @@ public class AuthService {
         }
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
-
-        userRepository.findById(userId)
+        User user = userRepository.findByIdAndIsDeleted(userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // accesstoken 새로 발급
@@ -69,7 +68,7 @@ public class AuthService {
 
         log.info("토큰 재발급 완료 - userID: {}", userId);
 
-        return RefreshRespDto.success(newAccessToken);
+        return RefreshRespDto.success(newAccessToken, user);
     }
 
     // 회원가입
