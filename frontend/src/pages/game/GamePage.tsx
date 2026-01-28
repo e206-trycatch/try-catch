@@ -2,7 +2,6 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { codeSubmission } from '../../api/codeSubmission';
 import { getQuest } from '../../api/questFile';
 import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
