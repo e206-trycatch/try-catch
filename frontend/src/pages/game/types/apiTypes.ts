@@ -5,11 +5,11 @@ export type FilePayload = {
 };
 
 export type RolePayload = {
-  problemFrameworkId: number | null;
   files: FilePayload[];
 };
 
 export type SubmissionRequest = {
+  problemFrameworkId: number | null;
   frontend?: RolePayload;
   backend?: RolePayload;
 };

@@ -30,11 +30,12 @@ export default function GamePage() {
   const navigate = useNavigate();
   const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
+  const [problemFrameworkId, setProblemFrameworkId] = useState<number | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
-  const [frontId, setFrontId] = useState<number | null>(null);
-  const [backId, setBackId] = useState<number | null>(null);
   const { accessToken } = useStore();
   // 게임 시작 알리기
   useEffect(() => {
@@ -52,17 +53,11 @@ export default function GamePage() {
 
     if (draft) {
       useGameStore.getState().setGameState(draft.life, draft.hints); // 초기 목숨과 힌트 수 설정
-      setFrontId(draft.frontendId);
-      setBackId(draft.backendId);
     }
   }, [roomId]);
 
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
-    const setRoomId = Number(roomId);
-    const frontFrameworkId = frontId;
-    const backFrameworkId = backId;
-
     // 현재 활성 파일과 openTabs의 코드를 모두 모으기
     const allFileCodes: Record<string, string> = { ...ide.fileCodes };
 
@@ -74,53 +69,28 @@ export default function GamePage() {
       allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
     });
 
-    const requestBody: SubmissionRequest = {};
-
-    if (frontFrameworkId !== null) {
-      requestBody.frontend = {
-        problemFrameworkId: frontFrameworkId,
+    const requestBody: SubmissionRequest = {
+      problemFrameworkId: problemFrameworkId,
+      frontend: {
         files: buildFilesRequestData({
           node: rootNode,
           fileCodes: allFileCodes,
           role: 'FRONTEND',
         }),
-      };
-    }
-    if (backFrameworkId !== null) {
-      requestBody.backend = {
-        problemFrameworkId: backFrameworkId,
+      },
+      backend: {
         files: buildFilesRequestData({
           node: rootNode,
           fileCodes: allFileCodes,
           role: 'BACKEND',
         }),
-      };
-    }
-    try {
-      console.log('Submitting:', { setRoomId, requestBody });
-      const res = await codeSubmission(setRoomId, requestBody, accessToken);
-      console.log('제출 성공', res);
-      const { result } = res.result;
-      console.log('result', result);
-      if (result.roomState) {
-        useGameStore
-          .getState()
-          .setGameState(
-            result.roomState.remainingLife,
-            result.roomState.remainingHintCount,
-          );
-      }
+      },
+    };
 
-      if (result.status === 'SUCCESS') {
-        useSubmissionStore.getState().setSuccessResult(result);
-      } else {
-        useSubmissionStore.getState().setFailResult(result);
-      }
-      navigate(`/result/loading`);
-    } catch (e) {
-      console.error('제출 실패', e);
-      alert('코드 제출에 실패했습니다. 잠시 후 다시 시도해주세요.');
-    }
+    console.log('requestBody', requestBody);
+
+    useSubmissionStore.getState().setResult(requestBody);
+    navigate('/result/loading');
   };
 
   useEffect(() => {
@@ -135,6 +105,7 @@ export default function GamePage() {
         }
 
         const data = await getQuest(questId, roomId, accessToken);
+        setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
       } catch (e) {
         console.error('문제 정보 로드 실패:', e);
