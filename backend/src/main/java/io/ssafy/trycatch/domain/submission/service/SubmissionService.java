@@ -178,14 +178,18 @@ public class SubmissionService {
         Long problemFrameworkId = request.getProblemFrameworkId();
 
         // Frontend 제출 처리
-        if (request.getFrontend() != null) {
+        if (request.getFrontend() != null
+                && request.getFrontend().getFiles() != null
+                && !request.getFrontend().getFiles().isEmpty()) {
             processRoleSubmission(
                     roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context
             );
         }
 
         // Backend 제출 처리
-        if (request.getBackend() != null) {
+        if (request.getBackend() != null
+                && request.getBackend().getFiles() != null
+                && !request.getBackend().getFiles().isEmpty()) {
             processRoleSubmission(
                     roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context
             );
