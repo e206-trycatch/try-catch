@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 
 import { codeSubmission } from '../../api/codeSubmission';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 // import { fetchSubmissionResult } from '../../api/submissionApi';
 import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -104,6 +105,7 @@ const ResultLoadingPage = () => {
   // 로딩 중
   return (
     <div className="flex flex-col justify-center items-center h-screen gap-4">
+      <LoadingSpinner />
       <p className="text-white text-xl">결과를 불러오는 중...</p>
     </div>
   );
