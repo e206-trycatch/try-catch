@@ -1,6 +1,7 @@
 // 프로필 조회 섹션 (1차: 조회만, 2차: 수정 기능 추가 예정)
 
 import type { Profile } from './types/user';
+import defaultProfile from '../../assets/images/icons/default_profile.png';
 
 interface ProfileSectionProps {
   profile: Profile | null;
@@ -19,8 +20,15 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
       <div className="flex gap-12">
         {/* 프로필 이미지 영역 */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-40 h-48 bg-[#2a2a3d] rounded flex items-center justify-center text-gray-500">
-            프로필사진
+          <div className="w-40 h-48 bg-[#2a2a3d] rounded overflow-hidden">
+            <img
+              src={profile.profileUrl || defaultProfile}
+              alt="프로필 이미지"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = defaultProfile;
+              }}
+            />
           </div>
           <button className="px-6 py-1 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
             수정

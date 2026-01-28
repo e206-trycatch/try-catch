@@ -59,7 +59,11 @@ const Header = () => {
         >
           <SoundToggleButton />
           {isLogin ? (
-            <LogInMenu userName={user?.nickname} onLogout={handleLogout} />
+            <LogInMenu
+              userName={user?.nickname}
+              profileUrl={user?.profileUrl}
+              onLogout={handleLogout}
+            />
           ) : (
             <LogOutMenu />
           )}

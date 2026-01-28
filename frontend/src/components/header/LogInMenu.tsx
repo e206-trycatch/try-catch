@@ -1,19 +1,31 @@
 import { Link } from 'react-router-dom';
 
-import userIcon from '../../assets/images/icons/user_icon.png';
+import defaultProfile from '../../assets/images/icons/default_profile.png';
 
 interface LoggedInMenuProps {
   userName?: string;
+  profileUrl?: string | null;
   onLogout: () => void;
 }
 
-const LoggedInMenu = ({ userName, onLogout }: LoggedInMenuProps) => (
+const LoggedInMenu = ({
+  userName,
+  profileUrl,
+  onLogout,
+}: LoggedInMenuProps) => (
   <>
     <Link
       to="/mypage"
       className="flex items-center gap-2 hover:opacity-80 transition-opacity"
     >
-      <img src={userIcon} alt="User" className="w-6 h-6" />
+      <img
+        src={profileUrl || defaultProfile}
+        alt="User"
+        className="w-6 h-6 rounded-full object-cover"
+        onError={(e) => {
+          e.currentTarget.src = defaultProfile;
+        }}
+      />
       <span className="font-medium">{userName} 님</span>
     </Link>
     <button
