@@ -92,14 +92,23 @@ export default function GamePage() {
     }
     try {
       console.log('Submitting:', { setRoomId, requestBody });
-      const result = await codeSubmission(setRoomId, requestBody, accessToken);
-      console.log('제출 성공', result);
-      useSubmissionStore.getState().setResult(result);
-      const roomState = result.result?.roomState;
-      if (roomState) {
+      const res = await codeSubmission(setRoomId, requestBody, accessToken);
+      console.log('제출 성공', res);
+      const { result } = res.result;
+      console.log('result', result);
+      if (result.roomState) {
         useGameStore
           .getState()
-          .setGameState(roomState.remainingLife, roomState.remainingHintCount);
+          .setGameState(
+            result.roomState.remainingLife,
+            result.roomState.remainingHintCount,
+          );
+      }
+
+      if (result.status === 'SUCCESS') {
+        useSubmissionStore.getState().setSuccessResult(result);
+      } else {
+        useSubmissionStore.getState().setFailResult(result);
       }
       navigate(`/result/loading`);
     } catch (e) {
