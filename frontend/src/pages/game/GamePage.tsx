@@ -32,17 +32,25 @@ export default function GamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
+  const [frontId, setFrontId] = useState<number | null>(null);
+  const [backId, setBackId] = useState<number | null>(null);
 
   // 초기 게임 상태 설정
-  const { draft } = useRoomStore.getState();
   const { accessToken } = useStore();
-  useGameStore.getState().setGameState(draft.life, draft.hints);
+  useEffect(() => {
+    const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
+    if (draft) {
+      useGameStore.getState().setGameState(draft.life, draft.hints); // 초기 목숨과 힌트 수 설정
+      setFrontId(draft.frontendId);
+      setBackId(draft.backendId);
+    }
+  }, [roomId]);
 
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
     const setRoomId = Number(roomId);
-    const frontFrameworkId = draft.frontendId;
-    const backFrameworkId = draft.backendId;
+    const frontFrameworkId = frontId;
+    const backFrameworkId = backId;
 
     const requestBody: SubmissionRequest = {
       frontend: {
@@ -86,7 +94,11 @@ export default function GamePage() {
         setLoading(true);
         setError(null);
 
-        // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
+        if (!roomId || !questId) {
+          setError('필수 정보가 없습니다.');
+          return;
+        }
+
         const data = await getQuest(questId, roomId);
         setQuestInfo(data);
       } catch {

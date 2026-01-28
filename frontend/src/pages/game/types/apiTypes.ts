@@ -10,8 +10,8 @@ export type RolePayload = {
 };
 
 export type SubmissionRequest = {
-  frontend: RolePayload;
-  backend: RolePayload;
+  frontend?: RolePayload;
+  backend?: RolePayload;
 };
 
 export type RoomState = {
