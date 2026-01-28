@@ -89,6 +89,7 @@ export default function GamePage() {
     console.log('requestBody', requestBody);
 
     useSubmissionStore.getState().setResult(requestBody);
+    useSubmissionStore.getState().setRoomId(roomId!);
     navigate('/result/loading');
   };
 
