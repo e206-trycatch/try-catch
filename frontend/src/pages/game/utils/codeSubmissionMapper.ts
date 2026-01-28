@@ -1,5 +1,5 @@
-import type { FilePayload } from '../pages/game/types/apiTypes';
-import type { FileNode } from '../pages/game/types/ideTypes';
+import type { FilePayload } from '../types/apiTypes';
+import type { FileNode } from '../types/ideTypes';
 
 type Props = {
   node: FileNode;

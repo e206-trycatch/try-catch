@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission } from '../../api/codeSubmission';
-import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
 import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
@@ -23,6 +22,7 @@ import useTerminal from './hooks/useTerminal';
 import type { SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
+import { buildFilesRequestData } from './utils/codeSubmissionMapper';
 
 type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
