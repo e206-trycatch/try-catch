@@ -2,16 +2,10 @@ package io.ssafy.trycatch.domain.submission.service;
 
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
-import io.ssafy.trycatch.domain.room.entity.ProblemFile;
-import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
-import io.ssafy.trycatch.domain.room.entity.Quest;
-import io.ssafy.trycatch.domain.room.entity.Room;
+import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.FileType;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
-import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
-import io.ssafy.trycatch.domain.room.repository.ProblemFrameworkRepository;
-import io.ssafy.trycatch.domain.room.repository.QuestRepository;
-import io.ssafy.trycatch.domain.room.repository.RoomRepository;
+import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
 import io.ssafy.trycatch.domain.submission.dto.response.ScoreResult;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
@@ -31,8 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_NOT_FOUND;
-import static io.ssafy.trycatch.global.exception.ErrorCode.SUBMISSION_NOT_FOUND;
+import static io.ssafy.trycatch.global.exception.ErrorCode.*;
 
 @Slf4j
 @Service
@@ -47,6 +40,7 @@ public class SubmissionService {
     private final ProblemFrameworkRepository problemFrameworkRepository;
     private final QuestRepository questRepository;
     private final ProblemFileRepository problemFileRepository;
+    private final FrameworkRepository frameworkRepository;
 
     private static final String FRONTEND_RUBRIC = """
             - 요구사항(문제 설명) 충족 여부
@@ -254,19 +248,162 @@ public class SubmissionService {
 
     // GPT 채점 (트랜잭션 밖)
     private List<ScoreResult> scoreSubmissions(SubmissionContext context, Room room) {
-        List<ScoreResult> results = new ArrayList<>();
+        List<SubmissionContext.SubmissionData> dataList = context.getSubmissionDataList();
 
-        for (SubmissionContext.SubmissionData data : context.getSubmissionDataList()) {
-            Long problemFrameworkId = data.getFrameworkId();
-            String problemDoc = getProblemDoc(problemFrameworkId);
-            String submittedSource = combineSource(data.getFiles());
-            String rubric = data.getRoleName().equals("FRONTEND") ? FRONTEND_RUBRIC : BACKEND_RUBRIC;
+        // Frontend와 Backend 데이터 분리
+        SubmissionContext.SubmissionData frontendData = dataList.stream()
+                .filter(d -> d.getRoleName().equals("FRONTEND"))
+                .findFirst()
+                .orElse(null);
 
-            ScoreResult score = gptScoringService.scoreSubmission(problemDoc, submittedSource, rubric, room);
-            results.add(score);
+        SubmissionContext.SubmissionData backendData = dataList.stream()
+                .filter(d -> d.getRoleName().equals("BACKEND"))
+                .findFirst()
+                .orElse(null);
+
+        // Fullstack인 경우 (둘 다 있음)
+        if (frontendData != null && backendData != null) {
+            return scoreFullstackSubmission(frontendData, backendData, room);
         }
 
-        return results;
+        // Frontend만 있는 경우
+        if (frontendData != null) {
+            ScoreResult frontendScore = scoreSingleRole(frontendData, room);
+            return List.of(frontendScore);
+        }
+
+        // Backend만 있는 경우
+        if (backendData != null) {
+            ScoreResult backendScore = scoreSingleRole(backendData, room);
+            return List.of(backendScore);
+        }
+
+        // 둘 다 없는 경우 (에러)
+        return List.of(ScoreResult.builder()
+                .success(false)
+                .score(0)
+                .errorLog("제출된 코드가 없습니다.")
+                .executionTime(0L)
+                .build());
+    }
+
+    /**
+     * 단일 역할(Frontend 또는 Backend) 채점
+     */
+    private ScoreResult scoreSingleRole(SubmissionContext.SubmissionData data, Room room) {
+        Long problemFrameworkId = data.getFrameworkId();
+        log.info("problemFrameworkId: {}", problemFrameworkId);
+        ProblemFramework problemFramework = problemFrameworkRepository
+                .findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_FRAMEWORK_NOT_FOUND));
+
+        String expectedFramework;
+        String expectedLanguage;
+
+        if (data.getRoleName().equals("FRONTEND")) {
+            Long frontendId = problemFramework.getFrontendId();
+            log.info("problemFrameworkId: {}, framework: {}", problemFrameworkId, frontendId);
+            if (frontendId == null) {
+                throw new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND);
+            }
+
+            Framework framework = frameworkRepository.findById(frontendId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND));
+            expectedFramework = framework.getName();
+            expectedLanguage = framework.getLanguage();
+        } else {
+            Long backendId = problemFramework.getBackendId();
+            log.info("problemFrameworkId: {}, framework: {}", problemFrameworkId, backendId);
+            if (backendId == null) {
+                throw new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND);
+            }
+
+            Framework framework = frameworkRepository.findById(backendId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND));
+            expectedFramework = framework.getName();
+            expectedLanguage = framework.getLanguage();
+        }
+
+        String problemDoc = getProblemDoc(problemFrameworkId);
+        String submittedSource = combineSource(data.getFiles());
+        String rubric = data.getRoleName().equals("FRONTEND") ? FRONTEND_RUBRIC : BACKEND_RUBRIC;
+
+        return gptScoringService.scoreQuality(
+                problemDoc,
+                submittedSource,
+                rubric,
+                data.getRoleName(),
+                expectedFramework,
+                expectedLanguage,
+                room
+        );
+    }
+
+    /**
+     * Fullstack 제출 채점 (Frontend + Backend)
+     */
+    private List<ScoreResult> scoreFullstackSubmission(
+            SubmissionContext.SubmissionData frontendData,
+            SubmissionContext.SubmissionData backendData,
+            Room room) {
+
+        // 1단계: 각자 품질 검증
+        ScoreResult frontendQuality = scoreSingleRole(frontendData, room);
+        ScoreResult backendQuality = scoreSingleRole(backendData, room);
+
+        // 둘 중 하나라도 실패하면 즉시 반환
+        if (!frontendQuality.getSuccess()) {
+            return List.of(
+                    frontendQuality,
+                    ScoreResult.builder()
+                            .success(false)
+                            .score(0)
+                            .errorLog("Frontend 검증 실패로 Backend 채점이 진행되지 않았습니다.")
+                            .executionTime(0L)
+                            .build()
+            );
+        }
+
+        if (!backendQuality.getSuccess()) {
+            return List.of(
+                    frontendQuality,
+                    backendQuality
+            );
+        }
+
+        // 2단계: API 계약 검증 (둘 다 성공한 경우에만)
+        Long problemFrameworkId = frontendData.getFrameworkId();
+        String problemDoc = getProblemDoc(problemFrameworkId);
+        String frontendCode = combineSource(frontendData.getFiles());
+        String backendCode = combineSource(backendData.getFiles());
+
+        ScoreResult apiContract = gptScoringService.verifyApiContract(
+                problemDoc,
+                frontendCode,
+                backendCode,
+                room
+        );
+
+        // API 계약 검증 실패 시
+        if (!apiContract.getSuccess()) {
+            return List.of(
+                    ScoreResult.builder()
+                            .success(false)
+                            .score(frontendQuality.getScore())
+                            .errorLog("API 계약 검증 실패: " + apiContract.getErrorLog())
+                            .executionTime(apiContract.getExecutionTime())
+                            .build(),
+                    ScoreResult.builder()
+                            .success(false)
+                            .score(backendQuality.getScore())
+                            .errorLog("API 계약 검증 실패: " + apiContract.getErrorLog())
+                            .executionTime(apiContract.getExecutionTime())
+                            .build()
+            );
+        }
+
+        // 모두 성공: 기존 점수 유지
+        return List.of(frontendQuality, backendQuality);
     }
 
     @Transactional
@@ -548,7 +685,7 @@ public class SubmissionService {
 
         // 권한 체크: 본인의 제출인지, 같은 방인지 확인
         validateSubmissionAccess(submission, userId, roomId);
-        
+
         // 3. ProblemFramework 조회
         Long problemFrameworkId = submission.getProblemFrameworkId();
         ProblemFramework problemFramework = problemFrameworkRepository
@@ -561,7 +698,25 @@ public class SubmissionService {
                         roomId, userId, submission.getSubmittedAt()
                 );
 
-        // 5. 제출 파일들 조회 (SOURCE, CONFIG 등)
+        // 5. Frontend/Backend 에러 로그 분리
+        String frontendErrorLog = null;
+        String backendErrorLog = null;
+
+        for (Submission sub : allSubmissions) {
+            List<SubmissionFile> files = submissionFileRepository
+                    .findBySubmissionIdAndIsDeleted(sub.getId(), TrueOrFalse.F);
+
+            boolean isFrontend = files.stream()
+                    .anyMatch(f -> f.getCodeRole() == SubmissionFile.CodeRole.FRONTEND);
+
+            if (isFrontend) {
+                frontendErrorLog = sub.getErrorLog();
+            } else {
+                backendErrorLog = sub.getErrorLog();
+            }
+        }
+
+        // 6. 제출 파일들 조회 (SOURCE, CONFIG 등)
         List<ProblemFileRespDto> submittedFiles = new ArrayList<>();
         for (Submission sub : allSubmissions) {
             List<SubmissionFile> files = submissionFileRepository
@@ -581,7 +736,7 @@ public class SubmissionService {
                     ));
         }
 
-        // 6. DOC 파일 조회 (ProblemFile에서)
+        // 7. DOC 파일 조회 (ProblemFile에서)
         List<ProblemFile> docFiles = problemFileRepository
                 .findByProblemFrameworkIdAndFileTypeAndIsDeleted(
                         problemFrameworkId, FileType.DOC, TrueOrFalse.F
@@ -598,16 +753,16 @@ public class SubmissionService {
                         .build())
                 .toList();
 
-        // 7. 모든 파일 합치기 (제출 파일 + DOC 파일)
+        // 8. 모든 파일 합치기 (제출 파일 + DOC 파일)
         List<ProblemFileRespDto> allFiles = new ArrayList<>();
         allFiles.addAll(submittedFiles);
         allFiles.addAll(docFileDtos);
 
-        // 8. 응답 생성
+        // 9. 응답 생성
         return ProblemFilesRespDto.builder()
                 .problemFrameworkId(problemFrameworkId)
-                .frontendErrorLog(problemFramework.getFrontendErrorLog())
-                .backendErrorLog(problemFramework.getBackendErrorLog())
+                .frontendErrorLog(frontendErrorLog)
+                .backendErrorLog(backendErrorLog)
                 .files(allFiles)
                 .build();
     }

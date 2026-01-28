@@ -35,8 +35,9 @@ public enum ErrorCode {
     SUBMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "제출 내역이 없습니다."),
     UNAUTHORIZED_SUBMISSION_ACCESS(HttpStatus.FORBIDDEN, "해당 제출에 접근할 권한이 없습니다"),
     DUPLICATE_SUBMISSION(HttpStatus.TOO_MANY_REQUESTS, "제출 요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요"),
+    PROBLEM_FRAMEWORK_NOT_FOUND(HttpStatus.NOT_FOUND, "문제 프레임워크를 찾을 수 없습니다"),
+    FRAMEWORK_NOT_FOUND(HttpStatus.NOT_FOUND, "프레임워크를 찾을 수 없습니다"),
     ;
-
     private final HttpStatus status;
     private final String message;
 
