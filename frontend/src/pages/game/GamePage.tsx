@@ -57,6 +57,12 @@ export default function GamePage() {
     const frontFrameworkId = frontId;
     const backFrameworkId = backId;
 
+    console.log('=== 제출 전 데이터 ===');
+    console.log('frontId:', frontFrameworkId);
+    console.log('backId:', backFrameworkId);
+    console.log('fileCodes:', ide.fileCodes);
+    console.log('rootNode:', rootNode);
+
     const requestBody: SubmissionRequest = {};
 
     if (frontFrameworkId !== null) {
@@ -79,6 +85,7 @@ export default function GamePage() {
         }),
       };
     }
+    console.log('최종 requestBody:', JSON.stringify(requestBody, null, 2));
     try {
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
       console.log('제출 성공');
@@ -119,7 +126,7 @@ export default function GamePage() {
     };
 
     loadQuest();
-  }, [roomId, questId]);
+  }, [roomId, questId, accessToken]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
