@@ -1,5 +1,6 @@
 // 제출 결과 Store
 import { create } from 'zustand';
+
 import type { SubmissionResult } from '../pages/result/types/resultTypes';
 
 interface ResultStore {

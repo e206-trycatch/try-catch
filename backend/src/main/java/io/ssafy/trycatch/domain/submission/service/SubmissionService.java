@@ -175,17 +175,19 @@ public class SubmissionService {
 
         SubmissionContext context = new SubmissionContext(room);
 
+        Long problemFrameworkId = request.getProblemFrameworkId();
+
         // Frontend 제출 처리
         if (request.getFrontend() != null) {
             processRoleSubmission(
-                    roomId, userId, request.getFrontend(), "FRONTEND", context
+                    roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context
             );
         }
 
         // Backend 제출 처리
         if (request.getBackend() != null) {
             processRoleSubmission(
-                    roomId, userId, request.getBackend(), "BACKEND", context
+                    roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context
             );
         }
 
@@ -197,13 +199,14 @@ public class SubmissionService {
             Long userId,
             SubmissionReqDto.SubmissionItem item,
             String roleName,
+            Long problemFrameworkId,
             SubmissionContext context
     ) {
         // Submission 생성 및 저장
         Submission submission = Submission.builder()
                 .userId(userId)
                 .roomId(roomId)
-                .problemFrameworkId(item.getProblemFrameworkId())
+                .problemFrameworkId(problemFrameworkId)
                 .status(Submission.Status.FAIL)
                 .build();
         submission = submissionRepository.save(submission);
@@ -212,7 +215,7 @@ public class SubmissionService {
         List<SubmissionFile> files = saveSubmissionFiles(submission.getId(), item.getFiles());
 
         // Context에 정보 저장
-        context.addSubmission(submission, files, roleName, item.getProblemFrameworkId());
+        context.addSubmission(submission, files, roleName, problemFrameworkId);
     }
 
     private List<SubmissionFile> saveSubmissionFiles(Long submissionId, List<SubmissionReqDto.FileItem> files) {
@@ -238,11 +241,12 @@ public class SubmissionService {
             return SubmissionFile.CodeRole.FRONTEND;
         }
 
-        if (filePath.contains("/frontend/")
+        if (filePath.contains("/frontend")
                 || filePath.contains("/components/")
-                || (filePath.contains("/src/") && filePath.endsWith(".jsx"))) {
+                || filePath.endsWith(".jsx") || filePath.endsWith(".vue")) {
             return SubmissionFile.CodeRole.FRONTEND;
-        } else if (filePath.contains("/backend/") || filePath.contains("/java/")) {
+        } else if (filePath.contains("/backend")
+                || filePath.endsWith(".java") || filePath.endsWith(".py")) {
             return SubmissionFile.CodeRole.BACKEND;
         }
         return SubmissionFile.CodeRole.FRONTEND;
@@ -253,7 +257,8 @@ public class SubmissionService {
         List<ScoreResult> results = new ArrayList<>();
 
         for (SubmissionContext.SubmissionData data : context.getSubmissionDataList()) {
-            String problemDoc = combineDoc(data.getFiles());
+            Long problemFrameworkId = data.getFrameworkId();
+            String problemDoc = getProblemDoc(problemFrameworkId);
             String submittedSource = combineSource(data.getFiles());
             String rubric = data.getRoleName().equals("FRONTEND") ? FRONTEND_RUBRIC : BACKEND_RUBRIC;
 
@@ -406,6 +411,20 @@ public class SubmissionService {
                 .hasNextQuest(true)
                 .nextQuestId(nextQuest.getId())
                 .build();
+    }
+
+    /**
+     * ProblemFile에서 DOC 파일 가져오기
+     */
+    private String getProblemDoc(Long problemFrameworkId) {
+        List<ProblemFile> docFiles = problemFileRepository
+                .findByProblemFrameworkIdAndFileTypeAndIsDeleted(
+                        problemFrameworkId, FileType.DOC, TrueOrFalse.F
+                );
+
+        return docFiles.stream()
+                .map(file -> String.format("## DOC: %s\n%s\n\n", safe(file.getFilePath()), safe(file.getCode())))
+                .collect(Collectors.joining());
     }
 
     // DOC만 합치기 (문제 설명)

@@ -5,13 +5,13 @@ export type FilePayload = {
 };
 
 export type RolePayload = {
-  problemFrameworkId: number | null;
   files: FilePayload[];
 };
 
 export type SubmissionRequest = {
-  frontend: RolePayload;
-  backend: RolePayload;
+  problemFrameworkId: number | null;
+  frontend?: RolePayload;
+  backend?: RolePayload;
 };
 
 export type RoomState = {
@@ -29,20 +29,30 @@ export type Next = {
   nextQuestId: number | null;
 };
 
+type BaseResponse = {
+  submissionId: number;
+  roomId: number;
+  questId: number;
+  questOrder: number;
+  executionTimeMs: number;
+  score: number;
+  roomState: RoomState;
+};
+
+export type SuccessResponse = BaseResponse & {
+  status: 'SUCCESS';
+  roles: Roles[];
+  next: Next;
+};
+
+export type FailResponse = BaseResponse & {
+  status: 'FAIL';
+  errorLog: string;
+};
+
 export type SubmissionResponse = {
   message: string;
-  result: {
-    submissionId: number;
-    roomId: number;
-    questId: number;
-    questOrder: number;
-    status: 'SUCCESS' | 'FAIL' | null;
-    score: number;
-    executionTimeMs: number;
-    roomState: RoomState;
-    roles: Roles[];
-    next: Next;
-  };
+  result: SuccessResponse | FailResponse;
 };
 
 // SubmissionResult는 SubmissionResponse의 result에서 roomState와 next를 제외한 타입에

@@ -9,13 +9,13 @@ import java.util.List;
 @NoArgsConstructor
 public class SubmissionReqDto {
 
+    private Long problemFrameworkId;
     private SubmissionItem frontend;
     private SubmissionItem backend;
 
     @Getter
     @NoArgsConstructor
     public static class SubmissionItem {
-        private Long problemFrameworkId;
         private List<FileItem> files;
     }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { FileNode } from '../types/ideTypes';
 
@@ -33,9 +33,11 @@ export function useIde(root: FileNode) {
   );
 
   // {파일 id : 코드} 형식으로 저장하기
-  const [fileCodes, setFileCodes] = useState<Record<string, string>>(() => {
-    return collectFileCodes(root);
-  });
+  const [fileCodes, setFileCodes] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setFileCodes(collectFileCodes(root));
+  }, [root]);
 
   // 현재 활성화 된 파일이고, 사용자가 타이핑 중인 코드
   const [currentCode, setCurrentCode] = useState('');

@@ -1,10 +1,9 @@
 import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import { codeSubmission } from '../../api/codeSubmission';
-import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
 import { getQuest } from '../../api/questFile';
+import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
@@ -22,61 +21,75 @@ import useTerminal from './hooks/useTerminal';
 import type { SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
+import { buildFilesRequestData } from './utils/codeSubmissionMapper';
 
 type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
 export default function GamePage() {
   const navigate = useNavigate();
+  const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
+  const [problemFrameworkId, setProblemFrameworkId] = useState<number | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
-
-  // 현재의 값 한 번 가져오기
-  const { draft } = useRoomStore.getState();
   const { accessToken } = useStore();
-  useGameStore.getState().setGameState(draft.life, draft.hints);
-  // 상태가 변경될 때 마다 자동으로 컴포넌트가 업데이트 된다.
-  const currentRoomId = useRoomStore((state) => state.currentRoomId);
+  // 게임 시작 알리기
+  useEffect(() => {
+    if (!roomId || !accessToken) return;
+
+    startGame(Number(roomId), accessToken);
+  }, [roomId, accessToken]);
+  // 초기 게임 상태 설정
+  useEffect(() => {
+    const { draft } = useRoomStore.getState(); // 방 생성 시점의 초기 데이터
+    if (!draft) {
+      setError('유효하지 않은 접근입니다. 처음부터 시작해주세요.');
+      return;
+    }
+
+    if (draft) {
+      useGameStore.getState().setGameState(draft.life, draft.hints); // 초기 목숨과 힌트 수 설정
+    }
+  }, [roomId]);
+
+  // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
-    const setRoomId = currentRoomId;
-    const frontFrameworkId = draft.frontendId;
-    const backFrameworkId = draft.backendId;
+    // 현재 활성 파일과 openTabs의 코드를 모두 모으기
+    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+
+    if (ide.activeFileId) {
+      allFileCodes[ide.activeFileId] = ide.currentCode;
+    }
+
+    ide.openTabs.forEach((f) => {
+      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
+    });
 
     const requestBody: SubmissionRequest = {
+      problemFrameworkId: problemFrameworkId,
       frontend: {
-        problemFrameworkId: frontFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
-          fileCodes: ide.fileCodes,
+          fileCodes: allFileCodes,
           role: 'FRONTEND',
         }),
       },
       backend: {
-        problemFrameworkId: backFrameworkId,
         files: buildFilesRequestData({
           node: rootNode,
-          fileCodes: ide.fileCodes,
+          fileCodes: allFileCodes,
           role: 'BACKEND',
         }),
       },
     };
-    try {
-      const result = await codeSubmission(setRoomId, requestBody, accessToken);
-      console.log('제출 성공');
-      console.log(result);
-      useSubmissionStore.getState().setResult(result.data);
-      navigate(`/result/loading`);
-      useGameStore
-        .getState()
-        .setGameState(
-          result.data.roomState.remainingLife,
-          result.data.roomState.remainingHintCount,
-        );
-    } catch (e) {
-      console.error('제출 실패', e);
-      alert('코드 제출에 실패했습니다. 잠시 후 다시 시도해주세요.');
-    }
+
+    console.log('requestBody', requestBody);
+
+    useSubmissionStore.getState().setResult(requestBody);
+    navigate('/result/loading');
   };
 
   useEffect(() => {
@@ -85,10 +98,16 @@ export default function GamePage() {
         setLoading(true);
         setError(null);
 
-        // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
-        const data = await getQuest(1, currentRoomId);
+        if (!roomId || !questId) {
+          setError('필수 정보가 없습니다.');
+          return;
+        }
+
+        const data = await getQuest(questId, roomId, accessToken);
+        setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
-      } catch {
+      } catch (e) {
+        console.error('문제 정보 로드 실패:', e);
         setError('문제 정보를 불러오지 못했습니다.');
       } finally {
         setLoading(false);
@@ -96,7 +115,7 @@ export default function GamePage() {
     };
 
     loadQuest();
-  }, [currentRoomId]);
+  }, [roomId, questId, accessToken]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);

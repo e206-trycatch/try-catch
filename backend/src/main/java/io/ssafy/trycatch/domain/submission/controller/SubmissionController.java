@@ -17,7 +17,7 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
 
-    @PostMapping("/api/v1/rooms/{roomId}/submission")
+    @PostMapping("/api/v1/rooms/{roomId}/submissions")
     public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
             @PathVariable Long roomId,
             @RequestBody SubmissionReqDto request) {
@@ -42,7 +42,7 @@ public class SubmissionController {
         );
     }
 
-    @GetMapping("/api/v1/rooms/{roomId}/submission")
+    @GetMapping("/api/v1/rooms/{roomId}/submissions")
     public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
             @PathVariable Long roomId) {
         Long userId = getCurrentUserId();
