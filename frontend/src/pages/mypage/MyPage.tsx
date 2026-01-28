@@ -54,7 +54,7 @@ const MyPage = () => {
         }
 
         setProfile(profileRes.result);
-        setRecords(submissionsRes.result.content);
+        setRecords(submissionsRes.result.submissions);
         setIsLoading(false);
       } catch (err) {
         // axios 에러 처리
