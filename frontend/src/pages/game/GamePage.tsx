@@ -57,12 +57,6 @@ export default function GamePage() {
     const frontFrameworkId = frontId;
     const backFrameworkId = backId;
 
-    console.log('=== 제출 전 데이터 ===');
-    console.log('frontId:', frontFrameworkId);
-    console.log('backId:', backFrameworkId);
-    console.log('fileCodes:', ide.fileCodes);
-    console.log('rootNode:', rootNode);
-
     const requestBody: SubmissionRequest = {};
 
     if (frontFrameworkId !== null) {
@@ -85,18 +79,17 @@ export default function GamePage() {
         }),
       };
     }
-    console.log('최종 requestBody:', JSON.stringify(requestBody, null, 2));
     try {
+      console.log('Submitting:', { setRoomId, requestBody });
       const result = await codeSubmission(setRoomId, requestBody, accessToken);
-      console.log('제출 성공');
-      console.log(result);
-      useSubmissionStore.getState().setResult(result.data);
-      useGameStore
-        .getState()
-        .setGameState(
-          result.data.roomState.remainingLife,
-          result.data.roomState.remainingHintCount,
-        );
+      console.log('제출 성공', result);
+      useSubmissionStore.getState().setResult(result);
+      const roomState = result.result?.roomState;
+      if (roomState) {
+        useGameStore
+          .getState()
+          .setGameState(roomState.remainingLife, roomState.remainingHintCount);
+      }
       navigate(`/result/loading`);
     } catch (e) {
       console.error('제출 실패', e);
