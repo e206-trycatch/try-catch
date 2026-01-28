@@ -53,10 +53,10 @@ const QuestDescriptionPage: React.FC = () => {
   }, [themeId, currentRoomId, navigate]);
 
   const handleStartGame = () => {
-    if (currentRoomId) {
-      navigate(`/game/${currentRoomId}`);
+    if (currentRoomId && firstQuest) {
+      navigate(`/game/${currentRoomId}/${firstQuest.questId}`);
     } else {
-      alert('방 ID를 찾을 수 없습니다.');
+      alert('방 ID 또는 퀘스트 정보를 찾을 수 없습니다.');
       navigate('/selection/theme');
     }
   };
@@ -91,7 +91,7 @@ const QuestDescriptionPage: React.FC = () => {
     <div className="w-screen h-screen flex items-center justify-center relative">
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questId={firstQuest.questOrder}
+          questId={firstQuest.questId}
           themeName={firstQuest.title}
           questDescription={firstQuest.description}
           onStart={handleStartGame}
