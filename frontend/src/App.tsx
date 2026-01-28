@@ -76,7 +76,7 @@ function App() {
           element={<SingleRoomSettingPage />}
         />
         {/* 게임 */}
-        <Route path="/game" element={<GamePage />} />
+        <Route path="/game/:roomId/:questId" element={<GamePage />} />
         {/* 결과 */}
         <Route path="/result/loading" element={<ResultLoadingPage />} />
         <Route path="/result" element={<ResultPage />} />

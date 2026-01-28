@@ -1,6 +1,6 @@
 import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission } from '../../api/codeSubmission';
 import { buildFilesRequestData } from '../../api/codeSubmissionMapper';
@@ -27,19 +27,20 @@ type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
 
 export default function GamePage() {
   const navigate = useNavigate();
+  const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
   const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
 
-  // 현재의 값 한 번 가져오기
+  // 초기 게임 상태 설정
   const { draft } = useRoomStore.getState();
   const { accessToken } = useStore();
   useGameStore.getState().setGameState(draft.life, draft.hints);
-  // 상태가 변경될 때 마다 자동으로 컴포넌트가 업데이트 된다.
-  const currentRoomId = useRoomStore((state) => state.currentRoomId);
+
+  // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
-    const setRoomId = currentRoomId;
+    const setRoomId = Number(roomId);
     const frontFrameworkId = draft.frontendId;
     const backFrameworkId = draft.backendId;
 
@@ -86,7 +87,7 @@ export default function GamePage() {
         setError(null);
 
         // TODO: 나중에 선택한 문제의 questId를 store에서 가져오도록 수정 필요
-        const data = await getQuest(1, currentRoomId);
+        const data = await getQuest(questId, roomId);
         setQuestInfo(data);
       } catch {
         setError('문제 정보를 불러오지 못했습니다.');
@@ -96,7 +97,7 @@ export default function GamePage() {
     };
 
     loadQuest();
-  }, [currentRoomId]);
+  }, [roomId, questId]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
