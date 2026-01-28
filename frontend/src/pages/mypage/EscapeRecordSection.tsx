@@ -27,7 +27,7 @@ const EscapeRecordSection = ({ records }: EscapeRecordSectionProps) => {
   const [activeTab, setActiveTab] = useState<'SINGLE' | 'MULTI'>('SINGLE');
 
   // 현재 탭에 해당하는 기록만 필터링
-  const filteredRecords = records.filter((r) => r.mode === activeTab);
+  const filteredRecords = records.filter((r) => r.gameMode === activeTab);
 
   return (
     <div className="border border-purple-900/50 rounded-lg p-8 bg-[#12121f]">
@@ -89,7 +89,7 @@ const EscapeRecordSection = ({ records }: EscapeRecordSectionProps) => {
                 {record.themeName}
               </div>
               <div className="bg-[#2a2a3d] rounded-lg py-3 px-4">
-                {record.framework}
+                {record.frameworkName}
               </div>
               <div className="bg-[#2a2a3d] rounded-lg py-3 px-4">
                 {formatTime(record.executionTime)}
