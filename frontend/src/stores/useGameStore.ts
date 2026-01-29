@@ -5,7 +5,7 @@ interface GameState {
   currentHints: number;
   currentRoomId: number | null;
   problemFrameworkId: number | null;
-  submissionId: number | null;
+  submissionId: string | null;
 
   setGameState: (life: number, hints: number) => void;
   initializeForRoom: (roomId: number, life: number, hints: number) => void;
@@ -40,6 +40,6 @@ export const useGameStore = create<GameState>((set) => ({
 
   setSubmissionId: (id) =>
     set({
-      submissionId: id,
+      submissionId: String(id),
     }),
 }));
