@@ -397,7 +397,7 @@ public class SingleRoomService {
 
     // 퀘스트 시작 시 목숨 초기화
     @Transactional
-    public void completeQuest(Long roomId, Long questId) {
+    public void completeQuest(Long roomId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
                 .orElseThrow(() -> new IllegalArgumentException("해당 방을 찾을 수 없습니다."));
 
@@ -405,7 +405,5 @@ public class SingleRoomService {
         room.resetLife();
         room.resetHint();
 
-        log.info("퀘스트 완료 - roomId: {}, questId: {}, life 초기화: {}",
-                roomId, questId, room.getLife());
     }
 }

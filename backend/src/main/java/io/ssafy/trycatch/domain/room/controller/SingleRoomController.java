@@ -103,11 +103,10 @@ public class SingleRoomController {
         );
     }
 
-    @PostMapping("/{roomId}/quest/{questId}/complete")
+    @PostMapping("/{roomId}/quest/complete")
     public ResponseEntity<ApiRespDto<String>> completeGame(
-            @PathVariable Long roomId,
-            @PathVariable Long questId) {
-        singleRoomService.completeQuest(roomId, questId);
+            @PathVariable Long roomId) {
+        singleRoomService.completeQuest(roomId);
         return ResponseEntity.ok(
                 ApiRespDto.success("퀘스트 완료", null)
         );
