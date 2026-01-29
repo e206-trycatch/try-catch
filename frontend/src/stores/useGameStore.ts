@@ -31,7 +31,6 @@ export const useGameStore = create<GameState>((set) => ({
       currentRoomId: roomId,
       currentLife: life,
       currentHints: hints,
-      submissionId: null,
     }),
 
   setProblemFrameworkId: (id) =>

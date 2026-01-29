@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { MOCK_THEMES, type Theme } from '../../mocks/mockData';
+import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 
 const ThemeSelectionPage = () => {
@@ -16,6 +17,11 @@ const ThemeSelectionPage = () => {
   const [activeId, setActiveId] = useState<number>(
     MOCK_THEMES[0]?.themeId || 1,
   );
+
+  // submissionId 초기화
+  useEffect(() => {
+    useGameStore.getState().submissionId = null;
+  });
 
   // 페이지 진입 시 예외 처리 (모드 미선택 시 되돌리기)
   useEffect(() => {
