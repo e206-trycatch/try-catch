@@ -48,7 +48,6 @@ export default function GamePage() {
 
   // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
   useEffect(() => {
-
     if (!roomId || !accessToken) return;
 
     const initSetting = async () => {
