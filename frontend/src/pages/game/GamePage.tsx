@@ -181,7 +181,7 @@ export default function GamePage() {
               enable={{ right: true }} // 드래그 설정 - 오른쪽만
               className="bg-stone-900 border-r border-gray-700"
             >
-              <div className="h-full overflow-hidden p-5">
+              <div className="h-full overflow-y-auto overflow-x-hidden pt-5 pb-10 px-3 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
                 {activeMenu === 'explorer' && (
                   <Explorer
@@ -211,7 +211,7 @@ export default function GamePage() {
           </div>
           {/* 터미널 */}
           <Resizable
-            defaultSize={{ width: '100%', height: 220 }}
+            defaultSize={{ width: '100%', height: 250 }}
             enable={{ top: true }}
             className="shrink-0 border border-gray-700 overflow-hidden"
             minHeight={50}
