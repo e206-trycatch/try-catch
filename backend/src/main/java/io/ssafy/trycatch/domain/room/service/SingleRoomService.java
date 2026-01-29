@@ -231,6 +231,7 @@ public class SingleRoomService {
 
         // 힌트 개수 초기화
         room.resetHint();
+        room.startQuestGame();
         
         roomRepository.save(room);
         // 2. Room에서 frontendId, backendId 추출
