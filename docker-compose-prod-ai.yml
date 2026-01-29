@@ -15,11 +15,11 @@ services:
       - "9000"  # API는 Spring Boot 프록시로만
     networks:
       - network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
     restart: unless-stopped
 
   ai-server:
@@ -41,7 +41,7 @@ services:
       - network
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
