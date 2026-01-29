@@ -55,13 +55,13 @@ const ResultLoadingPage = () => {
 
     codeSubmission(roomId, codeResult, accessToken)
       .then((res) => {
-        if (ignore) return;
         console.log(res);
         setSubmissionResult(res.result);
         setGameState(
           res.result.roomState.remainingLife,
           res.result.roomState.remainingHintCount,
         );
+        setSubmissionId(res.result.submissionId);
         navigate('/result', { replace: true });
       })
       .catch(() => {
