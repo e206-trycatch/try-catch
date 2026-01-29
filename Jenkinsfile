@@ -165,21 +165,26 @@ pipeline {
                 echo '========================================='
                 
                 sh '''
-                echo "⏳ Waiting for backend to be healthy..."
-                i=1
-                while [ $i -le 30 ]; do
-                    if curl -fsS http://localhost:8081/actuator/health >/dev/null; then
-                    echo "✅ Backend is healthy"
-                    exit 0
-                    fi
-                    echo "Attempt $i: Backend not ready yet..."
-                    i=$((i+1))
-                    sleep 2
-                done
-                echo "❌ Backend health check timeout"
-                # 실패 시 진짜 원인 바로 보이게 본문 출력(선택)
-                curl -v http://localhost:8081/actuator/health || true
-                exit 1
+                    echo "⏳ Waiting for Spring Boot to start..."
+                    i=1
+                    while [ $i -le 30 ]; do
+                        # 컨테이너 실행 확인
+                        if [ "$(docker inspect -f '{{.State.Running}}' trycatch-backend 2>/dev/null)" = "true" ]; then
+                            # Spring Boot 시작 확인
+                            if docker logs trycatch-backend 2>&1 | grep -q "Started TrycatchApplication"; then
+                                echo "✅ Spring Boot started successfully"
+                                docker exec trycatch-backend curl -fsS http://localhost:8081/actuator/health || true
+                                exit 0
+                            fi
+                        fi
+                        echo "Attempt $i: Waiting for application startup..."
+                        i=$((i+1))
+                        sleep 2
+                    done
+                    
+                    echo "❌ Health check timeout"
+                    docker logs --tail=50 trycatch-backend || true
+                    exit 1
                 '''
             }
         }
