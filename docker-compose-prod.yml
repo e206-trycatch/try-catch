@@ -67,6 +67,7 @@ services:
 
 networks:
   network:
+    name: trycatch-net
     driver: bridge
 
 volumes:
