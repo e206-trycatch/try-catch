@@ -1,6 +1,7 @@
 // 실패 결과 컴포넌트
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { useResultStore } from '../../../stores/useResultStore';
 import { formatTime } from '../../../utils/utils';
 import type { FailSubmissionResult } from '../types/resultTypes';
@@ -19,6 +20,7 @@ const FailResult = ({ result }: Props) => {
   const { roomId, questId, questOrder, executionTimeMs, roomState, errorLog } =
     result;
   const { remainingLife } = roomState;
+  console.log('result의 remaininLife:', remainingLife);
   const isGameOver = remainingLife === 0;
 
   const handleRetry = () => {
@@ -44,16 +46,16 @@ const FailResult = ({ result }: Props) => {
         </span>
       </div>
 
-      <p className="text-white">
-        총 소요시간 {formatTime(executionTimeMs)}
-      </p>
+      <p className="text-white">총 소요시간 {formatTime(executionTimeMs)}</p>
 
       {/* 남은 목숨 */}
       <div className="flex items-center gap-2">
         <span className="text-white">남은 목숨</span>
         <div className="flex gap-1">
           {Array.from({ length: remainingLife }).map((_, i) => (
-            <span key={i} className="text-red-500">♥</span>
+            <span key={i} className="text-red-500">
+              ♥
+            </span>
           ))}
         </div>
       </div>
@@ -67,9 +69,7 @@ const FailResult = ({ result }: Props) => {
           실패 원인 에러 확인 {showError ? '∧' : '∨'}
         </button>
         {showError && (
-          <div className="mt-2 p-4 bg-white text-black">
-            {errorLog}
-          </div>
+          <div className="mt-2 p-4 bg-white text-black">{errorLog}</div>
         )}
       </div>
 
