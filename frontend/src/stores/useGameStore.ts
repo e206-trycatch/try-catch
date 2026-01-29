@@ -5,10 +5,12 @@ interface GameState {
   currentHints: number;
   currentRoomId: number | null;
   problemFrameworkId: number | null;
+  submissionId: string | null;
 
   setGameState: (life: number, hints: number) => void;
   initializeForRoom: (roomId: number, life: number, hints: number) => void;
   setProblemFrameworkId: (id: number | null) => void;
+  setSubmissionId: (id: number | null) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -16,6 +18,7 @@ export const useGameStore = create<GameState>((set) => ({
   currentHints: 3,
   currentRoomId: null,
   problemFrameworkId: null,
+  submissionId: null,
 
   setGameState: (life, hints) =>
     set({
@@ -33,5 +36,10 @@ export const useGameStore = create<GameState>((set) => ({
   setProblemFrameworkId: (id) =>
     set({
       problemFrameworkId: id,
+    }),
+
+  setSubmissionId: (id) =>
+    set({
+      submissionId: id ? String(id) : null,
     }),
 }));

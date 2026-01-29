@@ -26,6 +26,11 @@ const SuccessResult = ({ result }: Props) => {
       if (draft) {
         useGameStore.getState().setGameState(draft.life, draft.hints);
       }
+
+      // 다음 문제로 넘어가면 submissionId null로 초기화 하기
+      useGameStore.getState().setSubmissionId(null);
+
+      // 다음 문제로 이동
       navigate(`/game/${roomId}/${next.nextQuestId}`);
     } else {
       navigate('/');

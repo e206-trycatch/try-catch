@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { getQuest } from '../../api/questFile';
+import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -36,13 +37,47 @@ export default function GamePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
   const { accessToken } = useStore();
+  const { submissionId } = useGameStore();
+
   // 게임 시작 알리기
   useEffect(() => {
     if (!roomId || !accessToken) return;
 
     startGame(Number(roomId), accessToken);
   }, [roomId, accessToken]);
-  // 초기 게임 상태 설정 (새 방 진입 시에만)
+
+  // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
+  useEffect(() => {
+    if (!roomId || !accessToken) return;
+
+    const initSetting = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        let data = null;
+
+        if (submissionId === null) {
+          data = await getQuest(questId, roomId, accessToken);
+        } else if (submissionId) {
+          data = await getRetryQuestFile(submissionId, roomId, accessToken);
+        } else {
+          throw new Error('submissionId가 올바르지 않습니다.');
+        }
+
+        setProblemFrameworkId(data.problemFrameworkId);
+        setQuestInfo(data);
+      } catch (e) {
+        console.error('문제 정보 로드 실패:', e);
+        setError('문제 정보를 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initSetting();
+  }, [questId, roomId, accessToken, submissionId]);
+
+  // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
     const { draft } = useRoomStore.getState();
     const { currentRoomId } = useGameStore.getState();
@@ -97,31 +132,6 @@ export default function GamePage() {
     useSubmissionStore.getState().setRoomId(roomId!);
     navigate('/result/loading');
   };
-
-  useEffect(() => {
-    const loadQuest = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        if (!roomId || !questId) {
-          setError('필수 정보가 없습니다.');
-          return;
-        }
-
-        const data = await getQuest(questId, roomId, accessToken);
-        setProblemFrameworkId(data.problemFrameworkId);
-        setQuestInfo(data);
-      } catch (e) {
-        console.error('문제 정보 로드 실패:', e);
-        setError('문제 정보를 불러오지 못했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadQuest();
-  }, [roomId, questId, accessToken]);
 
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
