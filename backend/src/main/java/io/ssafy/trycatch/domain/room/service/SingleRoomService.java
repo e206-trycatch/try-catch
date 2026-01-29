@@ -230,7 +230,8 @@ public class SingleRoomService {
 
         // 힌트 개수 초기화
         room.resetHint();
-
+        
+        roomRepository.save(room);
         // 2. Room에서 frontendId, backendId 추출
         Long frontendId = room.getFrontendId();
         Long backendId = room.getBackendId();
