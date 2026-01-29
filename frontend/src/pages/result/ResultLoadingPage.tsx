@@ -62,7 +62,12 @@ const ResultLoadingPage = () => {
           res.result.roomState.remainingLife,
           res.result.roomState.remainingHintCount,
         );
+        console.log('응답 submissionId', res.result.submissionId);
         setSubmissionId(res.result.submissionId);
+        console.log(
+          'useGameStore submissionId',
+          useGameStore.getState().submissionId,
+        );
         navigate('/result', { replace: true });
       })
       .catch(() => {
