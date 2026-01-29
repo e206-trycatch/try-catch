@@ -105,6 +105,10 @@ public class Room {
         this.startedAt = LocalDateTime.now();
     }
 
+    public void startQuestGame() {
+        this.startedAt = LocalDateTime.now();
+    }
+
     public void endGame() {
         this.status = RoomStatus.ENDED;
     }
