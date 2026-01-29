@@ -51,6 +51,7 @@ services:
 
 networks:
   network:
+    name: trycatch-net
     external: true  # 백엔드가 만든 네트워크 사용
 
 volumes:
