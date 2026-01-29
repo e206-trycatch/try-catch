@@ -219,6 +219,7 @@ public class SingleRoomService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public ProblemFilesRespDto getProblemFiles(Long roomId, Long questId) {
         // 1. Room 조회
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
@@ -230,7 +231,9 @@ public class SingleRoomService {
 
         // 힌트 개수 초기화
         room.resetHint();
-
+        room.startQuestGame();
+        
+        roomRepository.save(room);
         // 2. Room에서 frontendId, backendId 추출
         Long frontendId = room.getFrontendId();
         Long backendId = room.getBackendId();

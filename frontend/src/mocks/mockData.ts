@@ -1,3 +1,5 @@
+import projectAiMainImage from '../assets/images/project_ai/Project_ai_quest_main.png';
+
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
 
@@ -9,6 +11,7 @@ export interface Theme {
   level: number;
   themeImageUrl: string;
   quests: Quest[];
+  isAvailable: boolean;
 }
 
 export interface Quest {
@@ -72,7 +75,6 @@ export const MOCK_FRAMEWORKS: Record<CodeRole, FrameworkItem[]> = {
   ],
 };
 
-// ! -----------------------------------------------------
 // Id generator mock
 const makeStoryId = (questId: number, storyOrder: number) =>
   questId * 100 + storyOrder;
@@ -87,12 +89,11 @@ const eiaQuest3Id = 3;
 const THEME_PROJECT_EIA: Theme = {
   themeId: PROJECT_EIA_THEME_ID,
   name: '프로젝트 에이아',
-  description:
-    '불법 뇌 실험이 진행되는 하이테크 비밀 시설에서 탈출하라! 본인의 뇌에는 실험칩이 심어져 있다. 시설을 통제하는 메인 AI ‘에이아’가 원인 불명의 오류를 일으키며 탈출자들을 막는다.',
+  description: `불법 뇌 실험이 진행되는 하이테크 비밀 시설에서 탈출하라! 본인의 뇌에는 실험칩이 심어져 있다. 시설을 통제하는 메인 AI '에이아'가 원인 불명의 오류를 일으키며 탈출자들을 막는다.`,
   genre: 'SF/스릴러',
   level: 1,
-  themeImageUrl:
-    'frontend/src/assets/images/project_ai/Project_ai_quest_main.png',
+  themeImageUrl: projectAiMainImage,
+  isAvailable: true, // DB에 있는 테마
 
   quests: [
     {
@@ -168,8 +169,7 @@ const THEME_PROJECT_EIA: Theme = {
   ],
 };
 
-// ! -----------------------------------------------------
-// 다른 샘플 - 동일 규칙 (퀘스트 3개 + 퀘스트 스토리 2개)
+// 다른 샘플 테마들
 const makeTheme = (
   args: Omit<Theme, 'quests'> & { baseQuestId: number },
 ): Theme => {
@@ -257,6 +257,7 @@ const THEME_BOMB = makeTheme({
   themeImageUrl:
     'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800',
   baseQuestId: 100,
+  isAvailable: false,
 });
 
 const THEME_LEAK = makeTheme({
@@ -268,6 +269,7 @@ const THEME_LEAK = makeTheme({
   themeImageUrl:
     'https://images.unsplash.com/photo-1555617766-c94804975da3?w=800',
   baseQuestId: 200,
+  isAvailable: false,
 });
 
 const THEME_OOM = makeTheme({
@@ -279,6 +281,7 @@ const THEME_OOM = makeTheme({
   themeImageUrl:
     'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800',
   baseQuestId: 300,
+  isAvailable: false,
 });
 
 const THEME_DEADLOCK = makeTheme({
@@ -290,6 +293,7 @@ const THEME_DEADLOCK = makeTheme({
   themeImageUrl:
     'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800',
   baseQuestId: 400,
+  isAvailable: false,
 });
 
 // public exports (테마, 퀘스트, 퀘스트 스토리)
@@ -308,7 +312,6 @@ export const MOCK_QUEST_STORIES: QuestStory[] = MOCK_QUESTS.flatMap(
   (quest) => quest.stories,
 );
 
-// !-----------------------------------------------------
 // 쿼리 헬퍼 (테마, 퀘스트, 퀘스트 스토리 - ID로 조회)
 export const getThemes = (): Theme[] => MOCK_THEMES;
 
@@ -324,7 +327,6 @@ export const getQuestById = (questId: number): Quest | undefined =>
 export const getQuestStories = (questId: number): QuestStory[] =>
   getQuestById(questId)?.stories ?? [];
 
-// ! -----------------------------------------------------
 // Room mock (방 생성 -> roomId 반환)
 const rooms = new Map<string, Room>();
 
@@ -342,10 +344,10 @@ export const createMockRoom = (params: {
   const roomId = crypto.randomUUID();
 
   const room: Room = {
-    roomId: String(roomId),
+    roomId,
     themeId: params.themeId,
     mode: params.mode,
-    roomName: params.roomName?.trim() || '새 방',
+    roomName: params.roomName ?? `Room-${roomId.slice(0, 8)}`,
 
     frontendId: params.frontendId ?? null,
     backendId: params.backendId ?? null,
@@ -372,31 +374,22 @@ export const buildProblemSelectionContext = (
   questId,
 });
 
-// ? -----------------------------------------------------
 // 문제 Types (ERD 참고)
 export type FileType = 'SOURCE' | 'CONFIG' | 'TEST' | 'DOC' | 'ASSET';
 
 export interface Problem {
   problemId: number;
   questId: number;
-  title: string;
+  name: string;
   description: string;
-  difficulty: number;
   files: ProblemFile[];
 }
 
 export interface ProblemFile {
   fileId: number;
   problemId: number;
+  fileName: string;
   filePath: string;
-  code: string;
   fileType: FileType;
-
-  codeRole: CodeRole;
-  isReadOnly: boolean;
-
-  createAt?: string;
-  updatedAt?: string;
-  fileName?: string;
-  extension?: string;
+  content: string;
 }
