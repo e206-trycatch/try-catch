@@ -55,6 +55,7 @@ const ResultLoadingPage = () => {
 
     codeSubmission(roomId, codeResult, accessToken)
       .then((res) => {
+        if (ignore) return;
         console.log(res);
         setSubmissionResult(res.result);
         setGameState(
