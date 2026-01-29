@@ -6,6 +6,7 @@
 .env.dev
 mysql_data/
 redis_data/
+minio_data/
 
 
 ### Git ###
