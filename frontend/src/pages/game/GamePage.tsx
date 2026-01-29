@@ -58,8 +58,10 @@ export default function GamePage() {
 
         if (submissionId === null) {
           data = await getQuest(questId, roomId, accessToken);
-        } else {
+        } else if (submissionId) {
           data = await getRetryQuestFile(submissionId, roomId, accessToken);
+        } else {
+          throw new Error('submissionId가 올바르지 않습니다.');
         }
 
         setProblemFrameworkId(data.problemFrameworkId);

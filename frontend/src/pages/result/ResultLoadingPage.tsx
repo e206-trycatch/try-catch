@@ -72,7 +72,7 @@ const ResultLoadingPage = () => {
     return () => {
       ignore = true;
     };
-  });
+  }, []);
 
   if (error) {
     return (

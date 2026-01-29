@@ -40,6 +40,6 @@ export const useGameStore = create<GameState>((set) => ({
 
   setSubmissionId: (id) =>
     set({
-      submissionId: String(id),
+      submissionId: id ? String(id) : null,
     }),
 }));
