@@ -62,6 +62,7 @@ const ResultLoadingPage = () => {
           res.result.roomState.remainingLife,
           res.result.roomState.remainingHintCount,
         );
+        setSubmissionId(res.result.submissionId);
         navigate('/result', { replace: true });
       })
       .catch(() => {
