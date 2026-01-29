@@ -16,17 +16,19 @@ const getFileLanguage = (filePath: string): string => {
     jsx: 'javascript',
     ts: 'typescript',
     tsx: 'typescript',
-    md: 'markdown',
-    yml: 'yaml',
+    vue: 'html',
     py: 'python',
-    java: 'java',
     json: 'json',
     html: 'html',
     css: 'css',
+    java: 'java',
+    yml: 'yaml',
     yaml: 'yaml',
+    md: 'markdown',
+    properties: 'ini',
   };
 
-  return extensionMap[extension] ?? 'plainText';
+  return extensionMap[extension] ?? 'typescript';
 };
 
 // 폴더/파일 계층 구조의 트리를 생성한다.
