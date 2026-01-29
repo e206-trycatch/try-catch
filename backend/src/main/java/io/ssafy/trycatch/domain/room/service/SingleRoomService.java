@@ -225,6 +225,12 @@ public class SingleRoomService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "해당 방을 찾을 수 없습니다. roomId: " + roomId));
 
+        // 목숨 초기화 (다음 퀘스트용)
+        room.resetLife();
+
+        // 힌트 개수 초기화
+        room.resetHint();
+
         // 2. Room에서 frontendId, backendId 추출
         Long frontendId = room.getFrontendId();
         Long backendId = room.getBackendId();
@@ -394,4 +400,5 @@ public class SingleRoomService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "해당 방을 찾을 수 없습니다. roomId: " + roomId));
     }
+
 }

@@ -102,4 +102,5 @@ public class SingleRoomController {
                 ApiRespDto.success("게임이 종료되었습니다.", null)
         );
     }
+    
 }

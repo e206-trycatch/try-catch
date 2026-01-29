@@ -112,4 +112,14 @@ public class Room {
     public boolean isGameOver() {
         return this.life <= 0;
     }
+
+    // 기본 목숨 3으로 초기화
+    public void resetLife() {
+        this.life = 3;
+    }
+
+    // 힌트 3으로 초기화
+    public void resetHint() {
+        this.remainingHintCount = 3;
+    }
 }
