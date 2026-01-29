@@ -102,13 +102,5 @@ public class SingleRoomController {
                 ApiRespDto.success("게임이 종료되었습니다.", null)
         );
     }
-
-    @PostMapping("/{roomId}/quest/complete")
-    public ResponseEntity<ApiRespDto<String>> completeGame(
-            @PathVariable Long roomId) {
-        singleRoomService.completeQuest(roomId);
-        return ResponseEntity.ok(
-                ApiRespDto.success("퀘스트 완료", null)
-        );
-    }
+    
 }
