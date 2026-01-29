@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@plugin "tailwind-scrollbar";
+
 /* ! 전역 스타일 설정 */
 @font-face {
   font-family: 'Umdot';
