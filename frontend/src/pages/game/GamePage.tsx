@@ -56,8 +56,6 @@ export default function GamePage() {
         setError(null);
         let data = null;
 
-        console.log('submissionId:', submissionId);
-
         if (submissionId === null) {
           data = await getQuest(questId, roomId, accessToken);
         } else if (submissionId) {
