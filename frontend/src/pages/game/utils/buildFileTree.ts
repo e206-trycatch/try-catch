@@ -1,5 +1,24 @@
 import type { FileNode, QuestFile } from '../types/ideTypes';
 
+// Record<K, V>는 {[key: K]: V> 형태의 객체 타입을 의미한다.
+// cf) Map은 실제 키-값 저장소이다.
+const extensionMap: Record<string, string> = {
+  js: 'javascript',
+  jsx: 'javascript',
+  ts: 'typescript',
+  tsx: 'typescript',
+  vue: 'html',
+  py: 'python',
+  json: 'json',
+  html: 'html',
+  css: 'css',
+  java: 'java',
+  yml: 'yaml',
+  yaml: 'yaml',
+  md: 'markdown',
+  properties: 'ini',
+};
+
 const getFileLanguage = (filePath: string): string => {
   const fileName = filePath.split('/').filter(Boolean).at(-1) ?? '';
 
@@ -8,27 +27,7 @@ const getFileLanguage = (filePath: string): string => {
   // !가 없으면 string | undefined가 되어 에러가 발생한다..
   // ts 입장에서는 밑줄을 긋는다.
   const extension = fileName.includes('.') ? fileName.split('.').at(-1)! : '';
-
-  // Record<K, V>는 {[key: K]: V> 형태의 객체 타입을 의미한다.
-  // cf) Map은 실제 키-값 저장소이다.
-  const extensionMap: Record<string, string> = {
-    js: 'javascript',
-    jsx: 'javascript',
-    ts: 'typescript',
-    tsx: 'typescript',
-    vue: 'html',
-    py: 'python',
-    json: 'json',
-    html: 'html',
-    css: 'css',
-    java: 'java',
-    yml: 'yaml',
-    yaml: 'yaml',
-    md: 'markdown',
-    properties: 'ini',
-  };
-
-  return extensionMap[extension] ?? 'typescript';
+  return extensionMap[extension] ?? 'plainText';
 };
 
 // 폴더/파일 계층 구조의 트리를 생성한다.
