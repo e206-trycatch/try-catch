@@ -38,7 +38,7 @@ const ThemeSelectionPage = () => {
       setError(null);
 
       try {
-        const res = await fetch(`${API_BASE}/themes`, {
+        const res = await fetch(`${API_BASE}/api/v1/themes`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
