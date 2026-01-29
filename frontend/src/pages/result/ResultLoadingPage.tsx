@@ -19,6 +19,7 @@ const ResultLoadingPage = () => {
   const setSubmissionResult = useResultStore(
     (state) => state.setSubmissionResult,
   );
+  const setSubmissionId = useGameStore((state) => state.setSubmissionId);
 
   const setGameState = useGameStore((state) => state.setGameState);
 
@@ -34,6 +35,7 @@ const ResultLoadingPage = () => {
           res.result.roomState.remainingLife,
           res.result.roomState.remainingHintCount,
         );
+        setSubmissionId(res.result.submissionId);
         navigate('/result', { replace: true });
       })
       .catch(() => {
