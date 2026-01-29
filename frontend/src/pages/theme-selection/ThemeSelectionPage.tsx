@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import { ThemeCardList } from '../../components/theme-selection/ThemeCardList';
 import { MOCK_THEMES, type Theme } from '../../mocks/mockData';
+import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 
 type ThemeSummaryDto = Readonly<{
@@ -35,6 +36,12 @@ const ThemeSelectionPage = () => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // submissionId 초기화
+  const resetSubmissionId = useGameStore((state) => state.resetSubmissionId);
+  useEffect(() => {
+    resetSubmissionId();
+  }, [resetSubmissionId]);
 
   useEffect(() => {
     if (!mode) {
