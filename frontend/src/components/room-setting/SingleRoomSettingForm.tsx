@@ -1,5 +1,5 @@
 // SingleRoomSettingForm.tsx
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { MOCK_THEMES } from '../../mocks/mockData';
 import { type Position, useRoomStore } from '../../stores/useRoomStore';
