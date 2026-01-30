@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
+import { useTypingSound } from '../../hooks/useTypingSound';
+
 interface StorySlideProps {
   imageUrl: string;
   content: string;
@@ -17,6 +19,7 @@ const StorySlide = ({
   onTypingComplete,
 }: StorySlideProps) => {
   const [displayedText, setDisplayedText] = useState('');
+  const { playSound, stopSound } = useTypingSound();
   const [isTypingDone, setIsTypingDone] = useState(false);
 
   // 타이머 참조를 저장 (skipTyping에서 클리어하기 위함)
@@ -39,6 +42,7 @@ const StorySlide = ({
   useEffect(() => {
     if (!isActive) {
       clearTimers();
+      stopSound();
       setDisplayedText('');
       setIsTypingDone(false);
       return;
@@ -51,12 +55,14 @@ const StorySlide = ({
 
     // 딜레이 후 타이핑 시작
     delayTimerRef.current = setTimeout(() => {
+      playSound(); // 타이핑 사운드 시작
       typingTimerRef.current = setInterval(() => {
         if (index < content.length) {
           setDisplayedText(content.slice(0, index + 1));
           index++;
         } else {
           clearTimers();
+          stopSound(); // 타이핑 완료 시 사운드 정지
           setIsTypingDone(true);
           onTypingComplete?.();
         }
@@ -65,6 +71,7 @@ const StorySlide = ({
 
     return () => {
       clearTimers();
+      stopSound(); // 클린업 시 사운드 정지
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, content]);
@@ -76,13 +83,14 @@ const StorySlide = ({
       if (!isTypingDone) {
         e.stopPropagation();
         clearTimers(); // 타이머 클리어!
+        stopSound(); // 스킵 시 사운드 정지
         setDisplayedText(content);
         setIsTypingDone(true);
         onTypingComplete?.();
       }
       // 타이핑 완료 상태면 이벤트가 상위로 전파되어 handleNext 실행
     },
-    [content, isTypingDone, onTypingComplete, clearTimers]
+    [content, isTypingDone, onTypingComplete, clearTimers, stopSound]
   );
 
   return (
