@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import LoadingSpinner from './components/common/LoadingSpinner';
+import GuestRoute from './components/routes/GuestRoute';
+import PrivateRoute from './components/routes/PrivateRoute';
 import MainLayout from './layouts/AppLayout';
 import GamePage from './pages/game/GamePage';
 import HomePage from './pages/home/HomePage';
@@ -59,32 +61,30 @@ function App() {
   return (
     <Routes>
       <Route element={<MainLayout />}>
-        {/* 메인(대문) */}
+        {/* Public - 누구나 접근 가능 */}
         <Route path="/" element={<HomePage />} />
-        {/* 로그인/회원가입 */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
 
-        {/* 모드 */}
-        <Route path="/selection/mode" element={<ModeSelectionPage />} />
-        {/* 테마 */}
-        <Route path="/selection/theme" element={<ThemeSelectionPage />} />
-        {/* 스토리 */}
-        <Route path="/story" element={<StoryPage />} />
-        {/* 퀘스트 */}
-        <Route path="/quest-description" element={<QuestDescriptionPage />} />
-        {/* 싱글모드 방 설정 */}
-        <Route
-          path="/single-room-settings"
-          element={<SingleRoomSettingPage />}
-        />
-        {/* 게임 */}
-        <Route path="/game/:roomId/:questId" element={<GamePage />} />
-        {/* 결과 */}
-        <Route path="/result/loading" element={<ResultLoadingPage />} />
-        <Route path="/result" element={<ResultPage />} />
-        {/* 마이페이지 */}
-        <Route path="/mypage" element={<MyPage />} />
+        {/* Guest Only - 비로그인 유저만 접근 가능 */}
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+        </Route>
+
+        {/* Private - 로그인 유저만 접근 가능 */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/selection/mode" element={<ModeSelectionPage />} />
+          <Route path="/selection/theme" element={<ThemeSelectionPage />} />
+          <Route path="/story" element={<StoryPage />} />
+          <Route path="/quest-description" element={<QuestDescriptionPage />} />
+          <Route
+            path="/single-room-settings"
+            element={<SingleRoomSettingPage />}
+          />
+          <Route path="/game/:roomId/:questId" element={<GamePage />} />
+          <Route path="/result/loading" element={<ResultLoadingPage />} />
+          <Route path="/result" element={<ResultPage />} />
+          <Route path="/mypage" element={<MyPage />} />
+        </Route>
       </Route>
     </Routes>
   );
