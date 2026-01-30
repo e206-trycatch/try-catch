@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 
 import type { QuestInfo } from '../pages/game/types/ideTypes';
 
@@ -6,11 +6,7 @@ import type { QuestInfo } from '../pages/game/types/ideTypes';
 export const getQuest = async (
   questId: string | undefined,
   roomId: string | undefined,
-  accessToken?: string | null,
 ): Promise<QuestInfo> => {
-  const response = await axios.get(
-    `/api/v1/rooms/${roomId}/quest/${questId}/files`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
+  const response = await api.get(`/rooms/${roomId}/quest/${questId}/files`);
   return response.data.result as QuestInfo;
 };

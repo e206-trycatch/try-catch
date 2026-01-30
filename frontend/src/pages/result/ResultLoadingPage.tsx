@@ -6,7 +6,6 @@ import { codeSubmission } from '../../api/codeSubmission';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
-import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import ErrorDisplay from './components/ErrorDisplay';
 
@@ -15,7 +14,6 @@ const ResultLoadingPage = () => {
   const [error, setError] = useState(false);
   const roomId = useSubmissionStore((state) => state.roomId);
   const codeResult = useSubmissionStore((state) => state.result);
-  const { accessToken } = useStore();
   const setSubmissionResult = useResultStore(
     (state) => state.setSubmissionResult,
   );
@@ -27,7 +25,7 @@ const ResultLoadingPage = () => {
     if (!roomId || !codeResult) return;
 
     setError(false);
-    codeSubmission(roomId, codeResult, accessToken)
+    codeSubmission(roomId, codeResult)
       .then((res) => {
         console.log(res);
         setSubmissionResult(res.result);
@@ -53,7 +51,7 @@ const ResultLoadingPage = () => {
 
     if (!roomId || !codeResult) return;
 
-    codeSubmission(roomId, codeResult, accessToken)
+    codeSubmission(roomId, codeResult)
       .then((res) => {
         if (ignore) return;
         console.log(res);
