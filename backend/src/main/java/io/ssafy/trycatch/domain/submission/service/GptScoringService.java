@@ -66,29 +66,6 @@ public class GptScoringService {
         }
     }
 
-    /**
-     * API 계약 검증 (Fullstack 통합 채점)
-     */
-    public ScoreResult verifyApiContract(
-            String problemDoc,
-            String frontendCode,
-            String backendCode,
-            Room room) {
-        try {
-            String prompt = buildApiContractPrompt(problemDoc, frontendCode, backendCode);
-            GptRespDto response = callGptApi(prompt);
-            return parseScoreResult(response, room);
-        } catch (Exception e) {
-            log.error("GPT API 계약 검증 중 오류 발생", e);
-            return ScoreResult.builder()
-                    .success(false)
-                    .score(0)
-                    .errorLog("API 계약 검증 오류: " + e.getMessage())
-                    .executionTime(calculateExecutionTime(room))
-                    .build();
-        }
-    }
-
     private long calculateExecutionTime(Room room) {
         if (room == null || room.getStartedAt() == null) {
             return 0L;
@@ -209,59 +186,137 @@ public class GptScoringService {
     }
 
     /**
-     * API 계약 검증 프롬프트
+     * Fullstack 통합 채점
      */
-    private String buildApiContractPrompt(
+    public ScoreResult scoreFullstackIntegrated(
             String problemDoc,
             String frontendCode,
-            String backendCode) {
+            String backendCode,
+            String frontendFramework,
+            String frontendLanguage,
+            String backendFramework,
+            String backendLanguage,
+            Room room) {
+        try {
+            String prompt = buildFullstackIntegratedPrompt(
+                    problemDoc,
+                    frontendCode,
+                    backendCode,
+                    frontendFramework,
+                    frontendLanguage,
+                    backendFramework,
+                    backendLanguage
+            );
+            GptRespDto response = callGptApi(prompt);
+            return parseScoreResult(response, room);
+        } catch (Exception e) {
+            log.error("GPT Fullstack 통합 채점 중 오류 발생", e);
+            return ScoreResult.builder()
+                    .success(false)
+                    .score(0)
+                    .errorLog("채점 시스템 오류: " + e.getMessage())
+                    .executionTime(calculateExecutionTime(room))
+                    .build();
+        }
+    }
 
+    /**
+     * Fullstack 통합 채점 프롬프트
+     */
+    private String buildFullstackIntegratedPrompt(
+            String problemDoc,
+            String frontendCode,
+            String backendCode,
+            String frontendFramework,
+            String frontendLanguage,
+            String backendFramework,
+            String backendLanguage
+    ) {
         return String.format("""
-            너는 "API 계약 검증기"다.
+            너는 "Fullstack 코드 통합 검증기"다.
             
-            **목표: Frontend와 Backend가 같은 API를 사용하고 있는가?**
+            **1단계: Frontend 코드 품질 검증**
+            이 문제는 Frontend 코드를 요구하며, 반드시 %s (%s)로 작성되어야 한다.
             
-            검증 항목:
+            1-1. Backend 코드 패턴이 있는지 확인:
+               - @RestController, @Service, @Repository, @Entity
+               - Spring/Django/Express 등 Backend 프레임워크
+               → 발견 시 즉시 FAIL: "Frontend 코드를 제출해야 합니다."
             
-            1. API 경로 일치:
+            1-2. 올바른 Frontend 프레임워크인지 확인:
+               - 요구: %s
+               → 다른 프레임워크 발견 시 FAIL: "%s 프레임워크를 사용해야 합니다."
+            
+            1-3. 기능 구현 검증:
+               - 문제에서 요구한 UI 요소가 구현되었는가?
+               - 상태 관리가 적절한가?
+               - 이벤트 핸들러가 제대로 연결되었는가?
+               - API 호출 코드가 있는가? (경로는 3단계에서 검증)
+            
+            **2단계: Backend 코드 품질 검증**
+            이 문제는 Backend 코드를 요구하며, 반드시 %s (%s)로 작성되어야 한다.
+            
+            2-1. Frontend 코드 패턴이 있는지 확인:
+               - Vue 컴포넌트 (<template>, <script>)
+               - React 컴포넌트 (useState, useEffect, JSX)
+               → 발견 시 즉시 FAIL: "Backend 코드를 제출해야 합니다."
+            
+            2-2. 올바른 Backend 프레임워크인지 확인:
+               - 요구: %s
+               → 다른 프레임워크 발견 시 FAIL: "%s 프레임워크를 사용해야 합니다."
+            
+            2-3. 기능 구현 검증:
+               - 문제에서 요구한 비즈니스 로직이 구현되었는가?
+               - DB 조회/저장 로직이 있는가?
+               - 예외 처리가 적절한가?
+               - API 엔드포인트가 정의되어 있는가? (경로 일치는 3단계에서 검증)
+            
+            **3단계: API 계약 검증 (1, 2단계 모두 PASS인 경우에만)**
+            목표: Frontend와 Backend가 같은 API를 사용하고 있는가?
+            
+            3-1. API 경로 일치:
                - Frontend의 fetch/axios 경로
                - Backend의 @GetMapping/@PostMapping 경로
                → 정확히 일치하는가?
             
-            2. HTTP Method 일치:
+            3-2. HTTP Method 일치:
                - Frontend의 method (GET, POST, PUT, DELETE)
                - Backend의 매핑 어노테이션
                → 일치하는가?
             
-            3. Request Body 형식 일치 (POST/PUT인 경우):
+            3-3. Request Body 형식 일치 (POST/PUT인 경우):
                - Frontend가 보내는 JSON 필드
                - Backend DTO의 필드
                → 필드명이 일치하는가?
             
-            4. Response 형식 기본 일치:
+            3-4. Response 형식 기본 일치:
                - Backend 반환 타입의 필드
                - Frontend가 사용하는 필드
                → 주요 필드가 일치하는가?
             
             절대 규칙:
-            - 코드 품질은 검증하지 않는다 (이미 1단계에서 검증됨)
-            - "협업 시 API 명세를 맞췄는가?"만 확인
-            - 응답은 JSON만 출력하라. 다른 텍스트 금지.
+            - 코드에 근거가 없으면 FAIL
+            - 1, 2, 3단계 중 하나라도 FAIL이면 success=false, score=0
+            - 모두 PASS이면 success=true, score=1~100
+            - success=true인 경우 errorLog=""
+            - 응답은 JSON만 출력
             
             판정:
-            - 위 검증 항목 중 하나라도 불일치하면 success=false, score=0
-            - 모두 일치하면 success=true, score=100 (고정)
-            - success=false인 경우에만 errorLog 작성
-            - success=true인 경우 errorLog는 반드시 ""(빈 문자열)
-            - errorLog는 간략하게 작성. 예: "API 경로가 일치하지 않습니다.", "HTTP Method가 일치하지 않습니다."
-            - 어느 부분이 틀렸는지 구체적으로 알려주지 않고, 답도 알려주지 않는다.
+            - 1단계 FAIL → success=false, score=0, errorLog: Frontend 검증 실패 사유
+            - 2단계 FAIL → success=false, score=0, errorLog: Backend 검증 실패 사유
+            - 3단계 FAIL → success=false, score=0, errorLog: API 계약 검증 실패 사유
+            - 모두 PASS → success=true, score=1~100 (코드 품질에 따라)
+            - errorLog는 간략하게 (어느 부분이 틀렸는지, 답은 알려주지 않음)
             
             FAIL 예시:
-            - Frontend: GET /api/users, Backend: POST /api/users → errorLog: "HTTP Method가 일치하지 않습니다."
-            - Frontend: /api/users, Backend: /api/user → errorLog: "API 경로가 일치하지 않습니다."
-            - Frontend가 {name, age} 전송, Backend는 {username, age} 받음 → errorLog: "요청 데이터 형식이 일치하지 않습니다."
+            - Frontend에 @RestController 발견 → "Frontend 코드를 제출해야 합니다."
+            - Backend에 React 사용 → "%s 프레임워크를 사용해야 합니다."
+            - API 경로 불일치 (Frontend: /api/users, Backend: /api/user) → "API 경로가 일치하지 않습니다."
+            - HTTP Method 불일치 (Frontend: GET, Backend: POST) → "HTTP Method가 일치하지 않습니다."
+            - Request Body 불일치 (Frontend: {name, age}, Backend: {username, age}) → "요청 데이터 형식이 일치하지 않습니다."
+            - 응답 결과가 예시와 다름 → "응답 결과가 예시 응답 결과와 일치하지 않습니다."
             
-            출력 JSON 스키마(키는 정확히 이 3개만):
+            출력 JSON:
             {
               "success": false,
               "score": 0,
@@ -271,12 +326,21 @@ public class GptScoringService {
             [문제 설명]
             %s
             
-            [Frontend 코드 (API 호출 부분)]
+            [Frontend 코드 (%s, %s)]
             %s
             
-            [Backend 코드 (API 제공 부분)]
+            [Backend 코드 (%s, %s)]
             %s
-            """, problemDoc, frontendCode, backendCode);
+            """,
+                frontendFramework, frontendLanguage,
+                frontendFramework, frontendFramework,
+                backendFramework, backendLanguage,
+                backendFramework, backendFramework,
+                backendFramework,
+                problemDoc,
+                frontendFramework, frontendLanguage, frontendCode,
+                backendFramework, backendLanguage, backendCode
+        );
     }
 
     private GptRespDto callGptApi(String prompt) {
