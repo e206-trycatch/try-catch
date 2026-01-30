@@ -22,12 +22,7 @@ const SingleRoomSettingForm = () => {
     setFullstackFrameworks, // FULLSTACK용 액션 추가
   } = useRoomStore();
 
-  // ! draft.position이 null이면 기본값으로 'FRONTEND' 설정
-  useEffect(() => {
-    if (!draft.position) {
-      setPosition('FRONTEND');
-    }
-  }, [draft.position, setPosition]);
+  // position은 사용자가 직접 선택하도록 함 (기본값 강제 설정 제거)
 
   // 포지션 옵션에 FULLSTACK 추가
   const positionSelectOptions = useMemo(
@@ -102,10 +97,11 @@ const SingleRoomSettingForm = () => {
       <SettingRow label="포지션">
         <div className="w-[368px] flex justify-start">
           <SelectField
-            value={draft.position || 'FRONTEND'}
+            value={draft.position || ''}
             onChange={handlePositionChange}
             options={positionSelectOptions}
             widthClassName="w-[140px]"
+            placeholder="선택해주세요"
           />
         </div>
       </SettingRow>
@@ -121,6 +117,7 @@ const SingleRoomSettingForm = () => {
                 onChange={handleFrontendFrameworkChange}
                 options={frontendFrameworkOptions}
                 widthClassName="w-[140px]"
+                placeholder="선택해주세요"
               />
             </div>
           </SettingRow>
@@ -133,6 +130,7 @@ const SingleRoomSettingForm = () => {
                 onChange={handleBackendFrameworkChange}
                 options={backendFrameworkOptions}
                 widthClassName="w-[140px]"
+                placeholder="선택해주세요"
               />
             </div>
           </SettingRow>
@@ -146,6 +144,7 @@ const SingleRoomSettingForm = () => {
               onChange={handleFrameworkChange}
               options={frameworkSelectOptions}
               widthClassName="w-[140px]"
+              placeholder="선택해주세요"
             />
           </div>
         </SettingRow>

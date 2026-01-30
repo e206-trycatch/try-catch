@@ -6,6 +6,7 @@ type SelectFieldProps = {
   onChange: (value: string) => void;
   options: Option[];
   widthClassName?: string; // 예: "w-[140px]"
+  placeholder?: string; // 기본 옵션 텍스트
 };
 
 const SelectField = ({
@@ -13,6 +14,7 @@ const SelectField = ({
   onChange,
   options,
   widthClassName = 'w-[140px]',
+  placeholder = '선택해주세요',
 }: SelectFieldProps) => {
   return (
     <select
@@ -25,6 +27,9 @@ const SelectField = ({
         widthClassName,
       ].join(' ')}
     >
+      <option value="" disabled>
+        {placeholder}
+      </option>
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}
