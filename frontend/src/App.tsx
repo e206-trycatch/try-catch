@@ -14,6 +14,7 @@ import ResultLoadingPage from './pages/result/ResultLoadingPage';
 import ResultPage from './pages/result/ResultPage';
 import SingleRoomSettingPage from './pages/room-settings/SingleRoomSettingPage';
 import SignupPage from './pages/signup/SignupPage';
+import StoryPage from './pages/story/StoryPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import { useStore } from './stores/useStore';
 
@@ -68,6 +69,8 @@ function App() {
         <Route path="/selection/mode" element={<ModeSelectionPage />} />
         {/* 테마 */}
         <Route path="/selection/theme" element={<ThemeSelectionPage />} />
+        {/* 스토리 */}
+        <Route path="/story" element={<StoryPage />} />
         {/* 퀘스트 */}
         <Route path="/quest-description" element={<QuestDescriptionPage />} />
         {/* 싱글모드 방 설정 */}
