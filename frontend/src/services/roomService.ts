@@ -20,7 +20,7 @@ export type StartGameResult =
  */
 export async function createRoomAndStartQuest(
   payload: CreateRoomRequest,
-  themeId: number
+  themeId: number,
 ): Promise<StartGameResult> {
   try {
     // 1. 방 생성

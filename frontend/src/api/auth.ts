@@ -65,20 +65,32 @@ interface CheckDuplicateResponse {
 }
 
 // 아이디 중복 확인
-export const checkLoginId = async (loginId: string): Promise<CheckDuplicateResponse> => {
-  const response = await api.get<CheckDuplicateResponse>(`/auth/check-loginId?loginId=${loginId}`);
+export const checkLoginId = async (
+  loginId: string,
+): Promise<CheckDuplicateResponse> => {
+  const response = await api.get<CheckDuplicateResponse>(
+    `/auth/check-loginId?loginId=${loginId}`,
+  );
   return response.data;
 };
 
 // 닉네임 중복 확인
-export const checkNickname = async (nickname: string): Promise<CheckDuplicateResponse> => {
-  const response = await api.get<CheckDuplicateResponse>(`/auth/check-nickname?nickname=${nickname}`);
+export const checkNickname = async (
+  nickname: string,
+): Promise<CheckDuplicateResponse> => {
+  const response = await api.get<CheckDuplicateResponse>(
+    `/auth/check-nickname?nickname=${nickname}`,
+  );
   return response.data;
 };
 
 // 이메일 중복 확인
-export const checkEmail = async (email: string): Promise<CheckDuplicateResponse> => {
-  const response = await api.get<CheckDuplicateResponse>(`/auth/check-email?email=${email}`);
+export const checkEmail = async (
+  email: string,
+): Promise<CheckDuplicateResponse> => {
+  const response = await api.get<CheckDuplicateResponse>(
+    `/auth/check-email?email=${email}`,
+  );
   return response.data;
 };
 

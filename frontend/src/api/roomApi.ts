@@ -70,7 +70,7 @@ type QuestStoryResponse = {
 // 퀘스트 스토리 목록 조회
 export const fetchQuestStories = async (questId: number) => {
   const res = await api.get<QuestStoryResponse>(
-    `/rooms/single/quest/${questId}/story`
+    `/rooms/single/quest/${questId}/story`,
   );
   return res.data;
 };

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { fetchQuestStories, type QuestStory } from '../../api/roomApi';
@@ -46,7 +46,7 @@ const StoryPage = () => {
 
         // storyOrder 기준 정렬
         const sorted = [...response.result].sort(
-          (a, b) => a.storyOrder - b.storyOrder
+          (a, b) => a.storyOrder - b.storyOrder,
         );
         setStories(sorted);
       } catch (error) {
@@ -132,7 +132,10 @@ const StoryPage = () => {
   }
 
   return (
-    <PageFlipTransition isFlipping={isFlipping} onFlipComplete={handleFlipComplete}>
+    <PageFlipTransition
+      isFlipping={isFlipping}
+      onFlipComplete={handleFlipComplete}
+    >
       <div
         ref={slideRef}
         className="w-screen h-screen bg-black relative cursor-pointer select-none"
