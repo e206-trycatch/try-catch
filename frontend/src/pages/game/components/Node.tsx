@@ -25,13 +25,13 @@ export default function Node({
       <div>
         {/* 폴더 한 개 렌더링 */}
         <div
-          className="flex items-center gap-1.5 h-7 cursor-pointer select-none"
+          className="flex items-center gap-1.5 h-7 cursor-pointer select-none w-full"
           style={{ paddingLeft: indent }}
           onClick={() => onToggleFolder(node.id)}
         >
           <span style={{ width: 14 }}>{isOpen ? '▾' : '▸'}</span>
           <span>{isOpen ? '📂' : '📁'}</span>
-          <span>{node.name}</span>
+          <span className="truncate min-w-0 flex-1">{node.name}</span>
         </div>
 
         {/* 폴더가 열려 있다면 자식 노드(폴더/파일) 렌더링 */}
@@ -61,7 +61,7 @@ export default function Node({
         }}
       >
         <span className="text-xs tracking-widest">{'</>'}</span>
-        <span>{node.name}</span>
+        <span className="truncate min-w-0">{node.name}</span>
       </div>
     );
   }

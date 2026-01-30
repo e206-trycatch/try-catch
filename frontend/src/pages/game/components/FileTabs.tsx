@@ -15,7 +15,7 @@ export default function FileTabs({
   onCloseTab,
 }: Props) {
   return (
-    <div className="h-10 flex border border-[#333] overflow-x-auto bg-stone-900">
+    <div className="h-9 flex border border-[#333] overflow-x-auto bg-stone-900">
       {openTabs.map((tab) => {
         // 현재 순회 중인 탭의 id와 현재 활성화 된 파일의 id가 같으면 true
         const active = tab.id === activeFileId;
