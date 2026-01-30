@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageFlipTransition from '../../components/story/PageFlipTransition';
 import StoryIndicator from '../../components/story/StoryIndicator';
 import StorySlide from '../../components/story/StorySlide';
+import { useTypingSound } from '../../hooks/useTypingSound';
 import { useRoomStore } from '../../stores/useRoomStore';
 
 const StoryPage = () => {
@@ -21,6 +22,9 @@ const StoryPage = () => {
 
   // 타이핑 스킵을 위한 ref
   const slideRef = useRef<HTMLDivElement>(null);
+
+  // 타이핑 사운드 (단일 Audio 인스턴스로 관리)
+  const { playSound, stopSound } = useTypingSound();
 
   // 스토리 로드
   useEffect(() => {
@@ -142,6 +146,8 @@ const StoryPage = () => {
             content={story.content}
             isActive={index === currentIndex}
             onTypingComplete={handleTypingComplete}
+            playSound={playSound}
+            stopSound={stopSound}
           />
         ))}
 

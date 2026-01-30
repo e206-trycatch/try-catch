@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-import { useTypingSound } from '../../hooks/useTypingSound';
-
 interface StorySlideProps {
   imageUrl: string;
   content: string;
   isActive: boolean;
   onTypingComplete?: () => void;
+  playSound: () => void;
+  stopSound: () => void;
 }
 
 const TYPING_SPEED = 60; // ms per character
@@ -17,9 +17,10 @@ const StorySlide = ({
   content,
   isActive,
   onTypingComplete,
+  playSound,
+  stopSound,
 }: StorySlideProps) => {
   const [displayedText, setDisplayedText] = useState('');
-  const { playSound, stopSound } = useTypingSound();
   const [isTypingDone, setIsTypingDone] = useState(false);
 
   // 타이머 참조를 저장 (skipTyping에서 클리어하기 위함)

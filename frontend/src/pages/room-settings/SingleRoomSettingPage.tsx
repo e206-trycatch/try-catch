@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  createRoom,
-  fetchQuestList,
-  fetchSingleSetting,
-} from '../../api/roomApi';
+import { fetchSingleSetting } from '../../api/roomApi';
+import { createRoomAndStartQuest } from '../../services/roomService';
 import SingleRoomSettingForm from '../../components/room-setting/SingleRoomSettingForm';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -94,25 +91,14 @@ const SingleRoomSettingPage = () => {
       return;
     }
 
-    try {
-      // 1. 방 생성
-      const response = await createRoom(payload);
-      setRoomId(response.roomId);
+    const result = await createRoomAndStartQuest(payload, draft.themeId!);
 
-      // 2. 퀘스트 목록 조회 → 첫 번째 퀘스트 ID 저장
-      const questResponse = await fetchQuestList(draft.themeId!);
-      if (questResponse.result && questResponse.result.length > 0) {
-        const firstQuest =
-          questResponse.result.find((q) => q.questOrder === 1) ||
-          questResponse.result[0];
-        setCurrentQuestId(firstQuest.questId);
-      }
-
-      // 3. 스토리 페이지로 이동
+    if (result.success) {
+      setRoomId(result.roomId);
+      setCurrentQuestId(result.questId);
       navigate('/story');
-    } catch (error) {
-      console.error('방 생성 실패:', error);
-      alert('방 생성에 실패했습니다. 다시 시도해주세요.');
+    } else {
+      alert(result.error);
     }
   };
 
