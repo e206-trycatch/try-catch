@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
 
-export type Position = 'FRONTEND' | 'BACKEND';
+export type Position = 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
 
 export interface FrameworkItem {
   id: number;
@@ -15,6 +15,7 @@ export interface FrameworkItem {
 export interface AvailableFrameworks {
   FRONTEND: FrameworkItem[];
   BACKEND: FrameworkItem[];
+  FULLSTACK: FrameworkItem[];
 }
 
 export interface RoomDraft {
@@ -27,9 +28,10 @@ export interface RoomDraft {
 
   // 싱글 설정용
   position: Position | null;
-  selectedFrameworkId: number | null;
+  selectedFrameworkId: number | null; // FULL-STACK에서는 사용 X
 
   // 서버 요청용 (ERD 반영: FE/BE 분리)
+  // - FULL-STACK인 경우 둘 다 선택 가능
   frontendId: number | null;
   backendId: number | null;
 
@@ -64,6 +66,12 @@ interface RoomCreationState {
   // 싱글 설정용 액션
   setPosition: (position: Position) => void;
   setSelectedFrameworkId: (frameworkId: number | null) => void;
+
+  // FULLSTACK용 프레임워크 설정 액션
+  setFullstackFrameworks: (
+    frontendId: number | null,
+    backendId: number | null,
+  ) => void;
 
   // (직접 id 세팅이 필요한 경우 대비 - 유지)
   setFrameworkIds: (ids: {
@@ -176,7 +184,23 @@ export const useRoomStore = create<RoomCreationState>()(
         set((s) => {
           const af = get().availableFrameworks;
 
-          // 포지션 바뀌면 selectedFrameworkId를 "해당 포지션의 첫 옵션"으로 초기화(있다면)
+          // FULLSTACK인 경우 frontendId와 backendId 둘 다 초기화
+          if (position === 'FULLSTACK') {
+            const firstFrontId = pickFirstFrameworkId(af?.FRONTEND);
+            const firstBackId = pickFirstFrameworkId(af?.BACKEND);
+
+            return {
+              draft: {
+                ...s.draft,
+                position,
+                selectedFrameworkId: null, // FULLSTACK에서는 미사용
+                frontendId: firstFrontId,
+                backendId: firstBackId,
+              },
+            };
+          }
+
+          // FRONTEND 또는 BACKEND인 경우 기존 로직 유지
           const firstId =
             position === 'FRONTEND'
               ? pickFirstFrameworkId(af?.FRONTEND)
@@ -184,7 +208,6 @@ export const useRoomStore = create<RoomCreationState>()(
 
           const nextSelectedFrameworkId = firstId;
 
-          // position에 따라 FE/BE id 채우기 (반대쪽은 null)
           const nextDraft =
             position === 'FRONTEND'
               ? {
@@ -232,6 +255,18 @@ export const useRoomStore = create<RoomCreationState>()(
           return { draft: nextDraft };
         }),
 
+      setFullstackFrameworks: (
+        frontendId: number | null,
+        backendId: number | null,
+      ) =>
+        set((s) => ({
+          draft: {
+            ...s.draft,
+            frontendId,
+            backendId,
+          },
+        })),
+
       setFrameworkIds: ({ frontendId, backendId }) =>
         set((s) => ({
           draft: {
@@ -252,8 +287,16 @@ export const useRoomStore = create<RoomCreationState>()(
         })),
 
       validateDraft: () => {
-        const { mode, themeId, life, hints, position, selectedFrameworkId } =
-          get().draft;
+        const {
+          mode,
+          themeId,
+          life,
+          hints,
+          position,
+          selectedFrameworkId,
+          frontendId,
+          backendId,
+        } = get().draft;
 
         const errors: string[] = [];
 
@@ -262,10 +305,19 @@ export const useRoomStore = create<RoomCreationState>()(
         if (life < 1) errors.push('목숨은 최소 1개 이상이어야 합니다.');
         if (hints < 0) errors.push('힌트 개수는 0개 이상이어야 합니다.');
 
-        // 싱글모드라면 포지션/프레임워크 선택 필수로
+        // 싱글모드 검증
         if (mode === 'SINGLE') {
           if (!position) errors.push('포지션을 선택해주세요.');
-          if (!selectedFrameworkId) errors.push('프레임워크를 선택해주세요.');
+
+          // FULLSTACK인 경우 frontendId와 backendId 둘 다 필수
+          if (position === 'FULLSTACK') {
+            if (!frontendId)
+              errors.push('프론트엔드 프레임워크를 선택해주세요.');
+            if (!backendId) errors.push('백엔드 프레임워크를 선택해주세요.');
+          } else {
+            // FRONTEND 또는 BACKEND인 경우 selectedFrameworkId 필수
+            if (!selectedFrameworkId) errors.push('프레임워크를 선택해주세요.');
+          }
         }
 
         return errors.length ? { ok: false, errors } : { ok: true };
@@ -275,8 +327,26 @@ export const useRoomStore = create<RoomCreationState>()(
         const v = get().validateDraft();
         if (!v.ok) return null;
 
-        const { themeId, position, selectedFrameworkId } = get().draft;
+        const {
+          themeId,
+          position,
+          selectedFrameworkId,
+          frontendId,
+          backendId,
+        } = get().draft;
 
+        // FULLSTACK인 경우 frontId와 backId 둘 다 전송 (validation 통과했으므로 null 아님)
+        if (position === 'FULLSTACK') {
+          const payload: CreateRoomRequest = {
+            themeId: themeId!,
+            position: position!,
+            frontId: frontendId!, // FULLSTACK에서는 필수값 (validation 통과함)
+            backId: backendId!, // FULLSTACK에서는 필수값 (validation 통과함)
+          };
+          return payload;
+        }
+
+        // FRONTEND 또는 BACKEND인 경우 기존 로직 유지
         const payload: CreateRoomRequest = {
           themeId: themeId!,
           position: position!,

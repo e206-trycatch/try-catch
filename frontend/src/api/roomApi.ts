@@ -39,7 +39,10 @@ export const fetchSingleSetting = async (themeId: number) => {
 };
 
 export const createRoom = async (payload: CreateRoomRequest) => {
-  const { data } = await api.post<{ result: CreateRoomResponse }>('/rooms/single', payload);
+  const { data } = await api.post<{ result: CreateRoomResponse }>(
+    '/rooms/single',
+    payload,
+  );
   return data.result;
 };
 
