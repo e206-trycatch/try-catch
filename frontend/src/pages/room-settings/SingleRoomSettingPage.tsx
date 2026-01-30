@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { createRoom, fetchSingleSetting } from '../../api/roomApi';
+import { fetchSingleSetting } from '../../api/roomApi';
+import { createRoomAndStartQuest } from '../../services/roomService';
 import SingleRoomSettingForm from '../../components/room-setting/SingleRoomSettingForm';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -17,6 +18,7 @@ const SingleRoomSettingPage = () => {
     buildCreatePayload,
     setAvailableFrameworks,
     setRoomId,
+    setCurrentQuestId,
   } = useRoomStore();
 
   useEffect(() => {
@@ -67,13 +69,14 @@ const SingleRoomSettingPage = () => {
       return;
     }
 
-    try {
-      const response = await createRoom(payload);
-      setRoomId(response.roomId); // 생성된 방 ID 저장
-      navigate('/quest-description'); // 퀘스트 설명 페이지로 이동
-    } catch (error) {
-      console.error('방 생성 실패:', error);
-      alert('방 생성에 실패했습니다. 다시 시도해주세요.');
+    const result = await createRoomAndStartQuest(payload, draft.themeId!);
+
+    if (result.success) {
+      setRoomId(result.roomId);
+      setCurrentQuestId(result.questId);
+      navigate('/story');
+    } else {
+      alert(result.error);
     }
   };
 

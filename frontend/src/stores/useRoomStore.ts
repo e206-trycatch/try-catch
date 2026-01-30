@@ -50,12 +50,14 @@ export interface CreateRoomRequest {
 interface RoomCreationState {
   draft: RoomDraft;
   currentRoomId: number | null;
+  currentQuestId: number | null;
 
   // 서버에서 받아오는 프레임워크 목록 저장
   availableFrameworks: AvailableFrameworks | null;
   setAvailableFrameworks: (data: AvailableFrameworks) => void;
   clearAvailableFrameworks: () => void;
   setRoomId: (id: number | string) => void;
+  setCurrentQuestId: (id: number | null) => void;
 
   // 동작
   setMode: (mode: GameMode) => void;
@@ -118,6 +120,7 @@ export const useRoomStore = create<RoomCreationState>()(
     (set, get) => ({
       draft: DEFAULT_DRAFT,
       currentRoomId: null,
+      currentQuestId: null,
 
       availableFrameworks: null,
 
@@ -164,6 +167,8 @@ export const useRoomStore = create<RoomCreationState>()(
 
       setRoomId: (id) =>
         set({ currentRoomId: typeof id === 'string' ? parseInt(id, 10) : id }),
+
+      setCurrentQuestId: (id) => set({ currentQuestId: id }),
 
       setMode: (mode) =>
         set((s) => ({
@@ -362,6 +367,7 @@ export const useRoomStore = create<RoomCreationState>()(
           draft: DEFAULT_DRAFT,
           availableFrameworks: null,
           currentRoomId: null,
+          currentQuestId: null,
         }),
     }),
     {
