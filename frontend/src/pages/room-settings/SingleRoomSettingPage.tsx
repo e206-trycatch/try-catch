@@ -7,21 +7,6 @@ import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore'; // 토큰 확인용
 
-type AvailableFrameworks = NonNullable<
-  ReturnType<typeof useRoomStore.getState>['availableFrameworks']
->;
-
-const DEV_FRAMEWORKS: AvailableFrameworks = {
-  FRONTEND: [
-    { id: 1, name: 'React' },
-    { id: 2, name: 'Vue' },
-  ],
-  BACKEND: [
-    { id: 10, name: 'SpringBoot' },
-    { id: 11, name: 'Django' },
-  ],
-};
-
 const SingleRoomSettingPage = () => {
   const navigate = useNavigate();
 
@@ -41,21 +26,14 @@ const SingleRoomSettingPage = () => {
       return;
     }
 
-    const isDev = import.meta.env.DEV;
-
     // 토큰 없으면 401 날 가능성이 높으니 로그인
-    if (!accessToken && !isDev) {
+    if (!accessToken) {
       alert('로그인이 필요합니다.');
       navigate('/login');
       return;
     }
 
-    // dev 모드에서는 api 대신 mock 사용
-    if (isDev) {
-      setAvailableFrameworks(DEV_FRAMEWORKS);
-      return;
-    }
-
+    // 항상 실제 API 호출
     (async () => {
       try {
         const data = await fetchSingleSetting(draft.themeId!);
