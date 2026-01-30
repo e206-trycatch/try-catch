@@ -13,22 +13,24 @@ const PageFlipTransition = ({
   onFlipComplete,
   children,
 }: PageFlipTransitionProps) => {
-  const [opacity, setOpacity] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
 
   // 초기 페이드 인
   useEffect(() => {
-    const timer = setTimeout(() => setOpacity(1), 50);
+    const timer = setTimeout(() => setIsMounted(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
   // 페이드 아웃 후 전환
   useEffect(() => {
     if (isFlipping) {
-      setOpacity(0);
       const timer = setTimeout(onFlipComplete, FADE_DURATION);
       return () => clearTimeout(timer);
     }
   }, [isFlipping, onFlipComplete]);
+
+  // opacity는 상태가 아닌 계산된 값
+  const opacity = isFlipping ? 0 : isMounted ? 1 : 0;
 
   return (
     <div className="w-full h-full overflow-hidden bg-black">
