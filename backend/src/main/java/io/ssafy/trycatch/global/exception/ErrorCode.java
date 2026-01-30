@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+import java.util.Map;
+
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
@@ -36,6 +38,7 @@ public enum ErrorCode {
     DUPLICATE_SUBMISSION(HttpStatus.TOO_MANY_REQUESTS, "제출 요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요"),
     PROBLEM_FRAMEWORK_NOT_FOUND(HttpStatus.NOT_FOUND, "문제 프레임워크를 찾을 수 없습니다"),
     FRAMEWORK_NOT_FOUND(HttpStatus.NOT_FOUND, "프레임워크를 찾을 수 없습니다"),
+    FILE_UPLOAD_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패"),
     ;
     private final HttpStatus status;
     private final String message;
