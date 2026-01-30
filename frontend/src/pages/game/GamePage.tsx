@@ -183,7 +183,7 @@ export default function GamePage() {
               <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
                 {activeMenu === 'explorer' && (
-                  <div className="p-3 pb-10 min-w-full overflow-hidden">
+                  <div className="p-3 pb-10 min-w-full">
                     <Explorer
                       root={rootNode}
                       expanded={ide.expanded}
