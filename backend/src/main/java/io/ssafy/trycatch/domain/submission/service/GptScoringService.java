@@ -232,6 +232,10 @@ public class GptScoringService {
             String backendFramework,
             String backendLanguage
     ) {
+        String safeProblemDoc = (problemDoc == null || problemDoc.isBlank())
+                ? "문제 설명이 제공되지 않았습니다."
+                : problemDoc;
+
         return String.format("""
             너는 "Fullstack 코드 통합 검증기"다.
             
@@ -311,9 +315,9 @@ public class GptScoringService {
             FAIL 예시:
             - Frontend에 @RestController 발견 → "Frontend 코드를 제출해야 합니다."
             - Backend에 React 사용 → "%s 프레임워크를 사용해야 합니다."
-            - API 경로 불일치 (Frontend: /api/users, Backend: /api/user) → "API 경로가 일치하지 않습니다."
-            - HTTP Method 불일치 (Frontend: GET, Backend: POST) → "HTTP Method가 일치하지 않습니다."
-            - Request Body 불일치 (Frontend: {name, age}, Backend: {username, age}) → "요청 데이터 형식이 일치하지 않습니다."
+            - API 경로 불일치 → "API 경로가 일치하지 않습니다."
+            - HTTP Method 불일치 → "HTTP Method가 일치하지 않습니다."
+            - Request Body 불일치 → "요청 데이터 형식이 일치하지 않습니다."
             - 응답 결과가 예시와 다름 → "응답 결과가 예시 응답 결과와 일치하지 않습니다."
             
             출력 JSON:
@@ -332,14 +336,22 @@ public class GptScoringService {
             [Backend 코드 (%s, %s)]
             %s
             """,
-                frontendFramework, frontendLanguage,
-                frontendFramework, frontendFramework,
-                backendFramework, backendLanguage,
-                backendFramework, backendFramework,
+                // 1-3: Frontend 프레임워크 정보 (1단계)
+                frontendFramework, frontendLanguage, frontendFramework, frontendFramework,
+                // 4-7: Backend 프레임워크 정보 (2단계)
+                backendFramework, backendLanguage, backendFramework, backendFramework,
+                // 8: Backend 프레임워크 (FAIL 예시용)
                 backendFramework,
-                problemDoc,
-                frontendFramework, frontendLanguage, frontendCode,
-                backendFramework, backendLanguage, backendCode
+                // 9: 문제 설명
+                safeProblemDoc,
+                // 10-11: Frontend 코드 헤더
+                frontendFramework, frontendLanguage,
+                // 12: Frontend 코드
+                frontendCode,
+                // 13-14: Backend 코드 헤더
+                backendFramework, backendLanguage,
+                // 15: Backend 코드
+                backendCode
         );
     }
 

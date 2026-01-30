@@ -311,7 +311,7 @@ public class SubmissionService {
                     .filter(f -> f.getCodeRole() == SubmissionFile.CodeRole.BACKEND)
                     .toList();
 
-            // ✅ GPT 1번 호출로 통합 채점
+            // GPT 1번 호출로 통합 채점
             ScoreResult fullstackScore = scoreFullstackIntegrated(
                     fullstackData.getFrameworkId(),
                     frontendFiles,
@@ -319,8 +319,7 @@ public class SubmissionService {
                     room
             );
 
-            // ✅ 2개의 ScoreResult로 반환 (Frontend/Backend 동일 점수)
-            return List.of(fullstackScore, fullstackScore);
+            return List.of(fullstackScore);
         }
 
         // Frontend와 Backend 데이터 분리
@@ -456,73 +455,6 @@ public class SubmissionService {
         List<Submission> submissions = context.getSubmissions();
         List<SubmissionRespDto.RoleInfo> roles = new ArrayList<>();
 
-        // ✅ Fullstack인 경우 (하나의 Submission, 2개의 ScoreResult)
-        if (submissions.size() == 1 && scoreResults.size() == 2) {
-            Submission submission = submissions.get(0);
-            SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(0);
-
-            // Frontend/Backend 평균 점수 계산
-            int averageScore = (int) scoreResults.stream()
-                    .mapToInt(ScoreResult::getScore)
-                    .average()
-                    .orElse(0);
-
-            boolean allSuccess = scoreResults.stream()
-                    .allMatch(ScoreResult::getSuccess);
-
-            long totalExecutionTime = scoreResults.stream()
-                    .mapToLong(result -> result.getExecutionTime() != null ? result.getExecutionTime() : 0L)
-                    .sum();
-
-            String errorLog = scoreResults.stream()
-                    .map(ScoreResult::getErrorLog)
-                    .filter(log -> log != null && !log.isEmpty())
-                    .collect(Collectors.joining("\n"));
-
-            // Submission 업데이트
-            submission.updateResult(
-                    allSuccess ? Submission.Status.SUCCESS : Submission.Status.FAIL,
-                    totalExecutionTime,
-                    errorLog,
-                    averageScore
-            );
-
-            // roles 정보 생성 (FULLSTACK으로)
-            roles.add(SubmissionRespDto.RoleInfo.builder()
-                    .role("FULLSTACK")
-                    .frameworkId(data.getFrameworkId())
-                    .build());
-
-            Room room = context.getRoom();
-            Long currentQuestId = getCurrentQuestId(submission.getProblemFrameworkId());
-            Integer currentQuestOrder = getCurrentQuestOrder(submission.getProblemFrameworkId());
-
-            if (allSuccess) {
-                return buildSuccessResponse(
-                        submission.getId(),
-                        room.getId(),
-                        currentQuestId,
-                        currentQuestOrder,
-                        averageScore,
-                        totalExecutionTime,
-                        room,
-                        roles
-                );
-            } else {
-                room.decreaseLife();
-                return buildFailResponse(
-                        submission.getId(),
-                        room.getId(),
-                        currentQuestId,
-                        currentQuestOrder,
-                        averageScore,
-                        totalExecutionTime,
-                        room,
-                        errorLog
-                );
-            }
-        }
-
         // 각 Submission 결과 업데이트
         for (int i = 0; i < submissions.size(); i++) {
             Submission submission = submissions.get(i);
@@ -565,7 +497,7 @@ public class SubmissionService {
 
         Room room = context.getRoom();
         Long problemFrameworkId = submissions.get(0).getProblemFrameworkId();
-        Long currentQuestId = getCurrentQuestId(submissions.get(0).getProblemFrameworkId());
+        Long currentQuestId = getCurrentQuestId(problemFrameworkId);
         Integer currentQuestOrder = getCurrentQuestOrder(problemFrameworkId);
 
         if (allSuccess) {
@@ -580,7 +512,6 @@ public class SubmissionService {
                     roles
             );
         } else {
-            // 실패 시 life 감소
             room.decreaseLife();
             return buildFailResponse(
                     submissions.get(0).getId(),
