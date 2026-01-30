@@ -7,7 +7,6 @@ import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
-import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
@@ -36,19 +35,18 @@ export default function GamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
-  const { accessToken } = useStore();
   const { submissionId } = useGameStore();
 
   // 게임 시작 알리기
   useEffect(() => {
-    if (!roomId || !accessToken) return;
+    if (!roomId) return;
 
-    startGame(Number(roomId), accessToken);
-  }, [roomId, accessToken]);
+    startGame(Number(roomId));
+  }, [roomId]);
 
   // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
   useEffect(() => {
-    if (!roomId || !accessToken) return;
+    if (!roomId) return;
 
     const initSetting = async () => {
       try {
@@ -57,9 +55,9 @@ export default function GamePage() {
         let data = null;
 
         if (submissionId === null) {
-          data = await getQuest(questId, roomId, accessToken);
+          data = await getQuest(questId, roomId);
         } else if (submissionId) {
-          data = await getRetryQuestFile(submissionId, roomId, accessToken);
+          data = await getRetryQuestFile(submissionId, roomId);
         } else {
           throw new Error('submissionId가 올바르지 않습니다.');
         }
@@ -75,7 +73,7 @@ export default function GamePage() {
     };
 
     initSetting();
-  }, [questId, roomId, accessToken, submissionId]);
+  }, [questId, roomId, submissionId]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {

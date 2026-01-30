@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 
 import type { QuestInfo } from '../pages/game/types/ideTypes';
 
@@ -6,11 +6,7 @@ import type { QuestInfo } from '../pages/game/types/ideTypes';
 export const getRetryQuestFile = async (
   submissionId: string | undefined,
   roomId: string | undefined,
-  accessToken?: string | null,
 ): Promise<QuestInfo> => {
-  const response = await axios.get(
-    `/api/v1/rooms/${roomId}/submissions/${submissionId}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
+  const response = await api.get(`/rooms/${roomId}/submissions/${submissionId}`);
   return response.data.result as QuestInfo;
 };

@@ -1,16 +1,5 @@
-import axios from 'axios';
+import api from './api';
 
-export async function startGame(
-  roomId: number | null,
-  accessToken?: string | null,
-) {
-  await axios.post(
-    `/api/v1/rooms/${roomId}/start`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  );
+export async function startGame(roomId: number | null) {
+  await api.post(`/rooms/${roomId}/start`);
 }
