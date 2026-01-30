@@ -177,6 +177,11 @@ export default function GamePage() {
               maxWidth={400}
               enable={{ right: true }} // 드래그 설정 - 오른쪽만
               className="bg-stone-900 border-r border-gray-700"
+              handleComponent={{
+                right: (
+                  <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
+                ),
+              }}
             >
               <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
@@ -212,9 +217,14 @@ export default function GamePage() {
           <Resizable
             defaultSize={{ width: '100%', height: 230 }}
             enable={{ top: true }}
-            className="shrink-0 border border-gray-700 overflow-hidden"
+            className="shrink-0 border border-gray-700"
             minHeight={50}
             maxHeight={500}
+            handleComponent={{
+              top: (
+                <div className="w-full h-[4px] hover:bg-amber-300/70 cursor-row-resize transition-colors" />
+              ),
+            }}
           >
             <Terminal
               frontendErrorLog={frontendErrorLog}
