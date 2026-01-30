@@ -56,8 +56,6 @@ export default function GamePage() {
         setError(null);
         let data = null;
 
-        console.log('submissionId:', submissionId);
-
         if (submissionId === null) {
           data = await getQuest(questId, roomId, accessToken);
         } else if (submissionId) {
@@ -162,8 +160,9 @@ export default function GamePage() {
 
   return (
     <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
-      <div className="flex w-full h-[45px] gap-[48px] mb-[10px] shrink-0">
+      <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
         <GameInfoBar />
+        <SubmitBtn onClick={submitCode} />
       </div>
       <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
         {/* 메뉴바 */}
@@ -181,15 +180,17 @@ export default function GamePage() {
               enable={{ right: true }} // 드래그 설정 - 오른쪽만
               className="bg-stone-900 border-r border-gray-700"
             >
-              <div className="h-full overflow-y-auto overflow-x-hidden pt-5 pb-10 px-3 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
+              <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
                 {activeMenu === 'explorer' && (
-                  <Explorer
-                    root={rootNode}
-                    expanded={ide.expanded}
-                    onToggleFolder={ide.toggleFolder}
-                    onOpenFile={ide.openFile}
-                  />
+                  <div className="p-3 pb-10 min-w-full overflow-hidden">
+                    <Explorer
+                      root={rootNode}
+                      expanded={ide.expanded}
+                      onToggleFolder={ide.toggleFolder}
+                      onOpenFile={ide.openFile}
+                    />
+                  </div>
                 )}
               </div>
             </Resizable>
@@ -211,7 +212,7 @@ export default function GamePage() {
           </div>
           {/* 터미널 */}
           <Resizable
-            defaultSize={{ width: '100%', height: 250 }}
+            defaultSize={{ width: '100%', height: 230 }}
             enable={{ top: true }}
             className="shrink-0 border border-gray-700 overflow-hidden"
             minHeight={50}
@@ -223,9 +224,6 @@ export default function GamePage() {
             />
           </Resizable>
         </div>
-      </div>
-      <div className="flex w-full mt-4">
-        <SubmitBtn onClick={submitCode} />
       </div>
     </div>
   );
