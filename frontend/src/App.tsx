@@ -8,6 +8,7 @@ import PrivateRoute from './components/routes/PrivateRoute';
 import MainLayout from './layouts/AppLayout';
 import GamePage from './pages/game/GamePage';
 import HomePage from './pages/home/HomePage';
+import InvitationPage from './pages/invitation-code/InvitationCodePage';
 import LoginPage from './pages/login/LoginPage';
 import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
 import MyPage from './pages/mypage/MyPage';
@@ -80,6 +81,7 @@ function App() {
             path="/single-room-settings"
             element={<SingleRoomSettingPage />}
           />
+          <Route path="/invitation" element={<InvitationPage />} />
           <Route path="/game/:roomId/:questId" element={<GamePage />} />
           <Route path="/result/loading" element={<ResultLoadingPage />} />
           <Route path="/result" element={<ResultPage />} />
