@@ -1,4 +1,6 @@
 import { Editor } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import { Bounce, toast, ToastContainer } from 'react-toastify';
 
 import type { FileNode } from '../types/ideTypes';
 
@@ -19,30 +21,58 @@ export default function CodeEditor({
     );
   }
   return (
-    // div에 연결 -> 화면에 렌더링 될 때 자동으로 요소를 넣어준다.
-    <Editor
-      key={activeFile.id}
-      width="100%"
-      height="100%"
-      language={activeFile.language ?? 'javascript'} // 활성화 된 파일이 있고, 언어가 있다면 그 값 쓰기
-      value={code} // 에디터에 표시되는 텍스트
-      theme="vs-dark"
-      options={{
-        minimap: { enabled: false },
-        fontSize: 16,
-        contextmenu: false, // 우클릭 메뉴 제거
-      }}
-      onChange={(f) => onChange(f ?? '')}
-      // 복사 + 붙여넣기 방지
-      onMount={(editor) => {
-        editor.onKeyDown((e) => {
-          // 윈도우 ctrl, 맥 command
-          // e.code = 내가 어떤 키를 눌렀는지 나타내는 값
-          if ((e.ctrlKey || e.metaKey) && ['KeyC', 'KeyV'].includes(e.code)) {
-            e.preventDefault();
-          }
-        });
-      }}
-    />
+    <>
+      <ToastContainer
+        position="top-center"
+        autoClose={800}
+        hideProgressBar
+        transition={Bounce}
+        style={{ marginTop: '12px' }}
+        newestOnTop
+        toastStyle={{
+          backgroundColor: '#2d0a0a',
+          border: '1px solid #dc2626',
+          color: '#fca5a5',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 500,
+          padding: '12px 12px',
+          minHeight: 'auto',
+        }}
+      />
+      <Editor
+        key={activeFile.id}
+        width="100%"
+        height="100%"
+        language={activeFile.language ?? 'javascript'}
+        value={code}
+        theme="vs-dark"
+        options={{
+          minimap: { enabled: false },
+          fontSize: 16,
+          contextmenu: false,
+        }}
+        onChange={(f) => onChange(f ?? '')}
+        onMount={(editor) => {
+          editor.onKeyDown((e) => {
+            const isCopy =
+              (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyC;
+
+            const isPaste =
+              (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyV;
+
+            if (isCopy || isPaste) {
+              e.preventDefault();
+              toast.error('복사 및 붙여넣기를 할 수 없습니다.');
+            }
+          });
+
+          // 클립보드(윈도우 + V) 클릭해서 붙여넣기 했을 때 막기 위해
+          editor.onDidPaste(() => {
+            toast.error('복사 및 붙여넣기를 할 수 없습니다.');
+          });
+        }}
+      />
+    </>
   );
 }
