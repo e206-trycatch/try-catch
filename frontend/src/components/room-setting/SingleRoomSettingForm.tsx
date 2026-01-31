@@ -3,9 +3,9 @@ import { useMemo } from 'react';
 
 import { MOCK_THEMES } from '../../mocks/mockData';
 import { type Position, useRoomStore } from '../../stores/useRoomStore';
+import ThemeDisplay from '../theme-selection/ThemeDisplay';
 import SelectField from './SelectField';
 import SettingRow from './SettingRow';
-import ThemeDisplay from './ThemeDisplay';
 
 const getThemeName = (themeId: number | null) => {
   if (!themeId) return '테마를 선택해주세요';

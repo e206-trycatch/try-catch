@@ -110,8 +110,12 @@ const ThemeSelectionPage = () => {
   const handleStartGame = (theme: Theme) => {
     setThemeId(theme.themeId);
     navigate(
-      mode === 'SINGLE' ? '/single-room-settings' : '/multi-room-settings',
+      mode === 'SINGLE' ? '/single-room-settings' : '/multi-room-setting',
     );
+  };
+
+  const handleInvitationCodeClick = () => {
+    navigate('/invitation-code');
   };
 
   return (
@@ -123,6 +127,15 @@ const ThemeSelectionPage = () => {
             ? '테마 정보를 불러오지 못했습니다.'
             : '플레이할 테마를 선택해주세요.'}
       </div>
+
+      {mode === 'MULTI' && (
+        <button
+          onClick={handleInvitationCodeClick}
+          className="px-6 py-3 bg-[#2b2949] text-white rounded-lg hover:bg-[#353359] transition-colors duration-200 border border-[#555184]"
+        >
+          초대 코드로 참여하기
+        </button>
+      )}
 
       <ThemeCardList
         themes={viewThemes}

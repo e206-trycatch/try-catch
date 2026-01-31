@@ -81,7 +81,7 @@ function App() {
             path="/single-room-settings"
             element={<SingleRoomSettingPage />}
           />
-          <Route path="/invitation" element={<InvitationPage />} />
+          <Route path="/invitation-code" element={<InvitationPage />} />
           <Route path="/game/:roomId/:questId" element={<GamePage />} />
           <Route path="/result/loading" element={<ResultLoadingPage />} />
           <Route path="/result" element={<ResultPage />} />
