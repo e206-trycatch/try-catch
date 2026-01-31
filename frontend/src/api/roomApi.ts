@@ -39,7 +39,10 @@ export const fetchSingleSetting = async (themeId: number) => {
 };
 
 export const createRoom = async (payload: CreateRoomRequest) => {
-  const { data } = await api.post<{ result: CreateRoomResponse }>('/rooms/single', payload);
+  const { data } = await api.post<{ result: CreateRoomResponse }>(
+    '/rooms/single',
+    payload,
+  );
   return data.result;
 };
 
@@ -47,5 +50,27 @@ export const fetchQuestList = async (themeId: number) => {
   const res = await api.get<QuestListResponse>('/rooms/single/quest', {
     params: { themeId },
   });
+  return res.data;
+};
+
+// 퀘스트 스토리 관련 타입
+export interface QuestStory {
+  storyId: number;
+  storyOrder: number;
+  imageUrl: string;
+  content: string;
+}
+
+type QuestStoryResponse = {
+  status: number;
+  message: string;
+  result: QuestStory[];
+};
+
+// 퀘스트 스토리 목록 조회
+export const fetchQuestStories = async (questId: number) => {
+  const res = await api.get<QuestStoryResponse>(
+    `/rooms/single/quest/${questId}/story`,
+  );
   return res.data;
 };

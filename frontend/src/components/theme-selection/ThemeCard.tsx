@@ -45,7 +45,8 @@ export const ThemeCard = ({
         `}
         style={{
           padding: '2px',
-          background: 'white',
+          margin: '5px',
+          background: '#FEFEFE',
           clipPath: pixelClipPath,
         }}
       >
@@ -75,9 +76,9 @@ export const ThemeCard = ({
           ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}
         `}
       >
-        <p className="text-white text-sm leading-relaxed whitespace-pre-wrap drop-shadow-md">
+        {/* <p className="text-[#FEFEFE] text-sm leading-relaxed whitespace-pre-wrap drop-shadow-md">
           {theme.description}
-        </p>
+        </p> */}
       </div>
 
       {/* 하단 정보 영역 */}
@@ -96,8 +97,8 @@ export const ThemeCard = ({
           {/* 왼쪽 레벨 표시 */}
           <div
             className={`
-              flex items-center justify-center bg-white text-black font-bold rounded-full transition-all duration-500
-              ${isActive ? 'w-12 h-12 text-sm' : 'w-0 h-0 opacity-0'}
+              flex items-center justify-center bg-white text-black font-bold rounded-4xl transition-all duration-500
+              ${isActive ? 'w-15 h-15 text-md' : 'w-0 h-0 opacity-0'}
             `}
           >
             Lv.{theme.level}
@@ -106,7 +107,7 @@ export const ThemeCard = ({
           {/* 테마 제목 & 장르 */}
           <div
             className={`
-              flex flex-col text-white transition-all duration-500
+              flex flex-col text-[#FEFEFE] transition-all duration-500
               ${isActive ? 'flex-1 ml-4 items-start' : 'items-center'}
             `}
           >
@@ -125,12 +126,11 @@ export const ThemeCard = ({
 
             <div
               className={`
-                flex flex-col text-[10px] opacity-80 leading-tight transition-all
+                flex flex-col text-[#FEFEFE] text-[12px] opacity-80 leading-tight transition-all
                 ${isActive ? 'opacity-100' : 'h-0 opacity-0 overflow-hidden'}
               `}
             >
-              <span>테마 타입 | {theme.genre}</span>
-              <span>난이도 | Level {theme.level}</span>
+              <span className="text-[13px] mb-2">{theme.genre} | 타임어택</span>
             </div>
           </div>
 
@@ -138,7 +138,7 @@ export const ThemeCard = ({
           <button
             onClick={(e) => onStartClick(e, theme)}
             className={`
-              px-6 py-2 font-bold text-xs transition-all duration-500 shadow-lg
+              px-6 py-2 font-bold text-[13px] transition-all duration-500 shadow-lg mb-4 mr-3 rounded-lg
               ${
                 isActive
                   ? 'opacity-100 translate-x-0'
@@ -150,7 +150,6 @@ export const ThemeCard = ({
                   : 'bg-gray-500 text-gray-300 cursor-not-allowed'
               }
             `}
-            style={{ clipPath: pixelClipPath }}
             disabled={!theme.isAvailable}
           >
             {theme.isAvailable ? 'START' : '준비중'}

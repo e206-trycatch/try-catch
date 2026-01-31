@@ -1,7 +1,7 @@
 // 프로필 조회 섹션 (1차: 조회만, 2차: 수정 기능 추가 예정)
 
-import type { Profile } from './types/user';
 import defaultProfile from '../../assets/images/icons/default_profile.png';
+import type { Profile } from './types/user';
 
 interface ProfileSectionProps {
   profile: Profile | null;
@@ -90,7 +90,9 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
 
           {/* 비밀번호 확인 */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">비밀번호 확인</label>
+            <label className="block text-sm text-gray-400 mb-1">
+              비밀번호 확인
+            </label>
             <div className="flex gap-2">
               <input
                 type="password"

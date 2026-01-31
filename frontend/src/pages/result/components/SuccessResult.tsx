@@ -16,7 +16,7 @@ interface Props {
 const SuccessResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
-  const { roomId, questOrder, executionTimeMs, next } = result;
+  const { questOrder, executionTimeMs, next } = result;
 
   const handleNext = () => {
     clearStore();
@@ -30,8 +30,9 @@ const SuccessResult = ({ result }: Props) => {
       // 다음 문제로 넘어가면 submissionId null로 초기화 하기
       useGameStore.getState().setSubmissionId(null);
 
-      // 다음 문제로 이동
-      navigate(`/game/${roomId}/${next.nextQuestId}`);
+      // 다음 퀘스트 ID 설정 후 스토리 페이지로 이동
+      useRoomStore.getState().setCurrentQuestId(next.nextQuestId);
+      navigate('/story');
     } else {
       navigate('/');
     }

@@ -7,7 +7,6 @@ import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
-import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
@@ -36,19 +35,18 @@ export default function GamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
-  const { accessToken } = useStore();
   const { submissionId } = useGameStore();
 
   // 게임 시작 알리기
   useEffect(() => {
-    if (!roomId || !accessToken) return;
+    if (!roomId) return;
 
-    startGame(Number(roomId), accessToken);
-  }, [roomId, accessToken]);
+    startGame(Number(roomId));
+  }, [roomId]);
 
   // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
   useEffect(() => {
-    if (!roomId || !accessToken) return;
+    if (!roomId) return;
 
     const initSetting = async () => {
       try {
@@ -57,9 +55,9 @@ export default function GamePage() {
         let data = null;
 
         if (submissionId === null) {
-          data = await getQuest(questId, roomId, accessToken);
+          data = await getQuest(questId, roomId);
         } else if (submissionId) {
-          data = await getRetryQuestFile(submissionId, roomId, accessToken);
+          data = await getRetryQuestFile(submissionId, roomId);
         } else {
           throw new Error('submissionId가 올바르지 않습니다.');
         }
@@ -75,7 +73,7 @@ export default function GamePage() {
     };
 
     initSetting();
-  }, [questId, roomId, accessToken, submissionId]);
+  }, [questId, roomId, submissionId]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
@@ -160,8 +158,9 @@ export default function GamePage() {
 
   return (
     <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
-      <div className="flex w-full h-[45px] gap-[48px] mb-[10px] shrink-0">
+      <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
         <GameInfoBar />
+        <SubmitBtn onClick={submitCode} />
       </div>
       <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
         {/* 메뉴바 */}
@@ -178,16 +177,23 @@ export default function GamePage() {
               maxWidth={400}
               enable={{ right: true }} // 드래그 설정 - 오른쪽만
               className="bg-stone-900 border-r border-gray-700"
+              handleComponent={{
+                right: (
+                  <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
+                ),
+              }}
             >
-              <div className="h-full overflow-hidden p-5">
+              <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
                 {activeMenu === 'explorer' && (
-                  <Explorer
-                    root={rootNode}
-                    expanded={ide.expanded}
-                    onToggleFolder={ide.toggleFolder}
-                    onOpenFile={ide.openFile}
-                  />
+                  <div className="p-3 pb-10 min-w-full">
+                    <Explorer
+                      root={rootNode}
+                      expanded={ide.expanded}
+                      onToggleFolder={ide.toggleFolder}
+                      onOpenFile={ide.openFile}
+                    />
+                  </div>
                 )}
               </div>
             </Resizable>
@@ -209,11 +215,16 @@ export default function GamePage() {
           </div>
           {/* 터미널 */}
           <Resizable
-            defaultSize={{ width: '100%', height: 220 }}
+            defaultSize={{ width: '100%', height: 230 }}
             enable={{ top: true }}
-            className="shrink-0 border border-gray-700 overflow-hidden"
+            className="shrink-0 border border-gray-700"
             minHeight={50}
             maxHeight={500}
+            handleComponent={{
+              top: (
+                <div className="w-full h-[4px] hover:bg-amber-300/70 cursor-row-resize transition-colors" />
+              ),
+            }}
           >
             <Terminal
               frontendErrorLog={frontendErrorLog}
@@ -221,9 +232,6 @@ export default function GamePage() {
             />
           </Resizable>
         </div>
-      </div>
-      <div className="flex w-full mt-4">
-        <SubmitBtn onClick={submitCode} />
       </div>
     </div>
   );

@@ -1,15 +1,16 @@
 // 마이페이지 메인 컨테이너
 
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useStore } from '../../stores/useStore';
+
 import { getProfile, getSubmissions } from '../../api/user';
-import type { Profile, EscapeRecord } from './types/user';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import ProfileSection from './ProfileSection';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useStore } from '../../stores/useStore';
 import EscapeRecordSection from './EscapeRecordSection';
+import ProfileSection from './ProfileSection';
+import type { EscapeRecord, Profile } from './types/user';
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -102,7 +103,9 @@ const MyPage = () => {
       {/* 첫 번째 화면: 프로필 섹션 (화면 전체 높이) */}
       <section className="min-h-screen flex flex-col">
         {/* 페이지 제목 */}
-        <h1 className="text-3xl font-bold text-center pt-24 pb-8">마이페이지</h1>
+        <h1 className="text-3xl font-bold text-center pt-24 pb-8">
+          마이페이지
+        </h1>
 
         {/* 프로필 섹션 */}
         <div className="flex-1 flex items-center justify-center px-6 pb-8">
@@ -122,8 +125,16 @@ const MyPage = () => {
 
         {/* 푸터 */}
         <footer className="flex justify-between px-2 py-4 text-gray-500 text-sm mt-8">
-          <span>ESCAPE<br />THE ROOM</span>
-          <span className="text-right">CATCH ERROR<br />IF YOU CAN</span>
+          <span>
+            ESCAPE
+            <br />
+            THE ROOM
+          </span>
+          <span className="text-right">
+            CATCH ERROR
+            <br />
+            IF YOU CAN
+          </span>
         </footer>
       </section>
     </div>

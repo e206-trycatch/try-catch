@@ -171,23 +171,33 @@ public class SubmissionService {
 
         Long problemFrameworkId = request.getProblemFrameworkId();
 
-        // Frontend 제출 처리
-        if (request.getFrontend() != null
+        boolean hasFrontend = request.getFrontend() != null
                 && request.getFrontend().getFiles() != null
-                && !request.getFrontend().getFiles().isEmpty()) {
-            processRoleSubmission(
-                    roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context
-            );
+                && !request.getFrontend().getFiles().isEmpty();
+
+        boolean hasBackend = request.getBackend() != null
+                && request.getBackend().getFiles() != null
+                && !request.getBackend().getFiles().isEmpty();
+
+        if (!hasFrontend && !hasBackend) {
+            throw new CustomException(SUBMISSION_NOT_FOUND);
         }
 
-        // Backend 제출 처리
-        if (request.getBackend() != null
-                && request.getBackend().getFiles() != null
-                && !request.getBackend().getFiles().isEmpty()) {
-            processRoleSubmission(
-                    roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context
-            );
+        if (hasFrontend && hasBackend) {
+            // 풀스택: 둘 다 저장
+            processFullstackSubmission(roomId, userId, request, problemFrameworkId, context);
+//            processRoleSubmission(roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context);
+//            processRoleSubmission(roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context);
+            return context;
         }
+
+        if (hasFrontend) {
+            processRoleSubmission(roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context);
+            return context;
+        }
+
+        // hasBackend
+        processRoleSubmission(roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context);
 
         return context;
     }
@@ -217,9 +227,7 @@ public class SubmissionService {
     }
 
     private List<SubmissionFile> saveSubmissionFiles(Long submissionId, List<SubmissionReqDto.FileItem> files) {
-        if (files == null || files.isEmpty()) {
-            return List.of();
-        }
+        if (files == null || files.isEmpty())  return List.of();
 
         List<SubmissionFile> submissionFiles = files.stream()
                 .map(file -> SubmissionFile.builder()
@@ -233,6 +241,43 @@ public class SubmissionService {
 
         return submissionFileRepository.saveAll(submissionFiles);
     }
+
+    private void processFullstackSubmission(
+            Long roomId,
+            Long userId,
+            SubmissionReqDto request,
+            Long problemFrameworkId,
+            SubmissionContext context
+    ) {
+        Submission submission = Submission.builder()
+                .userId(userId)
+                .roomId(roomId)
+                .problemFrameworkId(problemFrameworkId)
+                .status(Submission.Status.FAIL)
+                .build();
+        submission = submissionRepository.save(submission);
+
+        List<SubmissionFile> frontendFiles = saveSubmissionFiles(
+                submission.getId(),
+                request.getFrontend().getFiles()
+        );
+
+        // ✅ 백 파일 저장 (codeRole=BACKEND 강제)
+        List<SubmissionFile> backendFiles = saveSubmissionFiles(
+                submission.getId(),
+                request.getBackend().getFiles()
+        );
+
+        // ✅ context에는 "FULLSTACK"으로 1개만 넣어도 되고,
+        // 또는 roles 응답을 위해 FRONTEND/BACKEND 둘 다 넣고 싶으면 context 구조를 바꿔야 함.
+        // 여기서는 일단 submissionData 1개로 관리 (roleName="FULLSTACK")
+        List<SubmissionFile> allFiles = new ArrayList<>();
+        allFiles.addAll(frontendFiles);
+        allFiles.addAll(backendFiles);
+
+        context.addSubmission(submission, allFiles, "FULLSTACK", problemFrameworkId);
+    }
+
 
     private SubmissionFile.CodeRole determineCodeRole(String filePath) {
         if (filePath == null) {
@@ -254,6 +299,29 @@ public class SubmissionService {
     private List<ScoreResult> scoreSubmissions(SubmissionContext context, Room room) {
         List<SubmissionContext.SubmissionData> dataList = context.getSubmissionDataList();
 
+        if (dataList.size() == 1 && dataList.get(0).getRoleName().equals("FULLSTACK")) {
+            SubmissionContext.SubmissionData fullstackData = dataList.get(0);
+
+            // 파일을 Frontend/Backend로 분리
+            List<SubmissionFile> frontendFiles = fullstackData.getFiles().stream()
+                    .filter(f -> f.getCodeRole() == SubmissionFile.CodeRole.FRONTEND)
+                    .toList();
+
+            List<SubmissionFile> backendFiles = fullstackData.getFiles().stream()
+                    .filter(f -> f.getCodeRole() == SubmissionFile.CodeRole.BACKEND)
+                    .toList();
+
+            // GPT 1번 호출로 통합 채점
+            ScoreResult fullstackScore = scoreFullstackIntegrated(
+                    fullstackData.getFrameworkId(),
+                    frontendFiles,
+                    backendFiles,
+                    room
+            );
+
+            return List.of(fullstackScore);
+        }
+
         // Frontend와 Backend 데이터 분리
         SubmissionContext.SubmissionData frontendData = dataList.stream()
                 .filter(d -> d.getRoleName().equals("FRONTEND"))
@@ -264,11 +332,6 @@ public class SubmissionService {
                 .filter(d -> d.getRoleName().equals("BACKEND"))
                 .findFirst()
                 .orElse(null);
-
-        // Fullstack인 경우 (둘 다 있음)
-        if (frontendData != null && backendData != null) {
-            return scoreFullstackSubmission(frontendData, backendData, room);
-        }
 
         // Frontend만 있는 경우
         if (frontendData != null) {
@@ -289,6 +352,47 @@ public class SubmissionService {
                 .errorLog("제출된 코드가 없습니다.")
                 .executionTime(0L)
                 .build());
+    }
+
+    /**
+     * Fullstack 통합 채점
+     */
+    private ScoreResult scoreFullstackIntegrated(
+            Long problemFrameworkId,
+            List<SubmissionFile> frontendFiles,
+            List<SubmissionFile> backendFiles,
+            Room room) {
+
+        ProblemFramework problemFramework = problemFrameworkRepository
+                .findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_FRAMEWORK_NOT_FOUND));
+
+        Long frontendId = problemFramework.getFrontendId();
+        Long backendId = problemFramework.getBackendId();
+
+        if (frontendId == null || backendId == null) {
+            throw new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND);
+        }
+
+        Framework frontendFramework = frameworkRepository.findById(frontendId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND));
+        Framework backendFramework = frameworkRepository.findById(backendId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FRAMEWORK_NOT_FOUND));
+
+        String problemDoc = getProblemDoc(problemFrameworkId);
+        String frontendCode = combineSource(frontendFiles);
+        String backendCode = combineSource(backendFiles);
+
+        return gptScoringService.scoreFullstackIntegrated(
+                problemDoc,
+                frontendCode,
+                backendCode,
+                frontendFramework.getName(),
+                frontendFramework.getLanguage(),
+                backendFramework.getName(),
+                backendFramework.getLanguage(),
+                room
+        );
     }
 
     /**
@@ -343,73 +447,6 @@ public class SubmissionService {
         );
     }
 
-    /**
-     * Fullstack 제출 채점 (Frontend + Backend)
-     */
-    private List<ScoreResult> scoreFullstackSubmission(
-            SubmissionContext.SubmissionData frontendData,
-            SubmissionContext.SubmissionData backendData,
-            Room room) {
-
-        // 1단계: 각자 품질 검증
-        ScoreResult frontendQuality = scoreSingleRole(frontendData, room);
-        ScoreResult backendQuality = scoreSingleRole(backendData, room);
-
-        // 둘 중 하나라도 실패하면 즉시 반환
-        if (!frontendQuality.getSuccess()) {
-            return List.of(
-                    frontendQuality,
-                    ScoreResult.builder()
-                            .success(false)
-                            .score(0)
-                            .errorLog("Frontend 검증 실패로 Backend 채점이 진행되지 않았습니다.")
-                            .executionTime(0L)
-                            .build()
-            );
-        }
-
-        if (!backendQuality.getSuccess()) {
-            return List.of(
-                    frontendQuality,
-                    backendQuality
-            );
-        }
-
-        // 2단계: API 계약 검증 (둘 다 성공한 경우에만)
-        Long problemFrameworkId = frontendData.getFrameworkId();
-        String problemDoc = getProblemDoc(problemFrameworkId);
-        String frontendCode = combineSource(frontendData.getFiles());
-        String backendCode = combineSource(backendData.getFiles());
-
-        ScoreResult apiContract = gptScoringService.verifyApiContract(
-                problemDoc,
-                frontendCode,
-                backendCode,
-                room
-        );
-
-        // API 계약 검증 실패 시
-        if (!apiContract.getSuccess()) {
-            return List.of(
-                    ScoreResult.builder()
-                            .success(false)
-                            .score(frontendQuality.getScore())
-                            .errorLog("API 계약 검증 실패: " + apiContract.getErrorLog())
-                            .executionTime(apiContract.getExecutionTime())
-                            .build(),
-                    ScoreResult.builder()
-                            .success(false)
-                            .score(backendQuality.getScore())
-                            .errorLog("API 계약 검증 실패: " + apiContract.getErrorLog())
-                            .executionTime(apiContract.getExecutionTime())
-                            .build()
-            );
-        }
-
-        // 모두 성공: 기존 점수 유지
-        return List.of(frontendQuality, backendQuality);
-    }
-
     @Transactional
     public SubmissionRespDto updateAndBuildResponse(
             SubmissionContext context,
@@ -460,7 +497,7 @@ public class SubmissionService {
 
         Room room = context.getRoom();
         Long problemFrameworkId = submissions.get(0).getProblemFrameworkId();
-        Long currentQuestId = getCurrentQuestId(submissions.get(0).getProblemFrameworkId());
+        Long currentQuestId = getCurrentQuestId(problemFrameworkId);
         Integer currentQuestOrder = getCurrentQuestOrder(problemFrameworkId);
 
         if (allSuccess) {
@@ -475,7 +512,6 @@ public class SubmissionService {
                     roles
             );
         } else {
-            // 실패 시 life 감소
             room.decreaseLife();
             return buildFailResponse(
                     submissions.get(0).getId(),

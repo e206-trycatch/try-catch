@@ -52,6 +52,9 @@ api.interceptors.response.use(
   (response) => response,
 
   async (error: AxiosError) => {
+    if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
+      return Promise.reject(error);
+    }
     const originalRequest = error.config as CustomAxiosRequestConfig;
 
     // config가 없으면 그냥 에러 반환 (예방적 체크)
@@ -130,7 +133,7 @@ api.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
 
 export default api;

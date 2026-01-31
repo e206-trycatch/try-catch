@@ -11,6 +11,7 @@ interface GameState {
   initializeForRoom: (roomId: number, life: number, hints: number) => void;
   setProblemFrameworkId: (id: number | null) => void;
   setSubmissionId: (id: number | null) => void;
+  resetSubmissionId: () => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -41,5 +42,10 @@ export const useGameStore = create<GameState>((set) => ({
   setSubmissionId: (id) =>
     set({
       submissionId: id ? String(id) : null,
+    }),
+
+  resetSubmissionId: () =>
+    set({
+      submissionId: null,
     }),
 }));

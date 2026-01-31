@@ -6,7 +6,7 @@ import Header from '../components/header/Header';
 const AppLayout = () => {
   const { pathname } = useLocation();
   // 숨길 페이지
-  const hiddenFooterPaths = ['/game', '/quest'];
+  const hiddenFooterPaths = ['/game', '/quest', '/story'];
   // 현재 주소가 hiddenFooterPths 중 하나로 시작하면 Footer를 숨기겠다.
   const hideFooter = hiddenFooterPaths.some((path) =>
     pathname.startsWith(path),

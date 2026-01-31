@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import backIcon from '../../assets/images/icons/back_icon.png';
 import trycatchLogo from '../../assets/images/trycatch_logo.png';
 import { useStore } from '../../stores/useStore';
 import GlobalAudioPlayer from '../sound/GlobalAudioPlayer';
@@ -35,14 +34,13 @@ const Header = () => {
             style={{ gap: '0.5vw' }}
           >
             <img
-              src={backIcon}
-              alt="Back"
-              style={{ width: '24px', height: '24px' }}
-            />
-            <img
               src={trycatchLogo}
               alt="TryCatch Logo"
-              style={{ width: '95px', height: '23px', marginLeft: '0.5vw' }}
+              style={{
+                width: '110px',
+                height: '30px',
+                paddingBottom: '3px',
+              }}
               className="object-contain"
             />
           </Link>

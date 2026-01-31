@@ -38,6 +38,7 @@ public class SecurityConfig {
                         // 인증 필요 없는 API 전부 허용
                         .requestMatchers("/api/*/main").permitAll()
                         .requestMatchers("/api/*/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/*/files/**").permitAll()
                         .requestMatchers("/api/ws/**").permitAll() // 웹소켓 요청 url 추가
                         .anyRequest().authenticated()
                 )

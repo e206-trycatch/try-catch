@@ -19,7 +19,7 @@ export const ThemeCardList = ({
   const [activeId, setActiveId] = useState<number | null>(null);
 
   const pixelClipPath =
-    'polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px))';
+    'polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px))';
 
   const handleCardClick = (theme: Theme) => {
     if (!theme.isAvailable) {
@@ -41,14 +41,7 @@ export const ThemeCardList = ({
   };
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '24px',
-        padding: '24px',
-      }}
-    >
+    <div className="flex flex-row items-stretch justify-center w-full h-[400px] gap-2">
       {themes.map((theme) => (
         <ThemeCard
           key={theme.themeId}

@@ -1,17 +1,12 @@
-import axios from 'axios';
-
 import type { SubmissionRequest } from '../pages/game/types/apiTypes';
+import api from './api';
 
 export async function codeSubmission(
   roomId: string | null,
   body: SubmissionRequest,
-  accessToken?: string | null,
 ) {
-  const res = await axios.post(`/api/v1/rooms/${roomId}/submissions`, body, {
-    headers: {
-      'Content-Type': 'application/json; charset=utf8',
-      Authorization: `Bearer ${accessToken}`,
-    },
+  const res = await api.post(`/rooms/${roomId}/submissions`, body, {
+    timeout: 30000,
   });
 
   return res.data;

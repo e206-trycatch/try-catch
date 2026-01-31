@@ -1,26 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { createRoom, fetchSingleSetting } from '../../api/roomApi';
+import { fetchSingleSetting } from '../../api/roomApi';
 import SingleRoomSettingForm from '../../components/room-setting/SingleRoomSettingForm';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
+import { createRoomAndStartQuest } from '../../services/roomService';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore'; // 토큰 확인용
-
-type AvailableFrameworks = NonNullable<
-  ReturnType<typeof useRoomStore.getState>['availableFrameworks']
->;
-
-const DEV_FRAMEWORKS: AvailableFrameworks = {
-  FRONTEND: [
-    { id: 1, name: 'React' },
-    { id: 2, name: 'Vue' },
-  ],
-  BACKEND: [
-    { id: 10, name: 'SpringBoot' },
-    { id: 11, name: 'Django' },
-  ],
-};
 
 const SingleRoomSettingPage = () => {
   const navigate = useNavigate();
@@ -32,6 +18,7 @@ const SingleRoomSettingPage = () => {
     buildCreatePayload,
     setAvailableFrameworks,
     setRoomId,
+    setCurrentQuestId,
   } = useRoomStore();
 
   useEffect(() => {
@@ -41,21 +28,14 @@ const SingleRoomSettingPage = () => {
       return;
     }
 
-    const isDev = import.meta.env.DEV;
-
     // 토큰 없으면 401 날 가능성이 높으니 로그인
-    if (!accessToken && !isDev) {
+    if (!accessToken) {
       alert('로그인이 필요합니다.');
       navigate('/login');
       return;
     }
 
-    // dev 모드에서는 api 대신 mock 사용
-    if (isDev) {
-      setAvailableFrameworks(DEV_FRAMEWORKS);
-      return;
-    }
-
+    // 항상 실제 API 호출
     (async () => {
       try {
         const data = await fetchSingleSetting(draft.themeId!);
@@ -89,13 +69,14 @@ const SingleRoomSettingPage = () => {
       return;
     }
 
-    try {
-      const response = await createRoom(payload);
-      setRoomId(response.roomId); // 생성된 방 ID 저장
-      navigate('/quest-description'); // 퀘스트 설명 페이지로 이동
-    } catch (error) {
-      console.error('방 생성 실패:', error);
-      alert('방 생성에 실패했습니다. 다시 시도해주세요.');
+    const result = await createRoomAndStartQuest(payload, draft.themeId!);
+
+    if (result.success) {
+      setRoomId(result.roomId);
+      setCurrentQuestId(result.questId);
+      navigate('/story');
+    } else {
+      alert(result.error);
     }
   };
 
