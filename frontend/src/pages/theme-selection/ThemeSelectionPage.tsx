@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import api from '../../api/api';
 import { ThemeCardList } from '../../components/theme-selection/ThemeCardList';
+import { buttonClipPath } from '../../constants/clipPaths';
 import { MOCK_THEMES, type Theme } from '../../mocks/mockData';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -131,7 +132,8 @@ const ThemeSelectionPage = () => {
       {mode === 'MULTI' && (
         <button
           onClick={handleInvitationCodeClick}
-          className="px-6 py-3 bg-[#2b2949] text-white rounded-lg hover:bg-[#353359] transition-colors duration-200 border border-[#555184]"
+          className="px-6 py-3 bg-[#2b2949] text-white hover:bg-[#353359] transition-colors duration-200 border border-[#555184]"
+          style={{ clipPath: buttonClipPath }}
         >
           초대 코드로 참여하기
         </button>
