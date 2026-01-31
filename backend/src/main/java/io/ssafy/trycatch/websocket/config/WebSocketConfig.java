@@ -28,8 +28,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws") //   ws://localhost:8081/ws
-                .setAllowedOriginPatterns("*")
+        registry.addEndpoint("/api/ws") //   ws://localhost:8081/ws
+                .setAllowedOriginPatterns(
+                        "http://localhost:5173",
+                        "https://i14e206.p.ssafy.io" )
                 .withSockJS();  //WebSocket 미지원 브라우저 대비 폴백
     }
 
