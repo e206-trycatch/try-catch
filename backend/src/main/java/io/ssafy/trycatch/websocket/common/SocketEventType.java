@@ -12,6 +12,9 @@ public enum SocketEventType {
     SCREEN_CHANGE,
     TIMER_SYNC,
     TIME_OUT,
+    SUBMISSION_STARTED,
+    SUBMISSION_COMPLETED,
+    RETRY_STARTED,
 
     // 힌트 채팅 이벤트
     HINT_MESSAGE
