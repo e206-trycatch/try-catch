@@ -16,7 +16,7 @@ interface Props {
 const SuccessResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
-  const { roomId, questOrder, executionTimeMs, next } = result;
+  const { questOrder, executionTimeMs, next } = result;
 
   const handleNext = () => {
     clearStore();

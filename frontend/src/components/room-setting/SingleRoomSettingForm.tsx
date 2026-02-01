@@ -2,9 +2,9 @@
 import { useMemo } from 'react';
 
 import { type Position, useRoomStore } from '../../stores/useRoomStore';
+import ThemeDisplay from '../theme-selection/ThemeDisplay';
 import SelectField from './SelectField';
 import SettingRow from './SettingRow';
-import ThemeDisplay from './ThemeDisplay';
 
 const SingleRoomSettingForm = () => {
   const {

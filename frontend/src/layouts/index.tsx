@@ -19,7 +19,7 @@ const MainLayout = () => {
       {/* 본문 영역 (페이지마다 바뀌는 부분) */}
       <main className="flex-1 bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          <Outlet /> 
+          <Outlet />
         </div>
       </main>
 

@@ -1,6 +1,5 @@
-import api from './api';
-
 import type { SubmissionRequest } from '../pages/game/types/apiTypes';
+import api from './api';
 
 export async function codeSubmission(
   roomId: string | null,
