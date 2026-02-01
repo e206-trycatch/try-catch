@@ -19,7 +19,9 @@ import io.ssafy.trycatch.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +45,8 @@ public class SubmissionService {
     private final ProblemFileRepository problemFileRepository;
     private final FrameworkRepository frameworkRepository;
     private final RoomUserRepository roomUserRepository;
+    private final TransactionTemplate transactionTemplate;
+
 
     private static final String FRONTEND_RUBRIC = """
             - 요구사항(문제 설명) 충족 여부
@@ -61,7 +65,13 @@ public class SubmissionService {
     @Transactional
     public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request) {
         // 1단계: DB 작업 (트랜잭션 내)
-        SubmissionContext context = createSubmissions(roomId, userId, request);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        SubmissionContext context = transactionTemplate.execute(status ->
+                createSubmissions(roomId, userId, request)
+        );
+        if (context == null) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR); // 네 에러코드에 맞게
+        }
         Room room = context.getRoom();
 
         if (room.getLife() <= 0) {
@@ -224,8 +234,11 @@ public class SubmissionService {
 
     @Transactional
     public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request) {
-        Room room = roomRepository.findById(roomId)
+//        Room room = roomRepository.findById(roomId)
+//                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+        Room room = roomRepository.findByIdForUpdate(roomId)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
         log.info("createSubmissions roomId: {}, probelFrameworkId: {}", roomId, request.getProblemFrameworkId());
         // 중복 방지 로직
         boolean hasPending = submissionRepository
@@ -521,27 +534,29 @@ public class SubmissionService {
             SubmissionContext context,
             List<ScoreResult> scoreResults
     ) {
-        List<Submission> submissions = context.getSubmissions();
+        Submission submissions = context.getSubmissions().get(0);
         List<SubmissionRespDto.RoleInfo> roles = new ArrayList<>();
 
         // 각 Submission 결과 업데이트
-        for (int i = 0; i < submissions.size(); i++) {
-            Submission submission = submissions.get(i);
-            ScoreResult score = scoreResults.get(i);
-            SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(i);
+        Long submissionId = submissions.getId();
 
-            submission.updateResult(
-                    score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
-                    score.getExecutionTime(),
-                    score.getErrorLog(),
-                    score.getScore()
-            );
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
 
-            roles.add(SubmissionRespDto.RoleInfo.builder()
-                    .role(data.getRoleName())
-                    .frameworkId(data.getFrameworkId())
-                    .build());
-        }
+        ScoreResult score = scoreResults.get(0);
+        SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(0);
+
+        submission.updateResult(
+                score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
+                score.getExecutionTime(),
+                score.getErrorLog(),
+                score.getScore()
+        );
+
+        roles.add(SubmissionRespDto.RoleInfo.builder()
+                .role(data.getRoleName())
+                .frameworkId(data.getFrameworkId())
+                .build());
 
         // 전체 평균 점수 계산
         int averageScore = (int) scoreResults.stream()
@@ -564,14 +579,16 @@ public class SubmissionService {
                 .filter(log -> log != null && !log.isEmpty())
                 .collect(Collectors.joining("\n"));
 
-        Room room = context.getRoom();
-        Long problemFrameworkId = submissions.get(0).getProblemFrameworkId();
+        Room room = roomRepository.findByIdForUpdate(context.getRoom().getId())
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        Long problemFrameworkId = submission.getProblemFrameworkId();
         Long currentQuestId = getCurrentQuestId(problemFrameworkId);
         Integer currentQuestOrder = getCurrentQuestOrder(problemFrameworkId);
 
         if (allSuccess) {
             return buildSuccessResponse(
-                    submissions.get(0).getId(),
+                    submission.getId(),
                     room.getId(),
                     currentQuestId,
                     currentQuestOrder,
@@ -583,7 +600,7 @@ public class SubmissionService {
         } else {
             room.decreaseLife();
             return buildFailResponse(
-                    submissions.get(0).getId(),
+                    submission.getId(),
                     room.getId(),
                     currentQuestId,
                     currentQuestOrder,
