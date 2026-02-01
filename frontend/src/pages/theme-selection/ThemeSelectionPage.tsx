@@ -111,12 +111,12 @@ const ThemeSelectionPage = () => {
   const handleStartGame = (theme: Theme) => {
     setThemeId(theme.themeId);
     navigate(
-      mode === 'SINGLE' ? '/single-room-settings' : '/multi-room-setting',
+      mode === 'SINGLE' ? '/single-room-settings' : '/multi-room-settings',
     );
   };
 
   const handleInvitationCodeClick = () => {
-    navigate('/invitation-code');
+    navigate('/invitation');
   };
 
   return (
