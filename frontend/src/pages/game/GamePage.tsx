@@ -157,82 +157,84 @@ export default function GamePage() {
   }
 
   return (
-    <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
-      <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
-        <GameInfoBar />
-        <SubmitBtn onClick={submitCode} />
-      </div>
-      <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
-        {/* 메뉴바 */}
-        <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
-          <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
+    <>
+      <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
+        <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
+          <GameInfoBar />
+          <SubmitBtn onClick={submitCode} />
         </div>
-        {/* 파일탐색기 + 코드 편집기 + 터미널 */}
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          {/* 파일 탐색기 + 코드 편집기 */}
-          <div className="flex border border-gray-700 flex-1 min-h-0">
+        <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
+          {/* 메뉴바 */}
+          <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
+            <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
+          </div>
+          {/* 파일탐색기 + 코드 편집기 + 터미널 */}
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            {/* 파일 탐색기 + 코드 편집기 */}
+            <div className="flex border border-gray-700 flex-1 min-h-0">
+              <Resizable
+                defaultSize={{ width: 300, height: '100%' }}
+                minWidth={50}
+                maxWidth={400}
+                enable={{ right: true }} // 드래그 설정 - 오른쪽만
+                className="bg-stone-900 border-r border-gray-700"
+                handleComponent={{
+                  right: (
+                    <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
+                  ),
+                }}
+              >
+                <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
+                  {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
+                  {activeMenu === 'explorer' && (
+                    <div className="p-3 pb-10 min-w-full">
+                      <Explorer
+                        root={rootNode}
+                        expanded={ide.expanded}
+                        onToggleFolder={ide.toggleFolder}
+                        onOpenFile={ide.openFile}
+                      />
+                    </div>
+                  )}
+                </div>
+              </Resizable>
+              <div className="flex flex-col flex-1 min-w-0 min-h-0 ">
+                <FileTabs
+                  openTabs={ide.openTabs}
+                  activeFileId={ide.activeFileId}
+                  onSelectTab={ide.selectTab}
+                  onCloseTab={ide.closeTab}
+                />
+                <div className="flex-1 min-h-0 bg-[#1E1E1E]">
+                  <CodeEditor
+                    activeFile={ide.activeFile}
+                    code={ide.currentCode}
+                    onChange={ide.setCurrentCode}
+                  />
+                </div>
+              </div>
+            </div>
+            {/* 터미널 */}
             <Resizable
-              defaultSize={{ width: 300, height: '100%' }}
-              minWidth={50}
-              maxWidth={400}
-              enable={{ right: true }} // 드래그 설정 - 오른쪽만
-              className="bg-stone-900 border-r border-gray-700"
+              defaultSize={{ width: '100%', height: 230 }}
+              enable={{ top: true }}
+              className="shrink-0 border border-gray-700"
+              minHeight={50}
+              maxHeight={500}
               handleComponent={{
-                right: (
-                  <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
+                top: (
+                  <div className="w-full h-[4px] hover:bg-amber-300/70 cursor-row-resize transition-colors" />
                 ),
               }}
             >
-              <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
-                {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
-                {activeMenu === 'explorer' && (
-                  <div className="p-3 pb-10 min-w-full">
-                    <Explorer
-                      root={rootNode}
-                      expanded={ide.expanded}
-                      onToggleFolder={ide.toggleFolder}
-                      onOpenFile={ide.openFile}
-                    />
-                  </div>
-                )}
-              </div>
-            </Resizable>
-            <div className="flex flex-col flex-1 min-w-0 min-h-0 ">
-              <FileTabs
-                openTabs={ide.openTabs}
-                activeFileId={ide.activeFileId}
-                onSelectTab={ide.selectTab}
-                onCloseTab={ide.closeTab}
+              <Terminal
+                frontendErrorLog={frontendErrorLog}
+                backendErrorLog={backendErrorLog}
               />
-              <div className="flex-1 min-h-0 bg-[#1E1E1E]">
-                <CodeEditor
-                  activeFile={ide.activeFile}
-                  code={ide.currentCode}
-                  onChange={ide.setCurrentCode}
-                />
-              </div>
-            </div>
+            </Resizable>
           </div>
-          {/* 터미널 */}
-          <Resizable
-            defaultSize={{ width: '100%', height: 230 }}
-            enable={{ top: true }}
-            className="shrink-0 border border-gray-700"
-            minHeight={50}
-            maxHeight={500}
-            handleComponent={{
-              top: (
-                <div className="w-full h-[4px] hover:bg-amber-300/70 cursor-row-resize transition-colors" />
-              ),
-            }}
-          >
-            <Terminal
-              frontendErrorLog={frontendErrorLog}
-              backendErrorLog={backendErrorLog}
-            />
-          </Resizable>
         </div>
       </div>
-    </div>
+    </>
   );
 }

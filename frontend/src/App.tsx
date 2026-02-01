@@ -11,10 +11,12 @@ import HomePage from './pages/home/HomePage';
 import InvitationPage from './pages/invitation-code/InvitationCodePage';
 import LoginPage from './pages/login/LoginPage';
 import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
+import LobbyPage from './pages/multi-room/LobbyPage';
 import MyPage from './pages/mypage/MyPage';
 import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
 import ResultLoadingPage from './pages/result/ResultLoadingPage';
 import ResultPage from './pages/result/ResultPage';
+import MultiRoomSettingPage from './pages/room-settings/MultiRoomSettingPage';
 import SingleRoomSettingPage from './pages/room-settings/SingleRoomSettingPage';
 import SignupPage from './pages/signup/SignupPage';
 import StoryPage from './pages/story/StoryPage';
@@ -81,7 +83,12 @@ function App() {
             path="/single-room-settings"
             element={<SingleRoomSettingPage />}
           />
-          <Route path="/invitation-code" element={<InvitationPage />} />
+          <Route
+            path="/multi-room-settings"
+            element={<MultiRoomSettingPage />}
+          />
+          <Route path="/multi-room/lobby" element={<LobbyPage />} />
+          <Route path="/invitation" element={<InvitationPage />} />
           <Route path="/game/:roomId/:questId" element={<GamePage />} />
           <Route path="/result/loading" element={<ResultLoadingPage />} />
           <Route path="/result" element={<ResultPage />} />

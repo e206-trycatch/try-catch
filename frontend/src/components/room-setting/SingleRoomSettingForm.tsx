@@ -1,21 +1,15 @@
 // SingleRoomSettingForm.tsx
 import { useMemo } from 'react';
 
-import { MOCK_THEMES } from '../../mocks/mockData';
 import { type Position, useRoomStore } from '../../stores/useRoomStore';
 import ThemeDisplay from '../theme-selection/ThemeDisplay';
 import SelectField from './SelectField';
 import SettingRow from './SettingRow';
 
-const getThemeName = (themeId: number | null) => {
-  if (!themeId) return '테마를 선택해주세요';
-  const theme = MOCK_THEMES.find((t) => t.themeId === themeId);
-  return theme ? theme.name : '알 수 없는 테마';
-};
-
 const SingleRoomSettingForm = () => {
   const {
     draft,
+    themeName,
     availableFrameworks,
     setPosition,
     setSelectedFrameworkId,
@@ -86,12 +80,12 @@ const SingleRoomSettingForm = () => {
     setFullstackFrameworks(draft.frontendId, Number(frameworkId));
   };
 
-  const themeName = useMemo(() => getThemeName(draft.themeId), [draft.themeId]);
+  const displayThemeName = themeName || '테마를 선택해주세요';
 
   return (
     <div className="flex w-[550px] flex-col gap-[40px]">
       <SettingRow label="테마">
-        <ThemeDisplay themeName={themeName} />
+        <ThemeDisplay themeName={displayThemeName} />
       </SettingRow>
 
       <SettingRow label="포지션">
