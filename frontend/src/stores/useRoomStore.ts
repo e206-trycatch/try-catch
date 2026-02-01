@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import type { CreateMultiRoomRequest } from '../api/roomApi';
+import type { CreateMultiRoomRequest, QuestDetail } from '../api/roomApi';
 
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
@@ -59,6 +59,12 @@ interface RoomCreationState {
   draft: RoomDraft;
   currentRoomId: number | null;
   currentQuestId: number | null;
+
+  // 퀘스트 목록 캐싱
+  questList: QuestDetail[] | null;
+  questListThemeId: number | null;
+  setQuestList: (themeId: number, list: QuestDetail[]) => void;
+  clearQuestList: () => void;
 
   // 서버에서 받아오는 데이터 저장
   themeName: string | null;
@@ -145,6 +151,12 @@ export const useRoomStore = create<RoomCreationState>()(
       draft: DEFAULT_DRAFT,
       currentRoomId: null,
       currentQuestId: null,
+
+      questList: null,
+      questListThemeId: null,
+      setQuestList: (themeId, list) =>
+        set({ questList: list, questListThemeId: themeId }),
+      clearQuestList: () => set({ questList: null, questListThemeId: null }),
 
       themeName: null,
       themeImageUrl: null,
@@ -482,6 +494,8 @@ export const useRoomStore = create<RoomCreationState>()(
           availableFrameworks: null,
           currentRoomId: null,
           currentQuestId: null,
+          questList: null,
+          questListThemeId: null,
         }),
     }),
     {
