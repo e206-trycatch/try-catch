@@ -1,11 +1,17 @@
 package io.ssafy.trycatch.domain.room.service;
 
+import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
+import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.Framework;
+import io.ssafy.trycatch.domain.room.entity.Room;
+import io.ssafy.trycatch.domain.room.entity.RoomUser;
 import io.ssafy.trycatch.domain.room.entity.Theme;
-import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
+import io.ssafy.trycatch.domain.room.enums.*;
 import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
+import io.ssafy.trycatch.domain.room.repository.RoomRepository;
+import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,6 +33,8 @@ public class MultiRoomService {
 
     private final ThemeRepository themeRepository;
     private final FrameworkRepository frameworkRepository;
+    private final RoomRepository roomRepository;
+    private final RoomUserRepository roomUserRepository;
 
     public MultiRoomSettingRespDto getMultiRoomSettings(Long themeId) {
         // 1. 테마 조회
@@ -81,5 +90,130 @@ public class MultiRoomService {
         frameworkMap.put("BACKEND", backendFrameworks);
 
         return frameworkMap;
+    }
+
+
+
+    @Transactional
+    public MultiRoomCreateRespDto createMultiRoom(Long userId, MultiRoomCreateReqDto request) {
+        
+        // Host 프레임워크 검증
+        Framework hostFramework = validateFramework(request.getHost().getFrameworkId());
+
+        // Guest 프레임워크 검증
+        Framework guestFramework = validateFramework(request.getGuest().getFrameworkId());
+
+        // Host와 Guest 프레임워크가 다른 카테고리인지 검증
+        validateFrameworkCombination(hostFramework, guestFramework);
+
+        // frontendId와 backendId 결정
+        Long frontendId = null;
+        Long backendId = null;
+
+        if (hostFramework.getCategory() == FrameworkCategory.FRONTEND) {
+            frontendId = hostFramework.getId();
+            backendId = guestFramework.getId();
+        } else {
+            frontendId = guestFramework.getId();
+            backendId = hostFramework.getId();
+        }
+
+        // 초대 코드 생성
+        String invitationCode = generateInvitationCode();
+
+        // Room 생성
+        Room room = Room.builder()
+                .themeId(request.getThemeId())
+                .frontendId(frontendId)
+                .backendId(backendId)
+                .roomName(request.getRoomName())
+                .mode(RoomMode.MULTI)
+                .status(RoomStatus.CREATED)
+                .invitedCode(invitationCode)
+                .life(3)
+                .remainingHintCount(3)
+                .isDeleted(TrueOrFalse.F)
+                .build();
+
+        Room savedRoom = roomRepository.save(room);
+
+        // RoomUser 생성 (Host만 먼저 생성)
+        RoomPosition hostPosition = determinePosition(hostFramework);
+        createMultiRoomUser(userId, savedRoom.getId(), hostPosition, RoomRole.HOST);
+
+        log.info("멀티 방 생성 완료 - roomId: {}, invitationCode: {}, host: {}",
+                savedRoom.getId(), invitationCode, hostFramework.getName());
+
+        // Response 생성
+        return MultiRoomCreateRespDto.builder()
+                .roomId(savedRoom.getId())
+                .invitationCode(invitationCode)
+                .roomName(savedRoom.getRoomName())
+                .themeId(savedRoom.getThemeId().longValue())
+                .host(MultiRoomCreateRespDto.HostInfo.builder()
+                        .frameworkId(hostFramework.getId())
+                        .frameworkName(hostFramework.getName())
+                        .role(determinePosition(hostFramework))
+                        .build())
+                .guest(MultiRoomCreateRespDto.GuestInfo.builder()
+                        .frameworkId(guestFramework.getId())
+                        .frameworkName(guestFramework.getName())
+                        .role(determinePosition(guestFramework))
+                        .build())
+                .build();
+    }
+
+    // 테마 검증
+    private Theme validateTheme(Long themeId) {
+        return themeRepository.findById(themeId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 테마입니다. themeId: " + themeId));
+    }
+
+    // 프레임워크 검증
+    private Framework validateFramework(Long frameworkId) {
+        return frameworkRepository.findById(frameworkId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 프레임워크입니다. frameworkId: " + frameworkId));
+    }
+
+    // Host와 Guest 프레임워크 조합 검증 (같은 카테고리 불가)
+    private void validateFrameworkCombination(Framework hostFramework, Framework guestFramework) {
+        if (hostFramework.getCategory() == guestFramework.getCategory()) {
+            throw new IllegalArgumentException(
+                    "Host와 Guest는 서로 다른 카테고리(FRONTEND/BACKEND)의 프레임워크를 선택해야 합니다.");
+        }
+    }
+
+    // 초대 코드 생성 (8자리 랜덤 영숫자)
+    private String generateInvitationCode() {
+        return UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 8)
+                .toUpperCase();
+    }
+
+    // 프레임워크로부터 포지션 결정
+    private RoomPosition determinePosition(Framework framework) {
+        return framework.getCategory() == FrameworkCategory.FRONTEND
+                ? RoomPosition.FRONTEND
+                : RoomPosition.BACKEND;
+    }
+
+    // RoomUser 생성
+    private void createMultiRoomUser(Long userId, Long roomId, RoomPosition position, RoomRole role) {
+        RoomUser roomUser = RoomUser.builder()
+                .userId(userId)
+                .roomId(roomId)
+                .position(position)
+                .role(role)
+                .isReady(TrueOrFalse.F)
+                .isDeleted(TrueOrFalse.F)
+                .build();
+
+        roomUserRepository.save(roomUser);
+        log.info("RoomUser 생성 완료 - userId: {}, roomId: {}, position: {}, role: {}",
+                userId, roomId, position, role);
     }
 }
