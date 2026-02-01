@@ -90,6 +90,14 @@ public class SubmissionService {
                 .findTopByRoomIdOrderBySubmittedAtDesc(roomId)
                 .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
 
+        if (submission.getProcessingStatus() == Submission.ProcessingStatus.PENDING) {
+            return SubmissionRespDto.builder()
+                    .submissionId(submission.getId())
+                    .roomId(roomId)
+                    .status("PENDING")
+                    .build();
+        }
+
         // 4. ProblemFramework → Quest 조회
         ProblemFramework problemFramework = problemFrameworkRepository
                 .findById(submission.getProblemFrameworkId())
@@ -218,6 +226,15 @@ public class SubmissionService {
     public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+        log.info("createSubmissions roomId: {}, probelFrameworkId: {}", roomId, request.getProblemFrameworkId());
+        // 중복 방지 로직
+        boolean hasPending = submissionRepository
+                .existsByRoomIdAndUserIdAndProblemFrameworkIdAndProcessingStatus(
+                        roomId, userId, request.getProblemFrameworkId(), Submission.ProcessingStatus.PENDING
+                );
+        if (hasPending) {
+            throw new CustomException(SUBMISSION_ALREADY_PENDING);
+        }
 
         SubmissionContext context = new SubmissionContext(room);
 

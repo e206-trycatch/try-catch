@@ -44,6 +44,7 @@ public enum ErrorCode {
     ROOM_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "방 참가 유저를 찾을 수 없습니다"),
     USER_NOT_IN_ROOM(HttpStatus.NOT_FOUND, "유저가 해당 방에 존재하지 않습니다."),
     QUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "퀘스트를 찾을 수 없습니다."),
+    SUBMISSION_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 처리 중인 제출이 있습니다.")
     ;
 
     private final HttpStatus status;

@@ -17,4 +17,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             Long roomId, Long userId, LocalDateTime submittedAt);
 
     Optional<Submission> findTopByRoomIdOrderBySubmittedAtDesc(Long roomId);
+
+    boolean existsByRoomIdAndUserIdAndProblemFrameworkIdAndProcessingStatus(Long roomId, Long userId, Long problemFrameworkId, Submission.ProcessingStatus processingStatus);
 }
