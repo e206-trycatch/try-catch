@@ -15,4 +15,6 @@ public interface RoomUserRepository extends JpaRepository<RoomUser, Long> {
     boolean existsByUserIdAndRoomIdAndIsDeleted(Long userId, Long roomId, TrueOrFalse isDeleted);
 
     Optional<RoomUser> findByRoomIdAndUserIdAndIsDeleted(Long roomId, Long userId, TrueOrFalse isDeleted);
+
+    Optional<Object> findByRoomIdAndUserId(Long roomId, Long userId);
 }

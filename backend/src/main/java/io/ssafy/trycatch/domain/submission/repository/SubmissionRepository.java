@@ -15,4 +15,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     // 같은 시간에 제출된 모든 submission 조회 (Frontend + Backend)
     List<Submission> findByRoomIdAndUserIdAndSubmittedAtOrderByIdAsc(
             Long roomId, Long userId, LocalDateTime submittedAt);
+
+    Optional<Submission> findTopByRoomIdOrderBySubmittedAtDesc(Long roomId);
 }

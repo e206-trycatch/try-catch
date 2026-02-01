@@ -41,7 +41,18 @@ public class SubmissionController {
         Long userId = getCurrentUserId();
 
         return ResponseEntity.ok(
-                ApiRespDto.success(submissionService.getSubmission(roomId, userId))
+                ApiRespDto.success(submissionService.getLatestSubmission(roomId, userId))
+        );
+    }
+
+    @GetMapping("/api/v1/rooms/{roomId}/submissions/{submissionId}/result")
+    public ResponseEntity<ApiRespDto<SubmissionRespDto>> submissionById(
+            @PathVariable Long roomId,
+            @PathVariable Long submissionId) {
+        Long userId = getCurrentUserId();
+
+        return ResponseEntity.ok(
+                ApiRespDto.success(submissionService.getSubmission(roomId, submissionId, userId))
         );
     }
 
