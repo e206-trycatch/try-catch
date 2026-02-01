@@ -13,14 +13,19 @@ const QuestDescriptionBox: React.FC<QuestDescriptionBoxProps> = ({
   onStart,
 }) => {
   return (
-    <div className="w-[599px] h-[119px] [filter:drop-shadow(0_0_10px_rgba(254,254,254,0.25))]">
-      <div className="flex w-[599px] h-[119px] flex-col justify-center items-center gap-2.5 [background:rgba(0,0,0,0.75)]">
-        <div className="w-[81px] h-[22px] shrink-0 text-[#FEFEFE] [-webkit-text-stroke-width:0.2px] [-webkit-text-stroke-color:#000] text-lg font-normal leading-4 tracking-[-0.7px]">
+    <div className="w-[599px] [filter:drop-shadow(0_0_10px_rgba(254,254,254,0.25))]">
+      <div className="flex w-[599px] flex-col justify-center items-center gap-2.5 [background:rgba(0,0,0,0.75)] py-4">
+        <div className="shrink-0 text-[#FEFEFE] [-webkit-text-stroke-width:0.2px] [-webkit-text-stroke-color:#000] text-lg font-normal leading-4 tracking-[-0.7px]">
           Quest {questId}
         </div>
-        <div className="flex w-[545px] h-9 justify-center items-center gap-2.5 shrink-0 [background:#FEFEFE] px-2.5 py-[5px]">
-          <div className="text-black [-webkit-text-stroke-width:0.1px] [-webkit-text-stroke-color:#000] text-[15px] font-medium leading-[35px] tracking-[-0.7px]">
-            {questDescription}
+        <div className="flex w-[545px] justify-center items-center gap-2.5 [background:#FEFEFE] px-2.5 py-[5px]">
+          <div className="text-black [-webkit-text-stroke-width:0.1px] [-webkit-text-stroke-color:#000] text-[15px] font-medium leading-normal tracking-[-0.7px] break-keep text-center">
+            {questDescription.split(/(?<=[.!?])\s+/).map((sentence, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <br />}
+                {sentence}
+              </React.Fragment>
+            ))}
           </div>
         </div>
         <button

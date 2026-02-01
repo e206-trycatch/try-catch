@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import type { CreateMultiRoomRequest } from '../api/roomApi';
+import type { CreateMultiRoomRequest, QuestDetail } from '../api/roomApi';
 
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
@@ -60,10 +60,18 @@ interface RoomCreationState {
   currentRoomId: number | null;
   currentQuestId: number | null;
 
+  // 퀘스트 목록 캐싱
+  questList: QuestDetail[] | null;
+  questListThemeId: number | null;
+  setQuestList: (themeId: number, list: QuestDetail[]) => void;
+  clearQuestList: () => void;
+
   // 서버에서 받아오는 데이터 저장
   themeName: string | null;
+  themeImageUrl: string | null;
   availableFrameworks: AvailableFrameworks | null;
   setThemeName: (name: string) => void;
+  setThemeImageUrl: (url: string | null) => void;
   setAvailableFrameworks: (data: AvailableFrameworks) => void;
   clearAvailableFrameworks: () => void;
   setRoomId: (id: number | string) => void;
@@ -144,10 +152,18 @@ export const useRoomStore = create<RoomCreationState>()(
       currentRoomId: null,
       currentQuestId: null,
 
+      questList: null,
+      questListThemeId: null,
+      setQuestList: (themeId, list) =>
+        set({ questList: list, questListThemeId: themeId }),
+      clearQuestList: () => set({ questList: null, questListThemeId: null }),
+
       themeName: null,
+      themeImageUrl: null,
       availableFrameworks: null,
 
       setThemeName: (name) => set({ themeName: name }),
+      setThemeImageUrl: (url) => set({ themeImageUrl: url }),
 
       setAvailableFrameworks: (data) =>
         set((s) => {
@@ -474,9 +490,12 @@ export const useRoomStore = create<RoomCreationState>()(
         set({
           draft: DEFAULT_DRAFT,
           themeName: null,
+          themeImageUrl: null,
           availableFrameworks: null,
           currentRoomId: null,
           currentQuestId: null,
+          questList: null,
+          questListThemeId: null,
         }),
     }),
     {
@@ -484,6 +503,7 @@ export const useRoomStore = create<RoomCreationState>()(
       partialize: (s) => ({
         draft: s.draft,
         themeName: s.themeName,
+        themeImageUrl: s.themeImageUrl,
         availableFrameworks: s.availableFrameworks,
       }),
     },

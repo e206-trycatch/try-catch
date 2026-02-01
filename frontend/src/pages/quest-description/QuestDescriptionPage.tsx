@@ -9,6 +9,11 @@ const QuestDescriptionPage: React.FC = () => {
   const navigate = useNavigate();
   const themeId = useRoomStore((state) => state.draft.themeId);
   const currentRoomId = useRoomStore((state) => state.currentRoomId);
+  const currentQuestId = useRoomStore((state) => state.currentQuestId);
+  const themeImageUrl = useRoomStore((state) => state.themeImageUrl);
+  const questList = useRoomStore((state) => state.questList);
+  const questListThemeId = useRoomStore((state) => state.questListThemeId);
+  const setQuestList = useRoomStore((state) => state.setQuestList);
 
   const [firstQuest, setFirstQuest] = useState<QuestDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,14 +35,25 @@ const QuestDescriptionPage: React.FC = () => {
     const loadQuestList = async () => {
       try {
         setLoading(true);
-        const response = await fetchQuestList(themeId);
 
-        if (response.result && response.result.length > 0) {
-          // questOrder가 1인 첫 번째 퀘스트를 찾거나, 배열의 첫 번째 요소 사용
-          const first =
-            response.result.find((q) => q.questOrder === 1) ||
-            response.result[0];
-          setFirstQuest(first);
+        // 같은 테마의 캐시가 있으면 API 호출 없이 사용
+        let quests: QuestDetail[];
+        if (questListThemeId === themeId && questList && questList.length > 0) {
+          quests = questList;
+        } else {
+          const response = await fetchQuestList(themeId);
+          quests = response.result ?? [];
+          if (quests.length > 0) {
+            setQuestList(themeId, quests);
+          }
+        }
+
+        if (quests.length > 0) {
+          // currentQuestId가 있으면 해당 퀘스트를, 없으면 questOrder가 1인 첫 번째 퀘스트를 사용
+          const targetQuest = currentQuestId
+            ? quests.find((q) => q.questId === currentQuestId)
+            : quests.find((q) => q.questOrder === 1);
+          setFirstQuest(targetQuest || quests[0]);
         } else {
           setError('퀘스트 정보가 없습니다.');
         }
@@ -50,7 +66,15 @@ const QuestDescriptionPage: React.FC = () => {
     };
 
     loadQuestList();
-  }, [themeId, currentRoomId, navigate]);
+  }, [
+    themeId,
+    currentRoomId,
+    currentQuestId,
+    navigate,
+    questList,
+    questListThemeId,
+    setQuestList,
+  ]);
 
   const handleStartGame = () => {
     if (currentRoomId && firstQuest) {
@@ -89,6 +113,14 @@ const QuestDescriptionPage: React.FC = () => {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center relative">
+      {themeImageUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${themeImageUrl})` }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+        </div>
+      )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
           questId={firstQuest.questId}

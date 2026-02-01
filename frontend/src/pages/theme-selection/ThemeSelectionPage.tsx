@@ -29,11 +29,14 @@ type ApiResponseNullable<T> = Readonly<{
 
 const ThemeSelectionPage = () => {
   const navigate = useNavigate();
-  const { draft, setThemeId } = useRoomStore();
+  const { draft, setThemeId, setThemeImageUrl } = useRoomStore();
   const { mode } = draft;
 
   const [enabledThemeIds, setEnabledThemeIds] = useState<ReadonlySet<number>>(
     new Set(),
+  );
+  const [apiThemes, setApiThemes] = useState<ReadonlyMap<number, string>>(
+    new Map(),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +83,7 @@ const ThemeSelectionPage = () => {
         }
 
         setEnabledThemeIds(new Set(nested.map((t) => t.themeId)));
+        setApiThemes(new Map(nested.map((t) => [t.themeId, t.themeImageUrl])));
       } catch (e) {
         if (axios.isCancel(e)) return;
 
@@ -110,6 +114,7 @@ const ThemeSelectionPage = () => {
 
   const handleStartGame = (theme: Theme) => {
     setThemeId(theme.themeId);
+    setThemeImageUrl(apiThemes.get(theme.themeId) ?? null);
     navigate(
       mode === 'SINGLE' ? '/single-room-settings' : '/multi-room-settings',
     );
