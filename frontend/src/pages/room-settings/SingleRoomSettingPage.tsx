@@ -16,6 +16,7 @@ const SingleRoomSettingPage = () => {
     draft,
     validateDraft,
     buildCreatePayload,
+    setThemeName,
     setAvailableFrameworks,
     setRoomId,
     setCurrentQuestId,
@@ -41,20 +42,28 @@ const SingleRoomSettingPage = () => {
         const data = await fetchSingleSetting(draft.themeId!);
 
         // result/availableFrameworks가 없으면 크래시 방지
-        const frameworks = data?.result?.availableFrameworks;
+        const { availableFrameworks: frameworks, themeName } =
+          data?.result ?? {};
         if (!frameworks) {
           console.error('싱글 설정 응답 형태 확인 필요:', data);
           alert(data?.message ?? '설정 데이터를 불러오지 못했습니다.');
           return;
         }
 
+        if (themeName) setThemeName(themeName);
         setAvailableFrameworks(frameworks);
       } catch (e) {
         console.error('싱글 설정 데이터 로드 실패:', e);
         alert('설정 데이터를 불러오지 못했습니다.');
       }
     })();
-  }, [draft.themeId, accessToken, navigate, setAvailableFrameworks]);
+  }, [
+    draft.themeId,
+    accessToken,
+    navigate,
+    setThemeName,
+    setAvailableFrameworks,
+  ]);
 
   const handleStartGame = async () => {
     const validation = validateDraft();

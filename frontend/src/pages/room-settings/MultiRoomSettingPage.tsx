@@ -15,6 +15,7 @@ const MultiRoomSettingPage = () => {
     draft,
     validateDraft,
     buildMultiRoomPayload,
+    setThemeName,
     setAvailableFrameworks,
     setRoomId,
   } = useRoomStore();
@@ -37,20 +38,28 @@ const MultiRoomSettingPage = () => {
       try {
         const data = await fetchMultiSetting(draft.themeId!);
 
-        const frameworks = data?.result?.availableFrameworks;
+        const { availableFrameworks: frameworks, themeName } =
+          data?.result ?? {};
         if (!frameworks) {
           console.error('멀티 설정 응답 형태 확인 필요:', data);
           alert(data?.message ?? '설정 데이터를 불러오지 못했습니다.');
           return;
         }
 
+        if (themeName) setThemeName(themeName);
         setAvailableFrameworks(frameworks);
       } catch (e) {
         console.error('멀티 설정 데이터 로드 실패:', e);
         alert('설정 데이터를 불러오지 못했습니다.');
       }
     })();
-  }, [draft.themeId, accessToken, navigate, setAvailableFrameworks]);
+  }, [
+    draft.themeId,
+    accessToken,
+    navigate,
+    setThemeName,
+    setAvailableFrameworks,
+  ]);
 
   const handleStartMultiMode = async () => {
     const validation = validateDraft();

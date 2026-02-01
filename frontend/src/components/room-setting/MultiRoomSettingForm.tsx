@@ -1,21 +1,15 @@
 import { useMemo } from 'react';
 
-import { MOCK_THEMES } from '../../mocks/mockData';
 import { type Position, useRoomStore } from '../../stores/useRoomStore';
 import RoomNameInput from './RoomNameInput';
 import SelectField from './SelectField';
 import SettingRow from './SettingRow';
 import ThemeDisplay from './ThemeDisplay';
 
-const getThemeName = (themeId: number | null) => {
-  if (!themeId) return '테마를 선택해주세요';
-  const theme = MOCK_THEMES.find((t) => t.themeId === themeId);
-  return theme ? theme.name : '알 수 없는 테마';
-};
-
 const MultiRoomSettingForm = () => {
   const {
     draft,
+    themeName,
     availableFrameworks,
     setRoomName,
     setHostPosition,
@@ -79,7 +73,7 @@ const MultiRoomSettingForm = () => {
     setGuestFrameworkId(Number(frameworkId));
   };
 
-  const themeName = useMemo(() => getThemeName(draft.themeId), [draft.themeId]);
+  const displayThemeName = themeName || '테마를 선택해주세요';
 
   return (
     <div className="flex w-[550px] flex-col gap-[40px]">
@@ -95,7 +89,7 @@ const MultiRoomSettingForm = () => {
 
       {/* Row 2: Theme (read-only) */}
       <SettingRow label="테마">
-        <ThemeDisplay themeName={themeName} />
+        <ThemeDisplay themeName={displayThemeName} />
       </SettingRow>
 
       {/* Row 3: Host (나) Configuration */}
