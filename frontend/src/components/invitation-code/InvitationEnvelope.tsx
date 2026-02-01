@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 
 const Envelope = forwardRef<HTMLDivElement, { children: React.ReactNode }>(
-  ({ children }) => {
+  ({ children }, ref) => {
     return (
       <div
         className="relative w-[560px] h-[336px] bg-[#555184] rounded-sm"
@@ -10,6 +10,7 @@ const Envelope = forwardRef<HTMLDivElement, { children: React.ReactNode }>(
         {children}
         {/* 봉투 앞면 (삼각형 레이어) */}
         <div
+          ref={ref}
           className="absolute top-0 w-full h-full z-[25] pointer-events-none rounded-sm overflow-hidden"
           style={{
             background: `
