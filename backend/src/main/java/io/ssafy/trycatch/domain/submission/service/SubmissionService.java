@@ -19,10 +19,13 @@ import io.ssafy.trycatch.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static io.ssafy.trycatch.global.exception.ErrorCode.*;
@@ -41,6 +44,9 @@ public class SubmissionService {
     private final QuestRepository questRepository;
     private final ProblemFileRepository problemFileRepository;
     private final FrameworkRepository frameworkRepository;
+    private final RoomUserRepository roomUserRepository;
+    private final TransactionTemplate transactionTemplate;
+
 
     private static final String FRONTEND_RUBRIC = """
             - 요구사항(문제 설명) 충족 여부
@@ -59,12 +65,14 @@ public class SubmissionService {
     @Transactional
     public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request) {
         // 1단계: DB 작업 (트랜잭션 내)
-        SubmissionContext context = createSubmissions(roomId, userId, request);
-        Room room = context.getRoom();
-
-        if (room.getLife() <= 0) {
-            throw new CustomException(ErrorCode.GAMEOVER);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        SubmissionContext context = transactionTemplate.execute(status ->
+                createSubmissions(roomId, userId, request)
+        );
+        if (context == null) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR); // 네 에러코드에 맞게
         }
+        Room room = context.getRoom();
 
         // 2단계: GPT 채점 (트랜잭션 밖 - 외부 API 호출)
         List<ScoreResult> scoreResults = scoreSubmissions(context, room);
@@ -74,98 +82,180 @@ public class SubmissionService {
     }
 
     @Transactional(readOnly = true)
-    public SubmissionRespDto getSubmission(Long roomId, Long userId) {
+    public SubmissionRespDto getLatestSubmission(Long roomId, Long userId) {
         // 1. Room 조회
-        Room room = roomRepository.findById(roomId)
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
-        // 2. 해당 방의 가장 최근 제출 조회
-        Submission latestSubmission = submissionRepository
-                .findTopByRoomIdAndUserIdOrderBySubmittedAtDesc(roomId, userId)
+        // 2. Room에 유저가 있는지 체크
+        roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
+
+        // 3. 해당 방의 가장 최근 제출 조회
+        Submission submission = submissionRepository
+                .findTopByRoomIdOrderBySubmittedAtDesc(roomId)
                 .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
 
-        // 3. 해당 제출의 모든 파일 조회 (Frontend + Backend)
-        List<Submission> allSubmissions = submissionRepository
-                .findByRoomIdAndUserIdAndSubmittedAtOrderByIdAsc(
-                        roomId, userId, latestSubmission.getSubmittedAt()
-                );
-
-        // 4. Role 정보 구성
-        List<SubmissionRespDto.RoleInfo> roles = allSubmissions.stream()
-                .map(submission -> {
-                    Long problemFrameworkId = submission.getProblemFrameworkId();
-
-                    // Frontend/Backend 판단 (간단하게 처리)
-                    List<SubmissionFile> files = submissionFileRepository
-                            .findBySubmissionIdAndIsDeleted(submission.getId(), TrueOrFalse.F);
-
-                    String role = files.stream()
-                            .anyMatch(f -> f.getCodeRole() == SubmissionFile.CodeRole.FRONTEND)
-                            ? "FRONTEND" : "BACKEND";
-
-                    return SubmissionRespDto.RoleInfo.builder()
-                            .role(role)
-                            .frameworkId(problemFrameworkId)
-                            .build();
-                })
-                .toList();
-
-        // 5. 평균 점수 계산
-        int averageScore = (int) allSubmissions.stream()
-                .mapToInt(s -> s.getScore() != null ? s.getScore() : 0)
-                .average()
-                .orElse(0);
-
-        // 6. 전체 실행 시간 합계
-        long totalExecutionTime = allSubmissions.stream()
-                .mapToLong(s -> s.getExecutionTime() != null ? s.getExecutionTime() : 0L)
-                .sum();
-
-        // 7. 성공 여부 판단
-        boolean allSuccess = allSubmissions.stream()
-                .allMatch(s -> s.getStatus() == Submission.Status.SUCCESS);
-
-        // 8. 에러 로그 수집
-        String errorLog = allSubmissions.stream()
-                .map(Submission::getErrorLog)
-                .filter(log -> log != null && !log.isEmpty())
-                .collect(Collectors.joining("\n"));
-
-        // 9. Quest 정보 조회
-        Long problemFrameworkId = latestSubmission.getProblemFrameworkId();
-        Long questId = getCurrentQuestId(problemFrameworkId);
-        Integer questOrder = getCurrentQuestOrder(problemFrameworkId);
-
-        // 10. 응답 생성
-        if (allSuccess) {
-            return buildSuccessResponse(
-                    latestSubmission.getId(),
-                    roomId,
-                    questId,
-                    questOrder,
-                    averageScore,
-                    totalExecutionTime,
-                    room,
-                    roles
-            );
-        } else {
-            return buildFailResponse(
-                    latestSubmission.getId(),
-                    roomId,
-                    questId,
-                    questOrder,
-                    averageScore,
-                    totalExecutionTime,
-                    room,
-                    errorLog
-            );
+        if (submission.getProcessingStatus() == Submission.ProcessingStatus.PENDING) {
+            return SubmissionRespDto.builder()
+                    .submissionId(submission.getId())
+                    .roomId(roomId)
+                    .status("PENDING")
+                    .build();
         }
+
+        // 4. ProblemFramework → Quest 조회
+        ProblemFramework problemFramework = problemFrameworkRepository
+                .findById(submission.getProblemFrameworkId())
+                .orElseThrow(() -> new CustomException(PROBLEM_FRAMEWORK_NOT_FOUND));
+
+        Quest quest = questRepository.findById(problemFramework.getQuestId())
+                .orElseThrow(() -> new CustomException(QUEST_NOT_FOUND));
+
+        // 5. 다음 퀘스트 조회
+        Optional<Quest> nextQuest = questRepository
+                .findByThemeIdAndQuestOrder(quest.getThemeId(), quest.getQuestOrder() + 1);
+
+        // 6. Roles 구성
+        List<SubmissionRespDto.RoleInfo> roles = List.of(
+                SubmissionRespDto.RoleInfo.builder()
+                        .role("FRONTEND")
+                        .frameworkId(problemFramework.getFrontendId())
+                        .build(),
+                SubmissionRespDto.RoleInfo.builder()
+                        .role("BACKEND")
+                        .frameworkId(problemFramework.getBackendId())
+                        .build()
+        );
+
+        // 7. 응답 생성
+        if (submission.getStatus() == Submission.Status.SUCCESS) {
+            return buildSuccessResponse(submission, room, quest, roles,
+                    nextQuest.isPresent(), nextQuest.map(Quest::getId).orElse(null));
+        } else {
+            return buildFailResponse(submission, room, quest);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public SubmissionRespDto getSubmission(Long roomId, Long submissionId, Long userId) {
+        // 1. Room 조회
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        // 2. Room에 유저가 있는지 체크
+        roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
+
+        // 3. Submission 조회
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
+
+        if (submission.getProcessingStatus() == Submission.ProcessingStatus.PENDING) {
+            return SubmissionRespDto.builder()
+                    .submissionId(submission.getId())
+                    .roomId(roomId)
+                    .status("PENDING")
+                    .build();
+        }
+
+        // 4. ProblemFramework → Quest 조회
+        ProblemFramework problemFramework = problemFrameworkRepository
+                .findById(submission.getProblemFrameworkId())
+                .orElseThrow(() -> new CustomException(PROBLEM_FRAMEWORK_NOT_FOUND));
+
+        Quest quest = questRepository.findById(problemFramework.getQuestId())
+                .orElseThrow(() -> new CustomException(QUEST_NOT_FOUND));
+
+        // 5. 다음 퀘스트 조회
+        Optional<Quest> nextQuest = questRepository
+                .findByThemeIdAndQuestOrder(quest.getThemeId(), quest.getQuestOrder() + 1);
+
+        boolean hasNextQuest = nextQuest.isPresent();
+        Long nextQuestId = nextQuest.map(Quest::getId).orElse(null);
+
+        // 6. Roles 구성
+        List<SubmissionRespDto.RoleInfo> roles = List.of(
+                SubmissionRespDto.RoleInfo.builder()
+                        .role("FRONTEND")
+                        .frameworkId(problemFramework.getFrontendId())
+                        .build(),
+                SubmissionRespDto.RoleInfo.builder()
+                        .role("BACKEND")
+                        .frameworkId(problemFramework.getBackendId())
+                        .build()
+        );
+
+        if (submission.getStatus() == Submission.Status.SUCCESS) {
+            return buildSuccessResponse(submission, room, quest, roles, hasNextQuest, nextQuestId);
+        } else {
+            return buildFailResponse(submission, room, quest);
+        }
+    }
+
+    private SubmissionRespDto buildSuccessResponse(
+            Submission submission, Room room, Quest quest,
+            List<SubmissionRespDto.RoleInfo> roles, boolean hasNextQuest, Long nextQuestId) {
+
+        return SubmissionRespDto.builder()
+                .submissionId(submission.getId())
+                .roomId(room.getId())
+                .questId(quest.getId())
+                .questOrder(quest.getQuestOrder())
+                .status("SUCCESS")
+                .score(submission.getScore())
+                .executionTimeMs(submission.getExecutionTime())
+                .roomState(SubmissionRespDto.RoomState.builder()
+                        .remainingLife(room.getLife())
+                        .remainingHintCount(room.getRemainingHintCount())
+                        .build())
+                .roles(roles)
+                .next(SubmissionRespDto.NextQuest.builder()
+                        .hasNextQuest(hasNextQuest)
+                        .nextQuestId(nextQuestId)
+                        .build())
+                .build();
+    }
+
+    private SubmissionRespDto buildFailResponse(
+            Submission submission, Room room, Quest quest) {
+
+        return SubmissionRespDto.builder()
+                .submissionId(submission.getId())
+                .roomId(room.getId())
+                .questId(quest.getId())
+                .questOrder(quest.getQuestOrder())
+                .status("FAIL")
+                .score(submission.getScore())
+                .executionTimeMs(submission.getExecutionTime())
+                .roomState(SubmissionRespDto.RoomState.builder()
+                        .remainingLife(room.getLife())
+                        .remainingHintCount(room.getRemainingHintCount())
+                        .build())
+                .errorLog(submission.getErrorLog())
+                .build();
     }
 
     @Transactional
     public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request) {
-        Room room = roomRepository.findById(roomId)
+//        Room room = roomRepository.findById(roomId)
+//                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+        Room room = roomRepository.findByIdForUpdate(roomId)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        if (room.getLife() <= 0) {
+            throw new CustomException(ErrorCode.GAMEOVER);
+        }
+
+        log.info("createSubmissions roomId: {}, probelFrameworkId: {}", roomId, request.getProblemFrameworkId());
+        // 중복 방지 로직
+        boolean hasPending = submissionRepository
+                .existsByRoomIdAndUserIdAndProblemFrameworkIdAndProcessingStatus(
+                        roomId, userId, request.getProblemFrameworkId(), Submission.ProcessingStatus.PENDING
+                );
+        if (hasPending) {
+            throw new CustomException(SUBMISSION_ALREADY_PENDING);
+        }
 
         SubmissionContext context = new SubmissionContext(room);
 
@@ -452,27 +542,29 @@ public class SubmissionService {
             SubmissionContext context,
             List<ScoreResult> scoreResults
     ) {
-        List<Submission> submissions = context.getSubmissions();
+        Submission submissions = context.getSubmissions().get(0);
         List<SubmissionRespDto.RoleInfo> roles = new ArrayList<>();
 
         // 각 Submission 결과 업데이트
-        for (int i = 0; i < submissions.size(); i++) {
-            Submission submission = submissions.get(i);
-            ScoreResult score = scoreResults.get(i);
-            SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(i);
+        Long submissionId = submissions.getId();
 
-            submission.updateResult(
-                    score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
-                    score.getExecutionTime(),
-                    score.getErrorLog(),
-                    score.getScore()
-            );
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
 
-            roles.add(SubmissionRespDto.RoleInfo.builder()
-                    .role(data.getRoleName())
-                    .frameworkId(data.getFrameworkId())
-                    .build());
-        }
+        ScoreResult score = scoreResults.get(0);
+        SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(0);
+
+        submission.updateResult(
+                score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
+                score.getExecutionTime(),
+                score.getErrorLog(),
+                score.getScore()
+        );
+
+        roles.add(SubmissionRespDto.RoleInfo.builder()
+                .role(data.getRoleName())
+                .frameworkId(data.getFrameworkId())
+                .build());
 
         // 전체 평균 점수 계산
         int averageScore = (int) scoreResults.stream()
@@ -495,14 +587,16 @@ public class SubmissionService {
                 .filter(log -> log != null && !log.isEmpty())
                 .collect(Collectors.joining("\n"));
 
-        Room room = context.getRoom();
-        Long problemFrameworkId = submissions.get(0).getProblemFrameworkId();
+        Room room = roomRepository.findByIdForUpdate(context.getRoom().getId())
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        Long problemFrameworkId = submission.getProblemFrameworkId();
         Long currentQuestId = getCurrentQuestId(problemFrameworkId);
         Integer currentQuestOrder = getCurrentQuestOrder(problemFrameworkId);
 
         if (allSuccess) {
             return buildSuccessResponse(
-                    submissions.get(0).getId(),
+                    submission.getId(),
                     room.getId(),
                     currentQuestId,
                     currentQuestOrder,
@@ -514,7 +608,7 @@ public class SubmissionService {
         } else {
             room.decreaseLife();
             return buildFailResponse(
-                    submissions.get(0).getId(),
+                    submission.getId(),
                     room.getId(),
                     currentQuestId,
                     currentQuestOrder,

@@ -43,6 +43,10 @@ public class Submission {
     @Column
     private Integer score;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "processing_status", nullable = false)
+    private ProcessingStatus processingStatus = ProcessingStatus.PENDING;
+
     @CreationTimestamp
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
@@ -76,6 +80,7 @@ public class Submission {
         this.executionTime = executionTime;
         this.errorLog = errorLog;
         this.score = score;
+        this.processingStatus = ProcessingStatus.PENDING;  // 항상 PENDING으로 초기화
         this.submittedAt = LocalDateTime.now();
     }
 
@@ -84,6 +89,7 @@ public class Submission {
         this.executionTime = executionTime;
         this.errorLog = errorLog;
         this.score = score;
+        this.processingStatus = ProcessingStatus.COMPLETED;  // 완료 시 업데이트
     }
 
     public enum Status {
@@ -92,6 +98,10 @@ public class Submission {
 
     public enum IsDeleted {
         T, F
+    }
+
+    public enum ProcessingStatus {
+        PENDING, COMPLETED
     }
 
 }

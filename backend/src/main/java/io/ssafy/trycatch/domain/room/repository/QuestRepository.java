@@ -23,4 +23,6 @@ public interface QuestRepository extends JpaRepository<Quest, Long> {
     Optional<Quest> findNextQuest(@Param("themeId") Long themeId,
                                   @Param("currentOrder") Integer currentOrder,
                                   @Param("isDeleted") TrueOrFalse isDeleted);
+
+    Optional<Quest> findByThemeIdAndQuestOrder(Long themeId, int i);
 }
