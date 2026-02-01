@@ -18,6 +18,32 @@ type CreateRoomResponse = {
   roomId: number;
 };
 
+type MultiSettingResponse = {
+  status: number;
+  message: string;
+  result: {
+    themeId: number;
+    themeName: string;
+    availableFrameworks: AvailableFrameworks;
+  };
+};
+
+export interface CreateMultiRoomRequest {
+  themeId: number;
+  roomName: string;
+  host: {
+    frameworkId: number;
+  };
+  guest: {
+    frameworkId: number;
+  };
+}
+
+type CreateMultiRoomResponse = {
+  roomId: number;
+  invitationCode: string;
+};
+
 export interface QuestDetail {
   questId: number;
   questOrder: number;
@@ -73,4 +99,21 @@ export const fetchQuestStories = async (questId: number) => {
     `/rooms/single/quest/${questId}/story`
   );
   return res.data;
+};
+
+// 멀티 모드 설정 조회
+export const fetchMultiSetting = async (themeId: number) => {
+  const res = await api.get<MultiSettingResponse>('/rooms/multi', {
+    params: { themeId },
+  });
+  return res.data;
+};
+
+// 멀티 모드 방 생성
+export const createMultiRoom = async (payload: CreateMultiRoomRequest) => {
+  const { data } = await api.post<{ result: CreateMultiRoomResponse }>(
+    '/rooms/multi',
+    payload,
+  );
+  return data.result;
 };
