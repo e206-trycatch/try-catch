@@ -1,7 +1,6 @@
 import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Bounce, ToastContainer } from 'react-toastify';
 
 import { getQuest } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
@@ -159,26 +158,6 @@ export default function GamePage() {
 
   return (
     <>
-      <ToastContainer
-        position="top-center"
-        autoClose={1500}
-        hideProgressBar
-        closeButton
-        closeOnClick
-        transition={Bounce}
-        newestOnTop
-        style={{ zIndex: 20 }}
-        toastStyle={{
-          backgroundColor: '#2d0a0a',
-          border: '1px solid #dc2626',
-          color: '#fca5a5',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: 600,
-          padding: '12px 20px',
-          minHeight: 'auto',
-        }}
-      />
       <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar />
