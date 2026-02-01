@@ -10,6 +10,7 @@ const QuestDescriptionPage: React.FC = () => {
   const themeId = useRoomStore((state) => state.draft.themeId);
   const currentRoomId = useRoomStore((state) => state.currentRoomId);
   const currentQuestId = useRoomStore((state) => state.currentQuestId);
+  const themeImageUrl = useRoomStore((state) => state.themeImageUrl);
 
   const [firstQuest, setFirstQuest] = useState<QuestDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +91,14 @@ const QuestDescriptionPage: React.FC = () => {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center relative">
+      {themeImageUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${themeImageUrl})` }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+        </div>
+      )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
           questId={firstQuest.questId}

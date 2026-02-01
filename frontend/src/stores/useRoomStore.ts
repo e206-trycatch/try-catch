@@ -62,8 +62,10 @@ interface RoomCreationState {
 
   // 서버에서 받아오는 데이터 저장
   themeName: string | null;
+  themeImageUrl: string | null;
   availableFrameworks: AvailableFrameworks | null;
   setThemeName: (name: string) => void;
+  setThemeImageUrl: (url: string | null) => void;
   setAvailableFrameworks: (data: AvailableFrameworks) => void;
   clearAvailableFrameworks: () => void;
   setRoomId: (id: number | string) => void;
@@ -145,9 +147,11 @@ export const useRoomStore = create<RoomCreationState>()(
       currentQuestId: null,
 
       themeName: null,
+      themeImageUrl: null,
       availableFrameworks: null,
 
       setThemeName: (name) => set({ themeName: name }),
+      setThemeImageUrl: (url) => set({ themeImageUrl: url }),
 
       setAvailableFrameworks: (data) =>
         set((s) => {
@@ -474,6 +478,7 @@ export const useRoomStore = create<RoomCreationState>()(
         set({
           draft: DEFAULT_DRAFT,
           themeName: null,
+          themeImageUrl: null,
           availableFrameworks: null,
           currentRoomId: null,
           currentQuestId: null,
@@ -484,6 +489,7 @@ export const useRoomStore = create<RoomCreationState>()(
       partialize: (s) => ({
         draft: s.draft,
         themeName: s.themeName,
+        themeImageUrl: s.themeImageUrl,
         availableFrameworks: s.availableFrameworks,
       }),
     },
