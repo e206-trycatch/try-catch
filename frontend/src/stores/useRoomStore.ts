@@ -2,6 +2,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import type { CreateMultiRoomRequest } from '../api/roomApi';
+
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
 
@@ -38,6 +40,12 @@ export interface RoomDraft {
   // 게임 룰(목숨 3개, 힌트 3개)
   life: number; // default 3
   hints: number; // default 3
+
+  // 멀티 모드 설정용
+  hostPosition: Position | null; // FRONTEND or BACKEND only
+  hostFrameworkId: number | null;
+  guestPosition: Position | null; // FRONTEND or BACKEND only
+  guestFrameworkId: number | null;
 }
 
 export interface CreateRoomRequest {
@@ -52,8 +60,10 @@ interface RoomCreationState {
   currentRoomId: number | null;
   currentQuestId: number | null;
 
-  // 서버에서 받아오는 프레임워크 목록 저장
+  // 서버에서 받아오는 데이터 저장
+  themeName: string | null;
   availableFrameworks: AvailableFrameworks | null;
+  setThemeName: (name: string) => void;
   setAvailableFrameworks: (data: AvailableFrameworks) => void;
   clearAvailableFrameworks: () => void;
   setRoomId: (id: number | string) => void;
@@ -84,9 +94,16 @@ interface RoomCreationState {
   setLife: (life: number) => void;
   setHints: (count: number) => void;
 
+  // 멀티 모드 설정용 액션
+  setHostPosition: (position: Position) => void;
+  setHostFrameworkId: (frameworkId: number | null) => void;
+  setGuestPosition: (position: Position) => void;
+  setGuestFrameworkId: (frameworkId: number | null) => void;
+
   // 유효성 검사 및 payload 생성
   validateDraft: () => { ok: true } | { ok: false; errors: string[] };
   buildCreatePayload: () => CreateRoomRequest | null;
+  buildMultiRoomPayload: () => CreateMultiRoomRequest | null;
 
   // 초기화
   resetRoomCreation: () => void;
@@ -106,6 +123,11 @@ const DEFAULT_DRAFT: RoomDraft = {
 
   life: 3,
   hints: 3,
+
+  hostPosition: null,
+  hostFrameworkId: null,
+  guestPosition: null,
+  guestFrameworkId: null,
 };
 
 const pickFirstFrameworkId = (
@@ -122,7 +144,10 @@ export const useRoomStore = create<RoomCreationState>()(
       currentRoomId: null,
       currentQuestId: null,
 
+      themeName: null,
       availableFrameworks: null,
+
+      setThemeName: (name) => set({ themeName: name }),
 
       setAvailableFrameworks: (data) =>
         set((s) => {
@@ -291,6 +316,52 @@ export const useRoomStore = create<RoomCreationState>()(
           draft: { ...s.draft, hints: Math.max(0, hints) },
         })),
 
+      setHostPosition: (position) =>
+        set((s) => {
+          const af = get().availableFrameworks;
+
+          const firstId =
+            position === 'FRONTEND'
+              ? pickFirstFrameworkId(af?.FRONTEND)
+              : pickFirstFrameworkId(af?.BACKEND);
+
+          return {
+            draft: {
+              ...s.draft,
+              hostPosition: position,
+              hostFrameworkId: firstId,
+            },
+          };
+        }),
+
+      setHostFrameworkId: (frameworkId) =>
+        set((s) => ({
+          draft: { ...s.draft, hostFrameworkId: frameworkId },
+        })),
+
+      setGuestPosition: (position) =>
+        set((s) => {
+          const af = get().availableFrameworks;
+
+          const firstId =
+            position === 'FRONTEND'
+              ? pickFirstFrameworkId(af?.FRONTEND)
+              : pickFirstFrameworkId(af?.BACKEND);
+
+          return {
+            draft: {
+              ...s.draft,
+              guestPosition: position,
+              guestFrameworkId: firstId,
+            },
+          };
+        }),
+
+      setGuestFrameworkId: (frameworkId) =>
+        set((s) => ({
+          draft: { ...s.draft, guestFrameworkId: frameworkId },
+        })),
+
       validateDraft: () => {
         const {
           mode,
@@ -301,6 +372,11 @@ export const useRoomStore = create<RoomCreationState>()(
           selectedFrameworkId,
           frontendId,
           backendId,
+          roomName,
+          hostPosition,
+          hostFrameworkId,
+          guestPosition,
+          guestFrameworkId,
         } = get().draft;
 
         const errors: string[] = [];
@@ -323,6 +399,17 @@ export const useRoomStore = create<RoomCreationState>()(
             // FRONTEND 또는 BACKEND인 경우 selectedFrameworkId 필수
             if (!selectedFrameworkId) errors.push('프레임워크를 선택해주세요.');
           }
+        }
+
+        // 멀티모드 검증
+        if (mode === 'MULTI') {
+          if (!roomName || roomName.trim() === '')
+            errors.push('방 제목을 입력해주세요.');
+          if (!hostPosition) errors.push('나의 포지션을 선택해주세요.');
+          if (!hostFrameworkId) errors.push('나의 프레임워크를 선택해주세요.');
+          if (!guestPosition) errors.push('상대의 포지션을 선택해주세요.');
+          if (!guestFrameworkId)
+            errors.push('상대의 프레임워크를 선택해주세요.');
         }
 
         return errors.length ? { ok: false, errors } : { ok: true };
@@ -362,9 +449,31 @@ export const useRoomStore = create<RoomCreationState>()(
         return payload;
       },
 
+      buildMultiRoomPayload: () => {
+        const v = get().validateDraft();
+        if (!v.ok) return null;
+
+        const { themeId, roomName, hostFrameworkId, guestFrameworkId } =
+          get().draft;
+
+        const payload: CreateMultiRoomRequest = {
+          themeId: themeId!,
+          roomName: roomName.trim(),
+          host: {
+            frameworkId: hostFrameworkId!,
+          },
+          guest: {
+            frameworkId: guestFrameworkId!,
+          },
+        };
+
+        return payload;
+      },
+
       resetRoomCreation: () =>
         set({
           draft: DEFAULT_DRAFT,
+          themeName: null,
           availableFrameworks: null,
           currentRoomId: null,
           currentQuestId: null,
@@ -374,6 +483,7 @@ export const useRoomStore = create<RoomCreationState>()(
       name: 'room-creation-draft',
       partialize: (s) => ({
         draft: s.draft,
+        themeName: s.themeName,
         availableFrameworks: s.availableFrameworks,
       }),
     },
