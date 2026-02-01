@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/main").permitAll()
                         .requestMatchers("/api/*/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/*/files/**").permitAll()
+                        .requestMatchers("/api/ws/**").permitAll() // 웹소켓 요청 url 추가
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

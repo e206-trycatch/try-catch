@@ -1,8 +1,9 @@
 // 테마별 탈출 기록 섹션
 
 import { useState } from 'react';
-import type { EscapeRecord } from './types/user';
+
 import EmptyState from '../../components/common/EmptyState';
+import type { EscapeRecord } from './types/user';
 
 interface EscapeRecordSectionProps {
   records: EscapeRecord[];

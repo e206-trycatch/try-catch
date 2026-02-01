@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface StorySlideProps {
   imageUrl: string;
@@ -91,7 +91,7 @@ const StorySlide = ({
       }
       // 타이핑 완료 상태면 이벤트가 상위로 전파되어 handleNext 실행
     },
-    [content, isTypingDone, onTypingComplete, clearTimers, stopSound]
+    [content, isTypingDone, onTypingComplete, clearTimers, stopSound],
   );
 
   return (

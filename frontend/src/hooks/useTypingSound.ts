@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 import typingSound from '../assets/sounds/typing_sound.wav';
 import { useSoundStore } from '../stores/useSoundStore';
