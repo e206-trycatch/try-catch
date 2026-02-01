@@ -1,19 +1,19 @@
-import type { IMessage, StompSubscription } from '@stomp/stompjs';
+import type { IMessage } from '@stomp/stompjs';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+import { useSocketStore } from '../stores/useSocketStore';
 import type { ClientToServerMessage, ServerToClientMessage } from './types';
 
-const BASE_URL = import.meta.env.FILE_BASE_URL;
-
-let stompClient: Client | null = null;
-let roomSubscription: StompSubscription | null = null;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const connectStomp = (token: string): Promise<void> => {
-  if (stompClient?.active) return Promise.resolve();
+  const { client, setClient, setConnected } = useSocketStore.getState();
+
+  if (client?.active) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
-    const client = new Client({
+    const stomp = new Client({
       webSocketFactory: () => new SockJS(`${BASE_URL}/api/ws`),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
@@ -22,11 +22,14 @@ export const connectStomp = (token: string): Promise<void> => {
 
       onConnect: () => {
         console.log('STOMP 연결 성공');
+        setClient(stomp);
+        setConnected(true);
         resolve();
       },
 
       onDisconnect: () => {
         console.warn('STOMP 연결 해제');
+        setConnected(false);
       },
 
       onStompError: (frame) => {
@@ -35,55 +38,52 @@ export const connectStomp = (token: string): Promise<void> => {
       },
     });
 
-    client.activate();
-    stompClient = client;
+    stomp.activate();
   });
 };
 
 export const disconnectStomp = () => {
-  unsubscribeRoom();
-  stompClient?.deactivate();
-  stompClient = null;
+  const { client, clearSubscriptions, setClient, setConnected } =
+    useSocketStore.getState();
+  clearSubscriptions();
+  client?.deactivate();
+  setClient(null);
+  setConnected(false);
 };
-
-export const isStompConnected = () => stompClient?.connected ?? false;
 
 export const subscribeRoom = (
   roomId: number,
   handler: (msg: ServerToClientMessage) => void,
-): StompSubscription | undefined => {
-  if (!stompClient) return;
+) => {
+  const { client, addSubscription, removeSubscription, connected } =
+    useSocketStore.getState();
 
-  roomSubscription = stompClient.subscribe(
-    `/topic/room/${roomId}`,
-    (message: IMessage) => {
-      const response: ServerToClientMessage = JSON.parse(message.body);
-      handler(response);
-    },
-  );
-  console.log('구독 완료');
+  if (!client || !connected) return;
 
-  return roomSubscription;
-};
+  const key = `room-${roomId}`;
 
-export const unsubscribeRoom = () => {
-  if (roomSubscription) {
-    roomSubscription.unsubscribe();
-    roomSubscription = null;
-    console.log('방 구독 해제');
-  }
+  removeSubscription(key);
+
+  const sub = client.subscribe(`/topic/room/${roomId}`, (message: IMessage) => {
+    const response: ServerToClientMessage = JSON.parse(message.body);
+    handler(response);
+  });
+
+  addSubscription(key, sub);
 };
 
 export const sendSocketMessage = (
   destination: string,
   body: ClientToServerMessage,
 ) => {
-  if (!stompClient?.connected) {
+  const { client, connected } = useSocketStore.getState();
+
+  if (!client || !connected) {
     console.warn('STOMP 연결 안됐는데, 전송 시도 중');
     return;
   }
 
-  stompClient.publish({
+  client.publish({
     destination,
     body: JSON.stringify(body),
   });
