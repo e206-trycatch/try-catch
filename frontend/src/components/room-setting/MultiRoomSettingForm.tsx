@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 
 import { type Position, useRoomStore } from '../../stores/useRoomStore';
+import ThemeDisplay from '../theme-selection/ThemeDisplay';
 import RoomNameInput from './RoomNameInput';
 import SelectField from './SelectField';
 import SettingRow from './SettingRow';
-import ThemeDisplay from './ThemeDisplay';
 
 const MultiRoomSettingForm = () => {
   const {
