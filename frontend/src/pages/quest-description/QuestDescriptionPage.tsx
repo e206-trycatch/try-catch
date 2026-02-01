@@ -9,6 +9,7 @@ const QuestDescriptionPage: React.FC = () => {
   const navigate = useNavigate();
   const themeId = useRoomStore((state) => state.draft.themeId);
   const currentRoomId = useRoomStore((state) => state.currentRoomId);
+  const currentQuestId = useRoomStore((state) => state.currentQuestId);
 
   const [firstQuest, setFirstQuest] = useState<QuestDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,11 +34,11 @@ const QuestDescriptionPage: React.FC = () => {
         const response = await fetchQuestList(themeId);
 
         if (response.result && response.result.length > 0) {
-          // questOrder가 1인 첫 번째 퀘스트를 찾거나, 배열의 첫 번째 요소 사용
-          const first =
-            response.result.find((q) => q.questOrder === 1) ||
-            response.result[0];
-          setFirstQuest(first);
+          // currentQuestId가 있으면 해당 퀘스트를, 없으면 questOrder가 1인 첫 번째 퀘스트를 사용
+          const targetQuest = currentQuestId
+            ? response.result.find((q) => q.questId === currentQuestId)
+            : response.result.find((q) => q.questOrder === 1);
+          setFirstQuest(targetQuest || response.result[0]);
         } else {
           setError('퀘스트 정보가 없습니다.');
         }
@@ -50,7 +51,7 @@ const QuestDescriptionPage: React.FC = () => {
     };
 
     loadQuestList();
-  }, [themeId, currentRoomId, navigate]);
+  }, [themeId, currentRoomId, currentQuestId, navigate]);
 
   const handleStartGame = () => {
     if (currentRoomId && firstQuest) {
