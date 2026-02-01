@@ -74,10 +74,6 @@ public class SubmissionService {
         }
         Room room = context.getRoom();
 
-        if (room.getLife() <= 0) {
-            throw new CustomException(ErrorCode.GAMEOVER);
-        }
-
         // 2단계: GPT 채점 (트랜잭션 밖 - 외부 API 호출)
         List<ScoreResult> scoreResults = scoreSubmissions(context, room);
 
@@ -154,6 +150,14 @@ public class SubmissionService {
         // 3. Submission 조회
         Submission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new CustomException(SUBMISSION_NOT_FOUND));
+
+        if (submission.getProcessingStatus() == Submission.ProcessingStatus.PENDING) {
+            return SubmissionRespDto.builder()
+                    .submissionId(submission.getId())
+                    .roomId(roomId)
+                    .status("PENDING")
+                    .build();
+        }
 
         // 4. ProblemFramework → Quest 조회
         ProblemFramework problemFramework = problemFrameworkRepository
@@ -238,6 +242,10 @@ public class SubmissionService {
 //                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
         Room room = roomRepository.findByIdForUpdate(roomId)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        if (room.getLife() <= 0) {
+            throw new CustomException(ErrorCode.GAMEOVER);
+        }
 
         log.info("createSubmissions roomId: {}, probelFrameworkId: {}", roomId, request.getProblemFrameworkId());
         // 중복 방지 로직
