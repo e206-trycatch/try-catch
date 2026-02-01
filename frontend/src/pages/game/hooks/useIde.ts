@@ -130,6 +130,8 @@ export function useIde(root: FileNode) {
         // 닫은 탭 기준 왼쪽 탭 -> 없으면 오른쪽 탭 -> 없으면 null
         const nextActive = newTabs[idx - 1] ?? newTabs[idx] ?? null;
         setActiveFileId(nextActive?.id ?? null);
+        const code = fileCodes[nextActive?.id ?? ''];
+        setCurrentCode(code ?? '');
       }
 
       return newTabs;
