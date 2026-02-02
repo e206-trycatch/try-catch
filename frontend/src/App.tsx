@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
@@ -62,16 +63,17 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        {/* Public - 누구나 접근 가능 */}
-        <Route path="/" element={<HomePage />} />
+    <AnimatePresence>
+      <Routes>
+        <Route element={<MainLayout />}>
+          {/* Public - 누구나 접근 가능 */}
+          <Route path="/" element={<HomePage />} />
 
-        {/* Guest Only - 비로그인 유저만 접근 가능 */}
-        <Route element={<GuestRoute />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-        </Route>
+          {/* Guest Only - 비로그인 유저만 접근 가능 */}
+          <Route element={<GuestRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+          </Route>
 
         {/* Private - 로그인 유저만 접근 가능 */}
         <Route element={<PrivateRoute />}>
@@ -97,8 +99,8 @@ function App() {
           <Route path="/result" element={<ResultPage />} />
           <Route path="/mypage" element={<MyPage />} />
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </AnimatePresence>
   );
 }
 
