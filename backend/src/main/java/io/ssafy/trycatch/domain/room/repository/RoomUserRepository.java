@@ -1,6 +1,7 @@
 package io.ssafy.trycatch.domain.room.repository;
 
 import io.ssafy.trycatch.domain.room.entity.RoomUser;
+import io.ssafy.trycatch.domain.room.enums.RoomRole;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +15,9 @@ public interface RoomUserRepository extends JpaRepository<RoomUser, Long> {
 
 
     Optional<RoomUser> findByRoomIdAndIsDeleted(Long roomId, TrueOrFalse trueOrFalse);
+
+    boolean existsByUserIdAndRoomIdAndIsDeleted(Long userId, Long roomId, TrueOrFalse isDeleted);
+
+    long countByRoomIdAndIsDeleted(Long roomId, TrueOrFalse isDeleted);
+    Optional<RoomUser> findByRoomIdAndRoleAndIsDeleted(Long roomId, RoomRole role, TrueOrFalse isDeleted);
 }

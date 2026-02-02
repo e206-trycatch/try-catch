@@ -1,7 +1,9 @@
 package io.ssafy.trycatch.domain.room.service;
 
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
+import io.ssafy.trycatch.domain.room.dto.request.MultiRoomJoinReqDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.MultiRoomJoinRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.Framework;
@@ -19,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -254,4 +257,82 @@ public class MultiRoomService {
         }
 
     }
+
+    // 초대코드로 방 입장
+    @Transactional
+    public MultiRoomJoinRespDto joinMultiRoom(Long userId, MultiRoomJoinReqDto request) {
+        // 1. 초대코드로 Room 조회
+        Room room = roomRepository.findByInvitedCodeAndIsDeleted(request.getInvitationCode(), TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "유효하지 않은 초대코드입니다. code: " + request.getInvitationCode()));
+
+        // 2. 이미 방에 참가 중인지 확인
+        boolean alreadyJoined = roomUserRepository
+                .existsByUserIdAndRoomIdAndIsDeleted(userId, room.getId(), TrueOrFalse.F);
+
+        if (alreadyJoined) {
+            throw new IllegalArgumentException("이미 방에 참가 중입니다. roomId: " + room.getId());
+        }
+
+        // 3. 방이 가득 찼는지 확인 (Host + Guest = 2명)
+        long participantCount = roomUserRepository
+                .countByRoomIdAndIsDeleted(room.getId(), TrueOrFalse.F);
+
+        if (participantCount >= 2) {
+            throw new IllegalArgumentException("방이 가득 찼습니다. roomId: " + room.getId());
+        }
+
+        // 4. Host 조회
+        RoomUser host = roomUserRepository
+                .findByRoomIdAndRoleAndIsDeleted(room.getId(), RoomRole.HOST, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방장을 찾을 수 없습니다. roomId: " + room.getId()));
+
+        // 5. Guest 프레임워크 자동 결정 (Host와 반대)
+        Long guestFrameworkId;
+        RoomPosition guestPosition;
+
+        if (host.getPosition() == RoomPosition.FRONTEND) {
+            // Host가 FRONTEND면 Guest는 BACKEND
+            guestFrameworkId = room.getBackendId();
+            guestPosition = RoomPosition.BACKEND;
+        } else {
+            // Host가 BACKEND면 Guest는 FRONTEND
+            guestFrameworkId = room.getFrontendId();
+            guestPosition = RoomPosition.FRONTEND;
+        }
+
+        // 6. Guest Framework 조회 및 검증
+        Framework guestFramework = validateFramework(guestFrameworkId);
+
+        // 7. RoomUser 생성 (Guest)
+        RoomUser guest = RoomUser.builder()
+                .userId(userId)
+                .roomId(room.getId())
+                .isReady(TrueOrFalse.F)
+                .position(guestPosition)
+                .role(RoomRole.GUEST)
+                .joinedAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .isDeleted(TrueOrFalse.F)
+                .build();
+
+        roomUserRepository.save(guest);
+
+        log.info("방 입장 완료 - roomId: {}, userId: {}, position: {}, frameworkId: {}",
+                room.getId(), userId, guestPosition, guestFramework.getId());
+
+        // 8. Response 생성
+        return MultiRoomJoinRespDto.builder()
+                .roomId(room.getId())
+                .roomName(room.getRoomName())
+                .guest(MultiRoomJoinRespDto.GuestInfo.builder()
+                        .userId(userId)
+                        .position(guestPosition)
+                        .frameworkId(guestFramework.getId())
+                        .frameworkName(guestFramework.getName())
+                        .build())
+                .build();
+    }
+
 }
