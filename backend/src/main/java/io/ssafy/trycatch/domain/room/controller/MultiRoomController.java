@@ -1,7 +1,9 @@
 package io.ssafy.trycatch.domain.room.controller;
 
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
+import io.ssafy.trycatch.domain.room.dto.request.MultiRoomJoinReqDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.MultiRoomJoinRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomInfoRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.service.MultiRoomService;
@@ -49,6 +51,17 @@ public class MultiRoomController {
         multiRoomService.leaveMultiRoom(userId, roomId);
         return ResponseEntity.ok(
                 ApiRespDto.success("방을 나가셨습니다.", null)
+        );
+    }
+
+    // 초대 코드로 방 참가
+    @PostMapping("/join")
+    public ResponseEntity<ApiRespDto<MultiRoomJoinRespDto>> joinMultiRoom(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody MultiRoomJoinReqDto request) {
+        MultiRoomJoinRespDto response = multiRoomService.joinMultiRoom(userId, request);
+        return ResponseEntity.ok(
+                ApiRespDto.success("방에 입장했습니다.", response)
         );
     }
 
