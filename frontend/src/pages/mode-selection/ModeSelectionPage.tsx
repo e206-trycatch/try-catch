@@ -19,7 +19,7 @@ const ModeSelectionPage = () => {
   };
 
   return (
-    <div className="flex w-[608px] flex-col items-center gap-16">
+    <div className="w-full flex w-[608px] flex-col items-center gap-16">
       <div className="blinking-text text-2xl font-normal leading-[48px] tracking-[-0.7px]">
         모드를 선택해주세요.
       </div>
