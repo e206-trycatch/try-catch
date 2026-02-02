@@ -19,7 +19,7 @@ export interface EscapeRecord {
   gameMode: 'SINGLE' | 'MULTI';
   themeName: string;
   frameworkName: string;
-  executionTime: number; // 초 단위 (2340 = 39분)
+  executionTime: number; // ms 단위
   submittedAt: string; // "2025-01-20T14:32:15" 형식
 }
 

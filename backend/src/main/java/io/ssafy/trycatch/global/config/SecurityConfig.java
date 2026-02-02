@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.global.config;
 
+import io.ssafy.trycatch.global.auth.CustomAuthenticationEntryPoint;
 import io.ssafy.trycatch.global.auth.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint customAuthEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -33,6 +35,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 비활성화(세션 필요없음)
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthEntryPoint)
+                )
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 인증 필요 없는 API 전부 허용

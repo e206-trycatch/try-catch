@@ -73,10 +73,18 @@ export type ClientToServerMessage =
   | ReadyMessage
   | QuestReadyMessage;
 
+// GAME-TIMER
+export interface TimerSyncMessage {
+  type: 'TIMER_SYNC';
+  remainingSeconds: number;
+  status: 'RUNNING' | 'EXPIRED';
+}
+
 // 서버 -> 클라이언트
 export type ServerToClientMessage =
   | GuestJoinedMessage
   | ReadyStatusChangedMessage
   | GameStartMessage
   | QuestReadyStatusMessage
-  | StartQuestMessage;
+  | StartQuestMessage
+  | TimerSyncMessage;
