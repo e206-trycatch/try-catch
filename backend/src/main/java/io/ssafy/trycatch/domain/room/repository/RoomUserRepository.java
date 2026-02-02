@@ -12,6 +12,5 @@ public interface RoomUserRepository extends JpaRepository<RoomUser, Long> {
     
     List<RoomUser> findAllByRoomIdAndIsDeleted(Long roomId, TrueOrFalse isDeleted);
 
-
     Optional<RoomUser> findByRoomIdAndIsDeleted(Long roomId, TrueOrFalse trueOrFalse);
 }
