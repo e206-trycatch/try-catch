@@ -6,7 +6,7 @@ export async function codeSubmission(
   body: SubmissionRequest,
 ) {
   const res = await api.post(`/rooms/${roomId}/submissions`, body, {
-    timeout: 30000,
+    timeout: 90000,
   });
 
   return res.data;
