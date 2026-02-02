@@ -58,20 +58,13 @@ const MyPage = () => {
         setRecords(submissionsRes.result.submissions);
         setIsLoading(false);
       } catch (err) {
-        // axios 에러 처리
-        if (axios.isAxiosError(err)) {
-          const status = err.response?.status;
-          if (status === 401) {
-            navigate('/login');
-            return;
-          }
-          if (status === 404) {
-            setError('정보를 찾을 수 없습니다.');
-            setIsLoading(false);
-            return;
-          }
+        // 401은 interceptor에서 처리 (alert + 로그아웃)
+        // 그 외 에러만 여기서 처리
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+          setError('정보를 찾을 수 없습니다.');
+        } else {
+          setError('서버에 연결할 수 없습니다.');
         }
-        setError('서버에 연결할 수 없습니다.');
         setIsLoading(false);
       }
     };
