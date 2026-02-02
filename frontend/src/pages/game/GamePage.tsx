@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { getQuest } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
-import { startGame } from '../../api/startGame';
+import { startSingleGameTimer } from '../../api/startSingleGameTimer';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -35,14 +35,7 @@ export default function GamePage() {
   const [openFileMenu, setOpenFileMenu] = useState(true);
   const { submissionId } = useGameStore();
 
-  // 게임 시작 알리기
-  useEffect(() => {
-    if (!roomId) return;
-
-    startGame(Number(roomId));
-  }, [roomId]);
-
-  // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
+  // 초기 게임 상태 설정
   useEffect(() => {
     if (!roomId) return;
 
@@ -65,8 +58,15 @@ export default function GamePage() {
       } catch (e) {
         console.error('문제 정보 로드 실패:', e);
         setError('문제 정보를 불러오지 못했습니다.');
+        return;
       } finally {
         setLoading(false);
+      }
+
+      try {
+        await startSingleGameTimer(Number(roomId));
+      } catch (e) {
+        console.error('타이머 시작 실패:', e);
       }
     };
 
