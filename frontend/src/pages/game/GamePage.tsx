@@ -125,8 +125,7 @@ export default function GamePage() {
     console.log('requestBody', requestBody);
 
     useSubmissionStore.getState().setResult(requestBody);
-    useSubmissionStore.getState().setRoomId(roomId!);
-    navigate('/result/loading');
+    navigate(`/result/loading/${roomId}`);
   };
 
   const { files } = useFile(questInfo);
