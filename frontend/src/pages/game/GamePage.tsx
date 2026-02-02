@@ -39,42 +39,11 @@ export default function GamePage() {
   const [openFileMenu, setOpenFileMenu] = useState(true);
   const { submissionId } = useGameStore();
 
-  // 소켓 메시지 핸들러
-  const handleSocketMessage = (msg: ServerToClientMessage) => {
-    switch (msg.type) {
-      case 'TIMER_SYNC':
-        // TODO: 타이머 상태 업데이트
-        console.log('TIMER_SYNC:', msg);
-        break;
-      default:
-        console.log('알 수 없는 메시지:', msg);
-    }
-  };
-
-  // 소켓 연결 -> 구독 -> 게임 시작
+  // 게임 시작 알리기
   useEffect(() => {
     if (!roomId) return;
 
-    const init = async () => {
-      // 싱글 모드 연결 필요
-      const token = useStore.getState().accessToken;
-      if (token) {
-        await connectStomp(token);
-      }
-
-      // 메시지 구독
-      // subscribeRoom(Number(roomId), handleSocketMessage);
-
-      // 게임 시작 API
-      startGame(Number(roomId));
-    };
-
-    init();
-
-    // unmount 시 구독 해제
-    return () => {
-      useSocketStore.getState().removeSubscription(`room-${roomId}`);
-    };
+    startGame(Number(roomId));
   }, [roomId]);
 
   // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
