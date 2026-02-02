@@ -6,17 +6,27 @@ function collectFileCodes(root: FileNode): Record<string, string> {
   const result: Record<string, string> = {};
 
   const dfs = (node: FileNode) => {
-    // 파일인 경우, 코드 저장하기
     if (node.type === 'file') {
       result[node.id] = node.code ?? '';
       return;
     }
-
-    // 폴더인 경우, 폴더의 자식들 dfs 하기
     node.children?.forEach(dfs);
   };
   dfs(root);
   return result;
+}
+
+function collectFolderIds(root: FileNode): Set<string> {
+  const ids = new Set<string>();
+
+  const dfs = (node: FileNode) => {
+    if (node.type === 'folder') {
+      ids.add(node.id);
+      node.children?.forEach(dfs);
+    }
+  };
+  dfs(root);
+  return ids;
 }
 
 export function useIde(root: FileNode) {
@@ -37,6 +47,7 @@ export function useIde(root: FileNode) {
 
   useEffect(() => {
     setFileCodes(collectFileCodes(root));
+    setExpanded(collectFolderIds(root));
   }, [root]);
 
   // 현재 활성화 된 파일이고, 사용자가 타이핑 중인 코드
