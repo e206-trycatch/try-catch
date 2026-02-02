@@ -25,7 +25,7 @@ import type { SubmissionResult } from './types/resultTypes';
 // 폴링 설정 상수
 // ─────────────────────────────────────────────────────────────
 const POLLING_INTERVAL_MS = 3000; // 폴링 간격: 3초
-const POLLING_MAX_ATTEMPTS = 20; // 최대 시도 횟수: 20번 (총 60초)
+const POLLING_MAX_ATTEMPTS = 30; // 최대 시도 횟수: 30번 (총 90초)
 
 const ResultLoadingPage = () => {
   const navigate = useNavigate();
