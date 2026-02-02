@@ -96,24 +96,22 @@ const StorySlide = ({
 
   return (
     <div
-      className={`absolute inset-0 flex flex-col transition-all duration-500 ease-out ${
+      className={`absolute inset-0 transition-all duration-500 ease-out ${
         isActive
           ? 'opacity-100 translate-x-0'
           : 'opacity-0 translate-x-5 pointer-events-none'
       }`}
       onClick={skipTyping}
     >
-      {/* 이미지 영역 (65%) */}
-      <div className="flex-[65] relative overflow-hidden bg-black">
-        <img
-          src={imageUrl}
-          alt="Story scene"
-          className="w-full h-full object-cover"
-        />
-      </div>
+      {/* 이미지 영역 (전체 화면) */}
+      <img
+        src={imageUrl}
+        alt="Story scene"
+        className="absolute inset-0 w-full h-full object-cover object-[center_30%]"
+      />
 
-      {/* 텍스트 영역 (35%) */}
-      <div className="flex-[35] bg-black/90 flex items-center justify-center px-8 py-6">
+      {/* 텍스트 영역 (하단 오버레이) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[35%] bg-black/50 flex items-center justify-center px-8 py-6">
         <p className="text-white text-lg leading-relaxed text-center max-w-4xl whitespace-pre-line break-keep">
           {displayedText}
           {!isTypingDone && (
