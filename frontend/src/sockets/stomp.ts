@@ -5,8 +5,6 @@ import SockJS from 'sockjs-client';
 import { useSocketStore } from '../stores/useSocketStore';
 import type { ClientToServerMessage, ServerToClientMessage } from './types';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 export const connectStomp = (token: string): Promise<void> => {
   const { client, setClient, setConnected } = useSocketStore.getState();
 
@@ -14,7 +12,8 @@ export const connectStomp = (token: string): Promise<void> => {
 
   return new Promise((resolve, reject) => {
     const stomp = new Client({
-      webSocketFactory: () => new SockJS(`${BASE_URL}/api/ws`),
+      webSocketFactory: () =>
+        new SockJS(`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/ws`),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },

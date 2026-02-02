@@ -9,11 +9,12 @@ interface EscapeRecordSectionProps {
   records: EscapeRecord[];
 }
 
-// 소요시간 포맷팅 (초 → "29분 01초")
-const formatTime = (seconds: number | null | undefined): string => {
-  if (seconds == null) return '-';
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+// 소요시간 포맷팅 (ms → "29분 01초")
+const formatTime = (ms: number | null | undefined): string => {
+  if (ms == null) return '-';
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
   return `${minutes}분 ${secs.toString().padStart(2, '0')}초`;
 };
 
