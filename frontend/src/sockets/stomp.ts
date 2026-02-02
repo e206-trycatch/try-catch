@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 import { useSocketStore } from '../stores/useSocketStore';
 import type { ClientToServerMessage, ServerToClientMessage } from './types';
 
-export const connectStomp = (token: string): Promise<void> => {
+export const connectStomp = (token: string | null): Promise<void> => {
   const { client, setClient, setConnected } = useSocketStore.getState();
 
   if (client?.active) return Promise.resolve();

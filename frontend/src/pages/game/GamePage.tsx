@@ -2,9 +2,9 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { getTimer } from '../../api/getTimer';
 import { getQuest } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
-import { startGame } from '../../api/startGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -34,15 +34,8 @@ export default function GamePage() {
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
   const { submissionId } = useGameStore();
-
-  // 게임 시작 알리기
-  useEffect(() => {
-    if (!roomId) return;
-
-    startGame(Number(roomId));
-  }, [roomId]);
-
-  // 초기 게임 상태 설정 - problemFrameworkId, errorLog, files
+  const { draft } = useRoomStore();
+  // 초기 게임 상태 설정
   useEffect(() => {
     if (!roomId) return;
 
@@ -62,6 +55,9 @@ export default function GamePage() {
 
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
+
+        // 타이머 요청
+        await getTimer(Number(roomId));
       } catch (e) {
         console.error('문제 정보 로드 실패:', e);
         setError('문제 정보를 불러오지 못했습니다.');
