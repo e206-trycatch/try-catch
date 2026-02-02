@@ -5,9 +5,11 @@ import SockJS from 'sockjs-client';
 import { useSocketStore } from '../stores/useSocketStore';
 import type { ClientToServerMessage, ServerToClientMessage } from './types';
 
+// STOMP 서버에 연결
 export const connectStomp = (token: string | null): Promise<void> => {
   const { client, setClient, setConnected } = useSocketStore.getState();
 
+  // 이미 연결된 상태면 skip
   if (client?.active) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
@@ -17,6 +19,7 @@ export const connectStomp = (token: string | null): Promise<void> => {
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
+      // 연결 끊김 시 5초 후 자동 재연결
       reconnectDelay: 5000,
 
       onConnect: () => {
@@ -41,15 +44,21 @@ export const connectStomp = (token: string | null): Promise<void> => {
   });
 };
 
+// STOMP 연결을 해제
 export const disconnectStomp = () => {
   const { client, clearSubscriptions, setClient, setConnected } =
     useSocketStore.getState();
+
+  // 모든 구독을 unsubscribe
   clearSubscriptions();
+  // 클라이언트 비활성화
   client?.deactivate();
+
   setClient(null);
   setConnected(false);
 };
 
+// 특정 방의 게임 topic을 구독
 export const subscribeRoom = (
   roomId: number,
   handler: (msg: ServerToClientMessage) => void,
@@ -61,16 +70,22 @@ export const subscribeRoom = (
 
   const key = `room-${roomId}`;
 
+  // 기존 구독이 있으면 해제 (중복 구독 방지)
   removeSubscription(key);
 
-  const sub = client.subscribe(`/topic/room/${roomId}`, (message: IMessage) => {
-    const response: ServerToClientMessage = JSON.parse(message.body);
-    handler(response);
-  });
+  const sub = client.subscribe(
+    `/topic/room/${roomId}/game`,
+    (message: IMessage) => {
+      const response: ServerToClientMessage = JSON.parse(message.body);
+      handler(response);
+    },
+  );
 
   addSubscription(key, sub);
 };
 
+// 서버로 메시지 전송하기
+// 클라이언트 : /app/... 경로로 전송
 export const sendSocketMessage = (
   destination: string,
   body: ClientToServerMessage,
