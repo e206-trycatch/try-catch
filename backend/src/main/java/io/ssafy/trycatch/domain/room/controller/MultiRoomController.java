@@ -2,6 +2,7 @@ package io.ssafy.trycatch.domain.room.controller;
 
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.MultiRoomInfoRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.service.MultiRoomService;
 import io.ssafy.trycatch.global.common.ApiRespDto;
@@ -41,14 +42,22 @@ public class MultiRoomController {
         );
     }
 
-    @PostMapping
-    @RequestMapping("/delete")
+    @PostMapping("/{roomId}/leave")
     public ResponseEntity<?> leaveMultiRoom(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId) {
         multiRoomService.leaveMultiRoom(userId, roomId);
         return ResponseEntity.ok(
                 ApiRespDto.success("방을 나가셨습니다.", null)
+        );
+    }
+
+    @GetMapping("/{roomId}")
+    public ResponseEntity<ApiRespDto<MultiRoomInfoRespDto>> getMultiRoomInfo(
+            @PathVariable Long roomId) {
+        MultiRoomInfoRespDto response = multiRoomService.getMultiRoomInfo(roomId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("대기방 정보를 불러왔습니다.", response)
         );
     }
 }
