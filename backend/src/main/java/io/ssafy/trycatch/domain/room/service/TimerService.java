@@ -1,0 +1,98 @@
+package io.ssafy.trycatch.domain.room.service;
+
+import io.ssafy.trycatch.domain.room.dto.response.GameStartRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.TimerStatusRespDto;
+import io.ssafy.trycatch.domain.room.entity.Room;
+import io.ssafy.trycatch.domain.room.entity.RoomUser;
+import io.ssafy.trycatch.domain.room.enums.RoomStatus;
+import io.ssafy.trycatch.domain.room.repository.*;
+import io.ssafy.trycatch.global.common.TrueOrFalse;
+import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.websocket.common.TimeLimitPolicy;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_USER_NOT_FOUND;
+import static io.ssafy.trycatch.global.exception.ErrorCode.USER_NOT_IN_ROOM;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class TimerService {
+
+    private final RoomRepository roomRepository;
+    private final RoomUserRepository roomUserRepository;
+
+    @Transactional
+    public GameStartRespDto startGame(Long roomId) {
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+
+        RoomUser roomUser = roomUserRepository.findByRoomIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
+
+        Duration limit = TimeLimitPolicy.resolve(room.getMode(), roomUser.getPosition());
+        room.resetLife();
+        room.resetHint();
+        room.startGame();
+        LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
+
+        log.info("게임 시작 - roomId: {}, status: {}, startedAt: {}, deadlineAt: {}",
+                roomId, room.getStatus(), room.getStartedAt(), deadlineAt);
+
+        return GameStartRespDto.builder()
+                .roomId(room.getId())
+                .status(room.getStatus())
+                .startedAt(room.getStartedAt())
+                .deadlineAt(deadlineAt)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public TimerStatusRespDto getSingleTimerStatus(Long roomId, Long userId) {
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+
+        RoomUser ru = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (room.getStartedAt() == null || room.getStatus() == RoomStatus.CREATED) {
+            return TimerStatusRespDto.builder()
+                    .roomId(room.getId())
+                    .status(room.getStatus())
+                    .serverNow(now)
+                    .startedAt(room.getStartedAt())
+                    .deadlineAt(null)
+                    .remainingSeconds(0)
+                    .expired(false)
+                    .build();
+        }
+
+        Duration limit = TimeLimitPolicy.resolve(room.getMode(), ru.getPosition());
+        LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
+
+        long remaining = Duration.between(now, deadlineAt).getSeconds();
+        if (remaining < 0) remaining = 0;
+
+        return TimerStatusRespDto.builder()
+                .roomId(room.getId())
+                .status(room.getStatus())
+                .serverNow(now)
+                .startedAt(room.getStartedAt())
+                .deadlineAt(deadlineAt)
+                .remainingSeconds(remaining)
+                .expired(remaining == 0)
+                .build();
+    }
+
+}

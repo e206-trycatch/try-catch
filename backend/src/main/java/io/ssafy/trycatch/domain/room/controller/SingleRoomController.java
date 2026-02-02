@@ -75,15 +75,6 @@ public class SingleRoomController {
         );
     }
 
-    // 게임 시작
-    @PostMapping("/{roomId}/start")
-    public ResponseEntity<ApiRespDto<String>> startGame(@PathVariable Long roomId) {
-        singleRoomService.startGame(roomId);
-        return ResponseEntity.ok(
-                ApiRespDto.success("게임이 시작되었습니다.", null)
-        );
-    }
-
     // 힌트 사용
     @PostMapping("/{roomId}/hint")
     public ResponseEntity<ApiRespDto<Map<String, Integer>>> useHint(@PathVariable Long roomId) {
