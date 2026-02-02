@@ -6,6 +6,11 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 
+  // sockjs-client가 Node.js의 global 변수를 참조하므로 브라우저용 호환처리
+  define: {
+    global: 'globalThis',
+  },
+
   // 로컬호스트로 백엔드 연결하기 위한 vite proxy 세팅
   // 개발 서버 설정 (npm run dev 시 적용)
   server: {
