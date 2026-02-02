@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 
 import Footer from '../components/footer/Footer';
+import Wrapper from '../components/framer-motion/Wrapper';
 import Header from '../components/header/Header';
 
 const AppLayout = () => {
@@ -17,7 +18,9 @@ const AppLayout = () => {
 
       {/* 컨텐츠 영역 */}
       <main className="flex-1 w-full relative z-0 flex flex-col justify-center items-center">
-        <Outlet />
+        <Wrapper key={pathname}>
+          <Outlet />
+        </Wrapper>
       </main>
 
       {/* hideFooter가 아니면 Footer 컴포넌트 얍! */}
