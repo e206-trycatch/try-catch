@@ -65,7 +65,7 @@ function App() {
     <Routes>
       <Route element={<MainLayout />}>
         {/* Public - 누구나 접근 가능 */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomePage />}></Route>
 
         {/* Guest Only - 비로그인 유저만 접근 가능 */}
         <Route element={<GuestRoute />}>
