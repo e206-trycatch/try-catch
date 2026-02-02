@@ -19,7 +19,12 @@ import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import ErrorDisplay from './components/ErrorDisplay';
+import {
+  ERROR_CONFIGS,
+  type ResultErrorType,
+} from './types/errorTypes';
 import type { SubmissionResult } from './types/resultTypes';
+import { getErrorType } from './utils/errorUtils';
 
 // ─────────────────────────────────────────────────────────────
 // 폴링 설정 상수
@@ -39,7 +44,7 @@ const ResultLoadingPage = () => {
   // ─────────────────────────────────────────────────────────────
   // 상태 관리
   // ─────────────────────────────────────────────────────────────
-  const [error, setError] = useState(false); // 에러 발생 여부
+  const [errorType, setErrorType] = useState<ResultErrorType>('none');
   const [retryCount, setRetryCount] = useState(0); // 재시도 횟수 (재시도 버튼 클릭 시 증가)
   const hasSubmitted = useRef(false); // 중복 제출 방지 플래그
   const hasHandledResult = useRef(false); // 결과 처리 완료 플래그 (중복 처리 방지)
@@ -92,10 +97,10 @@ const ResultLoadingPage = () => {
 
       // 4. 결과 페이지로 이동 (뒤로가기 방지: replace)
       console.log('[handleResult] navigate 시도');
-      navigate('/result', { replace: true });
+      navigate(`/result/${roomId}`, { replace: true });
       console.log('[handleResult] navigate 완료');
     },
-    [navigate, setGameState, setSubmissionId, setSubmissionResult],
+    [navigate, roomId, setGameState, setSubmissionId, setSubmissionResult],
   );
 
   // ─────────────────────────────────────────────────────────────
@@ -138,8 +143,8 @@ const ResultLoadingPage = () => {
       }
     }
 
-    // 최대 시도 횟수 초과 → 에러 표시
-    setError(true);
+    // 최대 시도 횟수 초과 → 타임아웃 에러
+    setErrorType('timeout');
   }, [handleResult, roomId]);
 
   // ─────────────────────────────────────────────────────────────
@@ -160,7 +165,7 @@ const ResultLoadingPage = () => {
       // (잘못된 URL로 직접 접근한 경우)
       if (!roomId) {
         console.log('[init] roomId 없음 (URL 파라미터 누락), 에러 표시');
-        setError(true);
+        setErrorType('invalid_room');
         return;
       }
 
@@ -182,9 +187,9 @@ const ResultLoadingPage = () => {
             // 아직 채점 중 → 폴링 시작
             pollResult();
           }
-        } catch {
+        } catch (err) {
           // 제출 내역이 없거나 에러 발생
-          setError(true);
+          setErrorType(getErrorType(err));
         }
         return;
       }
@@ -213,8 +218,8 @@ const ResultLoadingPage = () => {
         handleResult(res.result);
       } catch (err) {
         console.error('[init] POST 에러:', err);
-        // 네트워크 에러, 타임아웃 등
-        setError(true);
+        // 에러 타입에 따라 분류
+        setErrorType(getErrorType(err));
         hasSubmitted.current = false; // 재시도 가능하도록 플래그 초기화
       }
     };
@@ -226,21 +231,25 @@ const ResultLoadingPage = () => {
   // 렌더링
   // ─────────────────────────────────────────────────────────────
 
-  // 에러 상태: 재시도 버튼 표시
-  if (error) {
+  // 에러 상태: 에러 타입에 따른 UI 표시
+  if (errorType !== 'none') {
+    const config = ERROR_CONFIGS[errorType];
     return (
       <ErrorDisplay
-        title="결과 제출에 실패했습니다"
-        message="네트워크 연결을 확인하고 다시 시도해주세요"
-        buttonText="다시 시도"
+        title={config.title}
+        message={config.message}
+        buttonText={config.buttonText}
         onClick={() => {
-          // 에러 상태 초기화
-          setError(false);
-          // 중복 제출/처리 방지 플래그 초기화
-          hasSubmitted.current = false;
-          hasHandledResult.current = false;
-          // retryCount 증가 → useEffect 재실행
-          setRetryCount((c) => c + 1);
+          if (config.action === 'home') {
+            // 홈으로 이동 (invalid_room, unauthorized)
+            navigate('/');
+          } else {
+            // 재시도 (network, timeout)
+            setErrorType('none');
+            hasSubmitted.current = false;
+            hasHandledResult.current = false;
+            setRetryCount((c) => c + 1);
+          }
         }}
       />
     );

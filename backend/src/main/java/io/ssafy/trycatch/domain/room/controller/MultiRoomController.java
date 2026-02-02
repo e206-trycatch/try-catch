@@ -40,4 +40,15 @@ public class MultiRoomController {
                 ApiRespDto.success("멀티 방이 생성되었습니다.", response)
         );
     }
+
+    @PostMapping
+    @RequestMapping("/delete")
+    public ResponseEntity<?> leaveMultiRoom(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long roomId) {
+        multiRoomService.leaveMultiRoom(userId, roomId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("방을 나가셨습니다.", null)
+        );
+    }
 }

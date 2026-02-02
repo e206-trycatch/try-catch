@@ -123,10 +123,10 @@ function App() {
             <Route path="/invitation" element={<InvitationPage />} />
             <Route path="/game/:roomId/:questId" element={<GamePage />} />
             <Route
-              path="/result/loading/:roomId"
+              path="/result/loading/:roomId?"
               element={<ResultLoadingPage />}
             />
-            <Route path="/result" element={<ResultPage />} />
+            <Route path="/result/:roomId?" element={<ResultPage />} />
             <Route path="/mypage" element={<MyPage />} />
           </Route>
         </Route>
