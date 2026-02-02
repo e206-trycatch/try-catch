@@ -4,6 +4,7 @@ import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomJoinReqDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomJoinRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.MultiRoomInfoRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto.FrameworkInfo;
 import io.ssafy.trycatch.domain.room.entity.Framework;
@@ -15,6 +16,8 @@ import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
 import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
+import io.ssafy.trycatch.domain.user.entity.User;
+import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +38,7 @@ public class MultiRoomService {
     private final FrameworkRepository frameworkRepository;
     private final RoomRepository roomRepository;
     private final RoomUserRepository roomUserRepository;
+    private final UserRepository userRepository;
 
     public MultiRoomSettingRespDto getMultiRoomSettings(Long themeId) {
         // 1. 테마 조회
@@ -335,4 +339,80 @@ public class MultiRoomService {
                 .build();
     }
 
+    public MultiRoomInfoRespDto getMultiRoomInfo(Long roomId) {
+        // 1. Room 조회
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 방입니다. roomId: " + roomId));
+
+        // 2. Theme 조회
+        Theme theme = validateTheme(room.getThemeId());
+
+        // 3. RoomUser 목록 조회 (Host, Guest)
+        List<RoomUser> roomUsers = roomUserRepository
+                .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+
+        // 4. Host와 Guest 분리
+        RoomUser hostRoomUser = roomUsers.stream()
+                .filter(ru -> ru.getRole() == RoomRole.HOST)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방장을 찾을 수 없습니다. roomId: " + roomId));
+
+        RoomUser guestRoomUser = roomUsers.stream()
+                .filter(ru -> ru.getRole() == RoomRole.GUEST)
+                .findFirst()
+                .orElse(null); // Guest는 없을 수 있음
+
+        // 5. Host 정보 구성
+        MultiRoomInfoRespDto.ParticipantInfo hostInfo = buildParticipantInfo(
+                hostRoomUser, room.getFrontendId(), room.getBackendId());
+
+        // 6. Guest 정보 구성
+        MultiRoomInfoRespDto.ParticipantInfo guestInfo = null;
+        if (guestRoomUser != null) {
+            guestInfo = buildParticipantInfo(
+                    guestRoomUser, room.getFrontendId(), room.getBackendId());
+        }
+
+        // 7. Response 생성
+        return MultiRoomInfoRespDto.builder()
+                .roomId(room.getId())
+                .roomName(room.getRoomName())
+                .invitationCode(room.getInvitedCode())
+                .themeId(room.getThemeId().intValue())
+                .themeName(theme.getName())
+                .roomStatus(room.getStatus())
+                .host(hostInfo)
+                .guest(guestInfo)
+                .build();
+    }
+
+    // ParticipantInfo 생성 헬퍼 메서드
+    private MultiRoomInfoRespDto.ParticipantInfo buildParticipantInfo(
+            RoomUser roomUser, Long frontendId, Long backendId) {
+
+        // User 조회
+        User user = userRepository.findById(roomUser.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 사용자입니다. userId: " + roomUser.getUserId()));
+
+        // Framework 결정
+        Long frameworkId = roomUser.getPosition().name().equals("FRONTEND")
+                ? frontendId
+                : backendId;
+
+        Framework framework = frameworkRepository.findById(frameworkId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 프레임워크입니다. frameworkId: " + frameworkId));
+
+        return MultiRoomInfoRespDto.ParticipantInfo.builder()
+                .userId(user.getId())
+                .nickname(user.getNickname())
+                .position(roomUser.getPosition())
+                .frameworkId(framework.getId())
+                .frameworkName(framework.getName())
+                .isReady(roomUser.getIsReady() == TrueOrFalse.T)
+                .build();
+    }
 }
