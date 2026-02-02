@@ -103,14 +103,14 @@ const StorySlide = ({
       }`}
       onClick={skipTyping}
     >
-      {/* 이미지 영역 (전체 화면) */}
+      {/* 이미지: absolute로 전체 화면(100%) 덮음, 세로 30% 기준 crop */}
       <img
         src={imageUrl}
         alt="Story scene"
         className="absolute inset-0 w-full h-full object-cover object-[center_30%]"
       />
 
-      {/* 텍스트 영역 (하단 오버레이) */}
+      {/* 텍스트: 이미지 위에 absolute 오버레이, 하단 35%, 반투명(50%) */}
       <div className="absolute bottom-0 left-0 right-0 h-[35%] bg-black/50 flex items-center justify-center px-8 py-6">
         <p className="text-white text-lg leading-relaxed text-center max-w-4xl whitespace-pre-line break-keep">
           {displayedText}
