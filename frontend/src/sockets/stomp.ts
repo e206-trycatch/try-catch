@@ -58,9 +58,10 @@ export const disconnectStomp = () => {
   setConnected(false);
 };
 
-// 특정 방의 게임 topic을 구독
-export const subscribeRoom = (
-  roomId: number,
+// 범용 토픽 구독
+const subscribe = (
+  key: string,
+  topic: string,
   handler: (msg: ServerToClientMessage) => void,
 ) => {
   const { client, addSubscription, removeSubscription, connected } =
@@ -68,21 +69,21 @@ export const subscribeRoom = (
 
   if (!client || !connected) return;
 
-  const key = `room-${roomId}`;
-
-  // 기존 구독이 있으면 해제 (중복 구독 방지)
   removeSubscription(key);
 
-  const sub = client.subscribe(
-    `/topic/room/${roomId}/game`,
-    (message: IMessage) => {
-      const response: ServerToClientMessage = JSON.parse(message.body);
-      handler(response);
-    },
-  );
+  const sub = client.subscribe(topic, (message: IMessage) => {
+    const response: ServerToClientMessage = JSON.parse(message.body);
+    handler(response);
+  });
 
   addSubscription(key, sub);
 };
+
+// 게임 topic 구독
+export const subscribeRoom = (
+  roomId: number,
+  handler: (msg: ServerToClientMessage) => void,
+) => subscribe(`room-${roomId}`, `/topic/room/${roomId}/game`, handler);
 
 // 서버로 메시지 전송하기
 // 클라이언트 : /app/... 경로로 전송
