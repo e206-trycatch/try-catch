@@ -23,8 +23,6 @@ import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 import { buildFilesRequestData } from './utils/codeSubmissionMapper';
 
-type SideMenu = 'explorer' | 'chat' | 'hint' | 'alarm';
-
 export default function GamePage() {
   const navigate = useNavigate();
   const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
@@ -34,7 +32,7 @@ export default function GamePage() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeMenu, setActiveMenu] = useState<SideMenu>('explorer');
+  const [openFileMenu, setOpenFileMenu] = useState(true);
   const { submissionId } = useGameStore();
 
   // 게임 시작 알리기
@@ -166,27 +164,29 @@ export default function GamePage() {
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
           {/* 메뉴바 */}
           <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
-            <MenuBar activeMenu={activeMenu} onChangeMenu={setActiveMenu} />
+            <MenuBar
+              fileMenu={openFileMenu}
+              onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
+            />
           </div>
           {/* 파일탐색기 + 코드 편집기 + 터미널 */}
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* 파일 탐색기 + 코드 편집기 */}
             <div className="flex border border-gray-700 flex-1 min-h-0">
-              <Resizable
-                defaultSize={{ width: 300, height: '100%' }}
-                minWidth={50}
-                maxWidth={400}
-                enable={{ right: true }} // 드래그 설정 - 오른쪽만
-                className="bg-stone-900 border-r border-gray-700"
-                handleComponent={{
-                  right: (
-                    <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
-                  ),
-                }}
-              >
-                <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
-                  {/* 조건 && 컴포넌트 : 조건이 true일 때만 컴포넌트를 렌더링 */}
-                  {activeMenu === 'explorer' && (
+              {openFileMenu && (
+                <Resizable
+                  defaultSize={{ width: 250, height: '100%' }}
+                  minWidth={50}
+                  maxWidth={400}
+                  enable={{ right: true }}
+                  className="bg-stone-900 border-r border-gray-700"
+                  handleComponent={{
+                    right: (
+                      <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
+                    ),
+                  }}
+                >
+                  <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                     <div className="p-3 pb-10 min-w-full">
                       <Explorer
                         root={rootNode}
@@ -195,9 +195,9 @@ export default function GamePage() {
                         onOpenFile={ide.openFile}
                       />
                     </div>
-                  )}
-                </div>
-              </Resizable>
+                  </div>
+                </Resizable>
+              )}
               <div className="flex flex-col flex-1 min-w-0 min-h-0 ">
                 <FileTabs
                   openTabs={ide.openTabs}
