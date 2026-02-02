@@ -19,10 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -215,5 +212,46 @@ public class MultiRoomService {
         roomUserRepository.save(roomUser);
         log.info("RoomUser 생성 완료 - userId: {}, roomId: {}, position: {}, role: {}",
                 userId, roomId, position, role);
+    }
+    @Transactional
+    public void leaveMultiRoom(Long userId, Long roomId) {
+        // 1. RoomUser 조회
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방 참가자가 아닙니다. userId: " + userId + ", roomId: " + roomId));
+
+        // 2. Host인지 Guest인지 판단
+        if (roomUser.isHost()) {
+            // Host가 나가면 → 방 전체 삭제
+            deleteEntireRoom(roomId);
+            log.info("Host가 방을 나가 방 전체 삭제 - roomId: {}, userId: {}", roomId, userId);
+        } else {
+            // Guest가 나가면 → Guest만 삭제
+            roomUser.delete();
+            roomUserRepository.save(roomUser);
+            log.info("Guest가 방에서 나감 - roomId: {}, userId: {}", roomId, userId);
+        }
+    }
+
+    // 방 전체 삭제
+    private void deleteEntireRoom(Long roomId) {
+        // 1. Room 삭제
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 방입니다. roomId: " + roomId));
+
+        room.delete();
+        roomRepository.save(room);
+
+        // 2. 모든 RoomUser 삭제
+        List<RoomUser> roomUsers = roomUserRepository
+                .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+
+        for (RoomUser roomUser : roomUsers) {
+            roomUser.delete();
+            roomUserRepository.save(roomUser);
+        }
+
     }
 }

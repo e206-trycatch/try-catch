@@ -122,20 +122,6 @@ const MyPage = () => {
             <EscapeRecordSection records={records} />
           </div>
         </div>
-
-        {/* 푸터 */}
-        <footer className="flex justify-between px-2 py-4 text-gray-500 text-sm mt-8">
-          <span>
-            ESCAPE
-            <br />
-            THE ROOM
-          </span>
-          <span className="text-right">
-            CATCH ERROR
-            <br />
-            IF YOU CAN
-          </span>
-        </footer>
       </section>
     </div>
   );

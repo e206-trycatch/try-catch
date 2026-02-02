@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import ModeSelectionButton from '../../assets/images/buttons/mode_selection_button.png';
@@ -6,7 +7,11 @@ import { useRoomStore } from '../../stores/useRoomStore';
 const ModeSelectionPage = () => {
   const navigate = useNavigate();
 
-  const { setMode } = useRoomStore();
+  const { setMode, resetRoomCreation } = useRoomStore();
+
+  useEffect(() => {
+    resetRoomCreation();
+  }, [resetRoomCreation]);
 
   const handleModeSelect = (mode: 'SINGLE' | 'MULTI') => {
     setMode(mode);
@@ -14,7 +19,7 @@ const ModeSelectionPage = () => {
   };
 
   return (
-    <div className="flex w-[608px] flex-col items-center gap-16">
+    <div className="w-full flex w-[608px] flex-col items-center gap-16">
       <div className="blinking-text text-2xl font-normal leading-[48px] tracking-[-0.7px]">
         모드를 선택해주세요.
       </div>

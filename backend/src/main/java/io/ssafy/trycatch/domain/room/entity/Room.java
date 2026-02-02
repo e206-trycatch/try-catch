@@ -126,4 +126,8 @@ public class Room {
     public void resetHint() {
         this.remainingHintCount = 3;
     }
+
+    public void delete() {
+        this.isDeleted = TrueOrFalse.T;
+    }
 }
