@@ -28,6 +28,7 @@ public class TimerService {
 
     private final RoomRepository roomRepository;
     private final RoomUserRepository roomUserRepository;
+    private final TimeoutSchedulerService timeoutSchedulerService;
 
     @Transactional
     public GameStartRespDto startGame(Long roomId) {
@@ -38,11 +39,13 @@ public class TimerService {
         RoomUser roomUser = roomUserRepository.findByRoomIdAndIsDeleted(roomId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
 
-        Duration limit = TimeLimitPolicy.resolve(room.getMode(), roomUser.getPosition());
+        Duration limit = TimeLimitPolicy.resolve(room.getMode());
         room.resetLife();
         room.resetHint();
         room.startGame();
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
+
+        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
 
         log.info("게임 시작 - roomId: {}, status: {}, startedAt: {}, deadlineAt: {}",
                 roomId, room.getStatus(), room.getStartedAt(), deadlineAt);
@@ -78,7 +81,7 @@ public class TimerService {
                     .build();
         }
 
-        Duration limit = TimeLimitPolicy.resolve(room.getMode(), ru.getPosition());
+        Duration limit = TimeLimitPolicy.resolve(room.getMode());
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
 
         long remaining = Duration.between(now, deadlineAt).getSeconds();
