@@ -24,9 +24,14 @@ import StoryPage from './pages/story/StoryPage';
 import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import { useStore } from './stores/useStore';
 
+// 토큰 갱신 주기 (25분)
+const TOKEN_REFRESH_INTERVAL = 25 * 60 * 1000;
+
 function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const login = useStore((state) => state.login);
+  const isLogin = useStore((state) => state.isLogin);
+  const setAccessToken = useStore((state) => state.setAccessToken);
 
   // 앱 초기화 시 토큰 체크 (인터셉터 우회)
   useEffect(() => {
@@ -52,6 +57,28 @@ function App() {
 
     initAuth();
   }, [login]);
+
+  // 25분마다 토큰 자동 갱신
+  useEffect(() => {
+    if (!isLogin) return;
+
+    const refreshToken = async () => {
+      try {
+        const { data } = await axios.post('/api/v1/auth/refresh', null, {
+          withCredentials: true,
+        });
+        setAccessToken(data.result.accessToken);
+        console.log('토큰 자동 갱신 완료');
+      } catch {
+        // 갱신 실패 시 다음 API 호출에서 401 처리됨
+        console.log('토큰 자동 갱신 실패');
+      }
+    };
+
+    const interval = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isLogin, setAccessToken]);
 
   // 초기화 전 로딩 화면
   if (!isInitialized) {
