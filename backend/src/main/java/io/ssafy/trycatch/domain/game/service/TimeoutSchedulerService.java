@@ -1,28 +1,19 @@
-package io.ssafy.trycatch.domain.room.service;
+package io.ssafy.trycatch.domain.game.service;
 
-import io.ssafy.trycatch.domain.room.dto.response.TimeOutEventDto;
-import io.ssafy.trycatch.domain.room.entity.Room;
-import io.ssafy.trycatch.domain.room.entity.RoomUser;
-import io.ssafy.trycatch.domain.room.enums.RoomStatus;
+import io.ssafy.trycatch.domain.game.dto.response.TimeOutEventRespDto;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
-import io.ssafy.trycatch.global.common.TrueOrFalse;
 import io.ssafy.trycatch.websocket.common.SocketEventType;
-import io.ssafy.trycatch.websocket.common.TimeLimitPolicy;
 import io.ssafy.trycatch.websocket.dto.SocketRespDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -73,7 +64,7 @@ public class TimeoutSchedulerService {
             log.info("타임아웃 발생 - roomId: {}, deadlineAt: {}", roomId, deadlineAt);
 
             // 웹소켓으로 타임아웃 이벤트 전송
-            TimeOutEventDto data = TimeOutEventDto.builder()
+            TimeOutEventRespDto data = TimeOutEventRespDto.builder()
                     .roomId(roomId)
                     .message("제한 시간이 초과되었습니다.")
                     .deadlineAt(deadlineAt)

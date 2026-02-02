@@ -1,9 +1,9 @@
-package io.ssafy.trycatch.domain.room.controller;
+package io.ssafy.trycatch.domain.game.controller;
 
 import io.ssafy.trycatch.domain.room.dto.response.GameStartRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.TimerStatusRespDto;
+import io.ssafy.trycatch.domain.game.dto.response.TimerStatusRespDto;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
-import io.ssafy.trycatch.domain.room.service.TimerService;
+import io.ssafy.trycatch.domain.game.service.TimerService;
 import io.ssafy.trycatch.global.common.ApiRespDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

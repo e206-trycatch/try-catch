@@ -1,7 +1,7 @@
-package io.ssafy.trycatch.domain.room.service;
+package io.ssafy.trycatch.domain.game.service;
 
 import io.ssafy.trycatch.domain.room.dto.response.GameStartRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.TimerStatusRespDto;
+import io.ssafy.trycatch.domain.game.dto.response.TimerStatusRespDto;
 import io.ssafy.trycatch.domain.room.entity.Room;
 import io.ssafy.trycatch.domain.room.entity.RoomUser;
 import io.ssafy.trycatch.domain.room.enums.RoomStatus;

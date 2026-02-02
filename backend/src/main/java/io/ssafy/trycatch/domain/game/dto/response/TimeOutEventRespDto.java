@@ -1,6 +1,5 @@
-package io.ssafy.trycatch.domain.room.dto.response;
+package io.ssafy.trycatch.domain.game.dto.response;
 
-import io.ssafy.trycatch.websocket.common.SocketEventType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TimeOutEventDto {
+public class TimeOutEventRespDto {
     private Long roomId;
     private String message;
     private LocalDateTime deadlineAt;
