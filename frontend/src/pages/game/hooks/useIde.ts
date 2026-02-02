@@ -1,32 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { FileNode } from '../types/ideTypes';
 
-function collectFileCodes(root: FileNode): Record<string, string> {
-  const result: Record<string, string> = {};
+function collectIdeData(root: FileNode) {
+  const fileCodes: Record<string, string> = {};
+  const folderIds = new Set<string>();
 
   const dfs = (node: FileNode) => {
     if (node.type === 'file') {
-      result[node.id] = node.code ?? '';
+      fileCodes[node.id] = node.code ?? '';
       return;
     }
-    node.children?.forEach(dfs);
-  };
-  dfs(root);
-  return result;
-}
 
-function collectFolderIds(root: FileNode): Set<string> {
-  const ids = new Set<string>();
-
-  const dfs = (node: FileNode) => {
     if (node.type === 'folder') {
-      ids.add(node.id);
+      folderIds.add(node.id);
       node.children?.forEach(dfs);
+      return;
     }
   };
   dfs(root);
-  return ids;
+  return { fileCodes, folderIds };
 }
 
 export function useIde(root: FileNode) {
@@ -45,10 +38,15 @@ export function useIde(root: FileNode) {
   // {파일 id : 코드} 형식으로 저장하기
   const [fileCodes, setFileCodes] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    setFileCodes(collectFileCodes(root));
-    setExpanded(collectFolderIds(root));
-  }, [root]);
+  // root가 변경되면 fileCodes와 expanded를 렌더 중 동기적으로 재설정
+  const [prevRoot, setPrevRoot] = useState(root);
+
+  if (root !== prevRoot) {
+    setPrevRoot(root);
+    const { fileCodes: codes, folderIds } = collectIdeData(root);
+    setFileCodes(codes);
+    setExpanded(folderIds);
+  }
 
   // 현재 활성화 된 파일이고, 사용자가 타이핑 중인 코드
   const [currentCode, setCurrentCode] = useState('');
