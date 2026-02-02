@@ -5,9 +5,11 @@ import SockJS from 'sockjs-client';
 import { useSocketStore } from '../stores/useSocketStore';
 import type { ClientToServerMessage, ServerToClientMessage } from './types';
 
+// STOMP 서버에 연결
 export const connectStomp = (token: string | null): Promise<void> => {
   const { client, setClient, setConnected } = useSocketStore.getState();
 
+  // 이미 연결된 상태면 skip
   if (client?.active) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
@@ -17,6 +19,7 @@ export const connectStomp = (token: string | null): Promise<void> => {
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
+      // 연결 끊김 시 5초 후 자동 재연결
       reconnectDelay: 5000,
 
       onConnect: () => {
@@ -41,17 +44,24 @@ export const connectStomp = (token: string | null): Promise<void> => {
   });
 };
 
+// STOMP 연결을 해제
 export const disconnectStomp = () => {
   const { client, clearSubscriptions, setClient, setConnected } =
     useSocketStore.getState();
+
+  // 모든 구독을 unsubscribe
   clearSubscriptions();
+  // 클라이언트 비활성화
   client?.deactivate();
+
   setClient(null);
   setConnected(false);
 };
 
-export const subscribeRoom = (
-  roomId: number,
+// 범용 토픽 구독
+const subscribe = (
+  key: string,
+  topic: string,
   handler: (msg: ServerToClientMessage) => void,
 ) => {
   const { client, addSubscription, removeSubscription, connected } =
@@ -59,11 +69,9 @@ export const subscribeRoom = (
 
   if (!client || !connected) return;
 
-  const key = `room-${roomId}`;
-
   removeSubscription(key);
 
-  const sub = client.subscribe(`/topic/room/${roomId}`, (message: IMessage) => {
+  const sub = client.subscribe(topic, (message: IMessage) => {
     const response: ServerToClientMessage = JSON.parse(message.body);
     handler(response);
   });
@@ -71,6 +79,14 @@ export const subscribeRoom = (
   addSubscription(key, sub);
 };
 
+// 게임 topic 구독
+export const subscribeRoom = (
+  roomId: number,
+  handler: (msg: ServerToClientMessage) => void,
+) => subscribe(`room-${roomId}`, `/topic/room/${roomId}/game`, handler);
+
+// 서버로 메시지 전송하기
+// 클라이언트 : /app/... 경로로 전송
 export const sendSocketMessage = (
   destination: string,
   body: ClientToServerMessage,
