@@ -6,16 +6,16 @@ import SaveIcon from '../../../assets/images/icons/save_icon.svg';
 
 type Props = {
   fileMenu: boolean;
-  onOpenCloseFileMenu: (fileMenu: boolean) => void;
+  onToggleFileMenu: () => void;
 };
 
-export default function Menubar({ fileMenu, onOpenCloseFileMenu }: Props) {
+export default function Menubar({ fileMenu, onToggleFileMenu }: Props) {
   return (
     <div className="flex flex-col gap-[20px] justify-center items-center">
       <button
         type="button"
         className={`cursor-pointer p-2 rounded-lg ${fileMenu ? 'bg-white/20 opacity-100' : 'opacity-50 hover:opacity-75'}`}
-        onClick={() => onOpenCloseFileMenu(!fileMenu)}
+        onClick={onToggleFileMenu}
       >
         <img src={FileIcon} alt="파일 목록" />
       </button>

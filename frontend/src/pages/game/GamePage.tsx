@@ -166,7 +166,7 @@ export default function GamePage() {
           <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
             <MenuBar
               fileMenu={openFileMenu}
-              onOpenCloseFileMenu={setOpenFileMenu}
+              onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
             />
           </div>
           {/* 파일탐색기 + 코드 편집기 + 터미널 */}
