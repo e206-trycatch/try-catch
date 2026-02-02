@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import ModeSelectionButton from '../../assets/images/buttons/mode_selection_button.png';
@@ -6,7 +7,11 @@ import { useRoomStore } from '../../stores/useRoomStore';
 const ModeSelectionPage = () => {
   const navigate = useNavigate();
 
-  const { setMode } = useRoomStore();
+  const { setMode, resetRoomCreation } = useRoomStore();
+
+  useEffect(() => {
+    resetRoomCreation();
+  }, [resetRoomCreation]);
 
   const handleModeSelect = (mode: 'SINGLE' | 'MULTI') => {
     setMode(mode);
