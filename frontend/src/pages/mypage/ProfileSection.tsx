@@ -7,6 +7,33 @@ interface ProfileSectionProps {
   profile: Profile | null;
 }
 
+// 미구현 기능 알림용 버튼 컴포넌트
+const ActionButton = ({
+  children,
+  variant = 'default',
+}: {
+  children: React.ReactNode;
+  variant?: 'default' | 'small' | 'link';
+}) => {
+  const handleNotImplemented = () => {
+    alert('추후 기능 구현 예정입니다.');
+  };
+
+  const baseStyles = {
+    default:
+      'px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors',
+    small:
+      'px-6 py-1 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors',
+    link: 'text-gray-400 hover:text-white transition-colors underline',
+  };
+
+  return (
+    <button onClick={handleNotImplemented} className={baseStyles[variant]}>
+      {children}
+    </button>
+  );
+};
+
 const ProfileSection = ({ profile }: ProfileSectionProps) => {
   if (!profile) return null;
 
@@ -30,9 +57,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
               }}
             />
           </div>
-          <button className="px-6 py-1 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-            수정
-          </button>
+          <ActionButton variant="small">수정</ActionButton>
         </div>
 
         {/* 폼 필드 영역 */}
@@ -47,12 +72,8 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                중복확인
-              </button>
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                수정
-              </button>
+              <ActionButton>중복확인</ActionButton>
+              <ActionButton>수정</ActionButton>
             </div>
           </div>
 
@@ -66,9 +87,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                확인
-              </button>
+              <ActionButton>확인</ActionButton>
             </div>
           </div>
 
@@ -82,9 +101,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white placeholder-gray-600"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                수정
-              </button>
+              <ActionButton>수정</ActionButton>
             </div>
           </div>
 
@@ -100,9 +117,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white placeholder-gray-600"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                확인
-              </button>
+              <ActionButton>확인</ActionButton>
             </div>
           </div>
 
@@ -116,17 +131,13 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                확인
-              </button>
+              <ActionButton>확인</ActionButton>
             </div>
           </div>
 
           {/* 프로필 저장 링크 */}
           <div className="text-right pt-4">
-            <button className="text-gray-400 hover:text-white transition-colors underline">
-              {'>'} 프로필 저장
-            </button>
+            <ActionButton variant="link">{'>'} 프로필 저장</ActionButton>
           </div>
         </div>
       </div>
