@@ -90,7 +90,10 @@ function App() {
           <Route path="/multi-room/lobby" element={<LobbyPage />} />
           <Route path="/invitation" element={<InvitationPage />} />
           <Route path="/game/:roomId/:questId" element={<GamePage />} />
-          <Route path="/result/loading" element={<ResultLoadingPage />} />
+          <Route
+            path="/result/loading/:roomId"
+            element={<ResultLoadingPage />}
+          />
           <Route path="/result" element={<ResultPage />} />
           <Route path="/mypage" element={<MyPage />} />
         </Route>
