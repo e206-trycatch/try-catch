@@ -38,11 +38,11 @@ public class ProblemFramework {
     private Long backendId;
 
     // 프론트엔드 에러 로그
-    @Column(name = "frontend_error_log")
+    @Column(name = "frontend_error_log", columnDefinition = "TEXT")
     private String frontendErrorLog;
 
     // 백엔드 에러 로그
-    @Column(name = "backend_error_log")
+    @Column(name = "backend_error_log", columnDefinition = "TEXT")
     private String backendErrorLog;
 
     // 삭제 여부
