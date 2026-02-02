@@ -8,9 +8,13 @@ import io.ssafy.trycatch.domain.room.enums.RoomStatus;
 import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.websocket.common.SocketEventType;
 import io.ssafy.trycatch.websocket.common.TimeLimitPolicy;
+import io.ssafy.trycatch.websocket.dto.SocketRespDto;
+import io.ssafy.trycatch.websocket.dto.game.TimerStartedDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +33,7 @@ public class TimerService {
     private final RoomRepository roomRepository;
     private final RoomUserRepository roomUserRepository;
     private final TimeoutSchedulerService timeoutSchedulerService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public GameStartRespDto startGame(Long roomId) {
@@ -56,6 +61,27 @@ public class TimerService {
                 .startedAt(room.getStartedAt())
                 .deadlineAt(deadlineAt)
                 .build();
+    }
+
+    @Transactional
+    public GameStartRespDto startGameWithBroadcast(Long roomId) {
+        GameStartRespDto result = startGame(roomId);
+
+        // 웹소켓으로 타이머 시작 브로드캐스트
+        TimerStartedDto syncData = TimerStartedDto.builder()
+                .roomId(result.getRoomId())
+                .startedAt(result.getStartedAt())
+                .deadlineAt(result.getDeadlineAt())
+                .build();
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/game",
+                SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
+        );
+
+        log.info("타이머 시작 브로드캐스트 완료 - roomId: {}", roomId);
+
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -97,5 +123,4 @@ public class TimerService {
                 .expired(remaining == 0)
                 .build();
     }
-
 }

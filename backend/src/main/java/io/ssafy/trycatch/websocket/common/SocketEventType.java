@@ -10,6 +10,7 @@ public enum SocketEventType {
     // 게임 이벤트
     CODE_SAVED,
     SCREEN_CHANGE,
+    TIMER_STARTED,
     TIMER_SYNC,
     TIME_OUT,
     SUBMISSION_STARTED,
