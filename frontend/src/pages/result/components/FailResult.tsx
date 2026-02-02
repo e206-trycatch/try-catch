@@ -69,7 +69,9 @@ const FailResult = ({ result }: Props) => {
           실패 원인 에러 확인 {showError ? '∧' : '∨'}
         </button>
         {showError && (
-          <div className="mt-2 p-4 bg-white text-black">{errorLog}</div>
+          <div className="mt-2 p-4 bg-white text-black break-words whitespace-pre-wrap overflow-x-auto">
+            {errorLog}
+          </div>
         )}
       </div>
 
