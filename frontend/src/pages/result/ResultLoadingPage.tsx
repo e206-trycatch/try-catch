@@ -46,6 +46,7 @@ const ResultLoadingPage = () => {
   // ─────────────────────────────────────────────────────────────
   const [errorType, setErrorType] = useState<ResultErrorType>('none');
   const [retryCount, setRetryCount] = useState(0); // 재시도 횟수 (재시도 버튼 클릭 시 증가)
+  const [isCompleted, setIsCompleted] = useState(false); // 채점 완료 상태 (모달 표시용)
   const hasSubmitted = useRef(false); // 중복 제출 방지 플래그
   const hasHandledResult = useRef(false); // 결과 처리 완료 플래그 (중복 처리 방지)
 
@@ -95,12 +96,11 @@ const ResultLoadingPage = () => {
       setSubmissionId(result.submissionId);
       console.log('[handleResult] setSubmissionId 완료');
 
-      // 4. 결과 페이지로 이동 (뒤로가기 방지: replace)
-      console.log('[handleResult] navigate 시도');
-      navigate(`/result/${roomId}`, { replace: true });
-      console.log('[handleResult] navigate 완료');
+      // 4. 채점 완료 모달 표시 (navigate는 확인 버튼 클릭 시)
+      setIsCompleted(true);
+      console.log('[handleResult] 채점 완료 모달 표시');
     },
-    [navigate, roomId, setGameState, setSubmissionId, setSubmissionResult],
+    [setGameState, setSubmissionId, setSubmissionResult],
   );
 
   // ─────────────────────────────────────────────────────────────
@@ -259,10 +259,28 @@ const ResultLoadingPage = () => {
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-6">
       <p className="text-xl text-white">결과를 불러오는 중...</p>
-      <DinoGame />
+      <DinoGame disabled={isCompleted} />
       <p className="text-sm text-gray-400">
         채점이 완료되면 자동으로 이동합니다
       </p>
+
+      {/* 채점 완료 모달 */}
+      {isCompleted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-lg bg-white px-8 py-6 text-center shadow-xl">
+            <p className="mb-2 text-xl font-bold text-gray-800">
+              채점이 종료되었습니다
+            </p>
+            <p className="mb-6 text-gray-600">결과 페이지로 넘어갑니다</p>
+            <button
+              onClick={() => navigate(`/result/${roomId}`, { replace: true })}
+              className="rounded-lg bg-blue-500 px-6 py-2 font-semibold text-white transition-colors hover:bg-blue-600"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
