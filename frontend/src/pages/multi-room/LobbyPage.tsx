@@ -86,12 +86,11 @@ const LobbyPage = () => {
 
     try {
       await leaveMultiRoom(roomId);
-    } catch (err) {
-      console.error('방 나가기 실패:', err);
-    } finally {
       disconnectStomp();
       resetLobby();
       navigate('/selection/theme');
+    } catch (err) {
+      console.error('방 나가기 실패:', err);
     }
   };
 
