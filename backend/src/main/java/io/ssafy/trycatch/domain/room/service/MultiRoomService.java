@@ -11,6 +11,7 @@ import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import io.ssafy.trycatch.websocket.dto.lobby.GuestJoinedDto;
+import io.ssafy.trycatch.websocket.dto.lobby.ReadyStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -539,5 +540,26 @@ public class MultiRoomService {
                 .quest(questDetail)
                 .participants(participants)
                 .build();
+    }
+
+    // ROOM-MULTI-009: 준비 상태 토글
+    @Transactional
+    public ReadyStatusDto toggleReady(Long roomId, Long userId) {
+        // 1. RoomUser 조회
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방 참가자가 아닙니다. userId: " + userId));
+
+        // 2. 준비 상태 토글
+        TrueOrFalse newReady = roomUser.getIsReady() == TrueOrFalse.T
+                ? TrueOrFalse.F
+                : TrueOrFalse.T;
+        roomUser.toggleReady();
+
+        log.info("준비 상태 토글 - roomId: {}, userId: {}, isReady: {}",
+                roomId, userId, newReady);
+
+        return new ReadyStatusDto(userId, newReady == TrueOrFalse.T);
     }
 }
