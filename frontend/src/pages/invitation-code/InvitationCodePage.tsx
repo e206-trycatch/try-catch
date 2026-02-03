@@ -63,6 +63,9 @@ const InvitationPage: React.FC = () => {
           return;
         }
         setRoomId(roomInfo.roomId);
+        setError(null);
+        setIsLoading(false);
+        setRoomId(roomInfo.roomId);
         navigate('/multi-room/lobby', {
           state: {
             roomId: roomInfo.roomId,
