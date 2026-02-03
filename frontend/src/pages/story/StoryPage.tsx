@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { fetchQuestStories, type QuestStory } from '../../api/roomApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageFlipTransition from '../../components/story/PageFlipTransition';
-import StoryIndicator from '../../components/story/StoryIndicator';
 import StorySlide from '../../components/story/StorySlide';
 import { useTypingSound } from '../../hooks/useTypingSound';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -153,16 +152,6 @@ const StoryPage = () => {
             stopSound={stopSound}
           />
         ))}
-
-        {/* 페이지 인디케이터 */}
-        <StoryIndicator total={stories.length} current={currentIndex} />
-
-        {/* 클릭 안내 - 타이핑 완료 시에만 표시 */}
-        {isTypingDone && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white/50 text-2xl z-20 animate-pulse">
-            {'>'}
-          </div>
-        )}
       </div>
     </PageFlipTransition>
   );
