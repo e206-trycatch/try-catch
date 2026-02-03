@@ -102,7 +102,11 @@ public class TimerService {
     }
 
     @Transactional
-    public void markUserReady(Long roomId, Long userId) {
+    public GameStartRespDto markUserReady(Long roomId, Long userId) {
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+
         // 1. 유저를 Ready 상태로 변경
         RoomUser roomUser = roomUserRepository
                 .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
@@ -126,6 +130,11 @@ public class TimerService {
                     allUsers.stream().filter(ru -> ru.getIsReady() == TrueOrFalse.T).count(),
                     allUsers.size());
         }
+
+        return GameStartRespDto.builder()
+                .roomId(room.getId())
+                .status(room.getStatus())
+                .build();
     }
 
     @Transactional
@@ -141,38 +150,55 @@ public class TimerService {
         log.info("모든 유저 준비 완료 - 게임 시작: roomId: {}, startedAt: {}, deadlineAt: {}",
                 roomId, room.getStartedAt(), deadlineAt);
 
-        // 트랜잭션 커밋 후 타임아웃 스케줄 등록 및 웹소켓 브로드캐스트
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // 타임아웃 스케줄 등록
-                        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
-                        log.info("트랜잭션 커밋 후 타임아웃 스케줄 등록 완료 - roomId: {}", roomId);
 
-                        // 웹소켓으로 타이머 시작 브로드캐스트
-                        TimerStartedDto syncData = TimerStartedDto.builder()
-                                .roomId(roomId)
-                                .startedAt(room.getStartedAt())
-                                .deadlineAt(deadlineAt)
-                                .build();
+        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
+        log.info("트랜잭션 커밋 후 타임아웃 스케줄 등록 완료 - roomId: {}", roomId);
 
-                        messagingTemplate.convertAndSend(
-                                "/topic/room/" + roomId + "/game",
-                                SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
-                        );
+        // 웹소켓으로 타이머 시작 브로드캐스트
+        TimerStartedDto syncData = TimerStartedDto.builder()
+                .roomId(roomId)
+                .startedAt(room.getStartedAt())
+                .deadlineAt(deadlineAt)
+                .build();
 
-                        log.info("타이머 시작 브로드캐스트 완료 - roomId: {}", roomId);
-                    }
-
-                    @Override
-                    public void afterCompletion(int status) {
-                        if (status == STATUS_ROLLED_BACK) {
-                            log.warn("트랜잭션 롤백으로 타임아웃 스케줄 등록 취소 - roomId: {}", roomId);
-                        }
-                    }
-                }
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/game",
+                SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
         );
+
+
+        // 트랜잭션 커밋 후 타임아웃 스케줄 등록 및 웹소켓 브로드캐스트
+//        TransactionSynchronizationManager.registerSynchronization(
+//                new TransactionSynchronization() {
+//                    @Override
+//                    public void afterCommit() {
+//                        // 타임아웃 스케줄 등록
+//                        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
+//                        log.info("트랜잭션 커밋 후 타임아웃 스케줄 등록 완료 - roomId: {}", roomId);
+//
+//                        // 웹소켓으로 타이머 시작 브로드캐스트
+//                        TimerStartedDto syncData = TimerStartedDto.builder()
+//                                .roomId(roomId)
+//                                .startedAt(room.getStartedAt())
+//                                .deadlineAt(deadlineAt)
+//                                .build();
+//
+//                        messagingTemplate.convertAndSend(
+//                                "/topic/room/" + roomId + "/game",
+//                                SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
+//                        );
+//
+//                        log.info("타이머 시작 브로드캐스트 완료 - roomId: {}", roomId);
+//                    }
+//
+//                    @Override
+//                    public void afterCompletion(int status) {
+//                        if (status == STATUS_ROLLED_BACK) {
+//                            log.warn("트랜잭션 롤백으로 타임아웃 스케줄 등록 취소 - roomId: {}", roomId);
+//                        }
+//                    }
+//                }
+//        );
     }
 
     @Transactional(readOnly = true)
