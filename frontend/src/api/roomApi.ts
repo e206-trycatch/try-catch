@@ -153,3 +153,8 @@ export const fetchMultiRoomInfo = async (
   );
   return data.result;
 };
+
+// 멀티 모드 방 나가기
+export const leaveMultiRoom = async (roomId: number): Promise<void> => {
+  await api.post(`/rooms/multi/${roomId}/leave`);
+};

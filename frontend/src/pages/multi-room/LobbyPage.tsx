@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { leaveMultiRoom } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
 import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
+import { disconnectStomp } from '../../sockets/stomp';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
@@ -69,6 +71,29 @@ const LobbyPage = () => {
       resetLobby();
     };
   }, [resetLobby]);
+
+  const currentUserRole = useLobbyStore((s) => s.currentUserRole);
+
+  const handleLeave = async () => {
+    if (!roomId) return;
+
+    const isHost = currentUserRole === 'HOST';
+    const confirmMsg = isHost
+      ? '호스트가 나가면 방이 삭제됩니다. 나가시겠습니까?'
+      : '방을 나가시겠습니까?';
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await leaveMultiRoom(roomId);
+    } catch (err) {
+      console.error('방 나가기 실패:', err);
+    } finally {
+      disconnectStomp();
+      resetLobby();
+      navigate('/selection/theme');
+    }
+  };
 
   const guestJoined = roomInfo?.guest != null;
   const invitationCode =
@@ -186,7 +211,7 @@ const LobbyPage = () => {
         <div className="w-full flex justify-end mt-3">
           <button
             type="button"
-            onClick={() => navigate('/selection/theme')}
+            onClick={handleLeave}
             className="text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors bg-transparent border-none"
           >
             {'<<'} 돌아가기
