@@ -4,6 +4,7 @@ import io.ssafy.trycatch.domain.game.service.RetryService;
 import io.ssafy.trycatch.domain.game.service.TimeoutSchedulerService;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
+import io.ssafy.trycatch.domain.submission.dto.response.RetryStartedRespDto;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionCompleteRespDto;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionStartRespDto;
@@ -132,8 +133,6 @@ public class SubmissionController {
     public ResponseEntity<ApiRespDto<Void>> retryGame(
             @PathVariable Long roomId,
             @AuthenticationPrincipal Long userId) {
-
-        submissionWebSocketService.validateHost(roomId, userId);
 
         retryService.retryGame(roomId, userId);
         // 모든 유저에게 재도전 시작 브로드캐스트
