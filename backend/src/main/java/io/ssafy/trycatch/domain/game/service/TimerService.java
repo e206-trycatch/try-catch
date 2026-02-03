@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -48,7 +50,22 @@ public class TimerService {
         room.startQuestGame();
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
 
-        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
+                        log.info("트랜잭션 커밋 후 타임아웃 스케줄 등록 완료 - roomId: {}", roomId);
+                    }
+
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status == STATUS_ROLLED_BACK) {
+                            log.warn("트랜잭션 롤백으로 타임아웃 스케줄 등록 취소 - roomId: {}", roomId);
+                        }
+                    }
+                }
+        );
 
         log.info("게임 시작 - roomId: {}, status: {}, startedAt: {}, deadlineAt: {}",
                 roomId, room.getStatus(), room.getStartedAt(), deadlineAt);

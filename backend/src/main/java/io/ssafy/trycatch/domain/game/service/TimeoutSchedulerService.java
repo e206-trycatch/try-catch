@@ -45,7 +45,8 @@ public class TimeoutSchedulerService {
         );
 
         scheduledTimeouts.put(roomId, future);
-        log.info("타임아웃 스케줄 등록 - roomId: {}, deadlineAt: {}", roomId, deadlineAt);
+        log.info("타임아웃 스케줄 등록 - roomId: {}, deadlineAt: {}, 활성 스케줄 수: {}",
+                roomId, deadlineAt, scheduledTimeouts.size());
     }
 
     /**
@@ -55,7 +56,8 @@ public class TimeoutSchedulerService {
         ScheduledFuture<?> future = scheduledTimeouts.remove(roomId);
         if (future != null && !future.isDone()) {
             future.cancel(false);
-            log.info("타임아웃 스케줄 취소 - roomId: {}", roomId);
+            log.info("타임아웃 스케줄 취소 - roomId: {}, 남은 활성 스케줄 수: {}",
+                    roomId, scheduledTimeouts.size());
         }
     }
 
