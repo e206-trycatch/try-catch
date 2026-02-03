@@ -127,6 +127,17 @@ type MultiRoomInfoResponse = {
   result: MultiRoomInfo;
 };
 
+type JoinMultiRoomResponse = {
+  roomId: number;
+  roomName: string;
+  guest: {
+    userId: number;
+    position: 'FRONTEND' | 'BACKEND';
+    frameworkId: number;
+    frameworkName: string;
+  };
+};
+
 // 멀티 모드 설정 조회
 export const fetchMultiSetting = async (themeId: number) => {
   const res = await api.get<MultiSettingResponse>('/rooms/multi', {
@@ -162,9 +173,8 @@ export const leaveMultiRoom = async (roomId: number): Promise<void> => {
 // 초대 코드로 멀티모드 방 입장
 export const joinMultiRoomByCode = async (invitationCode: string) => {
   const { data } = await api.post<{ result: MultiRoomInfo }>(
-    '/rooms/multi/invite',
-    null,
-    { params: { invitationCode } },
+    '/rooms/multi/join',
+    { invitationCode },
   );
   return data.result;
 };
