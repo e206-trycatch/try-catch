@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GameStartRespDto {
     private Long roomId;
     private RoomStatus status;

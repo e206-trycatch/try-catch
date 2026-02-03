@@ -1,4 +1,5 @@
 // 성공 결과 컴포넌트
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 import { useGameStore } from '../../../stores/useGameStore';
@@ -13,10 +14,34 @@ interface Props {
   result: SuccessSubmissionResult;
 }
 
+// 글자별 애니메이션 variants (custom으로 index 받아서 delay 적용)
+const INITIAL_DELAY = 0.5; // 화면 전환 후 대기 시간
+
+const letterVariants = {
+  hidden: {
+    opacity: 0,
+    y: 50,
+    scale: 0,
+  },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 500,
+      damping: 15,
+      delay: INITIAL_DELAY + index * 0.1,
+    },
+  }),
+};
+
 const SuccessResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
   const { questOrder, executionTimeMs, next } = result;
+
+  const successText = 'SUCCESS!';
 
   const handleNext = () => {
     clearStore();
@@ -46,7 +71,20 @@ const SuccessResult = ({ result }: Props) => {
         {/* TODO: 아이콘 추가 후 활성화 */}
         {/* <img src={rocketIcon} alt="success" className="w-12 h-12" /> */}
         <span className="text-4xl">🚀</span>
-        <span className="text-green-400 text-4xl font-bold">SUCCESS!</span>
+        <div className="flex">
+          {successText.split('').map((letter, index) => (
+            <motion.span
+              key={index}
+              className="text-green-400 text-4xl font-bold"
+              variants={letterVariants}
+              custom={index}
+              initial="hidden"
+              animate="visible"
+            >
+              {letter}
+            </motion.span>
+          ))}
+        </div>
       </div>
 
       <p className="text-white">총 소요시간 {formatTime(executionTimeMs)}</p>

@@ -1,17 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { leaveMultiRoom } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
 import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
+import { disconnectStomp } from '../../sockets/stomp';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
+import { useSocketStore } from '../../stores/useSocketStore';
 import { useStore } from '../../stores/useStore';
 import { getFramework, getPosition } from '../../utils/participantUtils';
 import { useLobbyData } from './hooks/useLobbyData';
+import { useLobbySocket } from './hooks/useLobbySocket';
 
 // * 초대코드(invitationCode) 초기화 로직
 // - location.state: 이전 페이지에서 navigate로 넘어온 경우 (최초 진입)
@@ -32,9 +36,49 @@ const LobbyPage = () => {
 
   // 로비 store
   const { roomInfo, status, errorMessage, resetLobby } = useLobbyStore();
+  const connected = useSocketStore((s) => s.connected);
 
   // 데이터 fetch + polling
   useLobbyData(roomId);
+
+  // STOMP 연결 + 구독
+  const { sendJoin } = useLobbySocket(roomId);
+
+  // roomInfo + 유저 닉네임으로 역할/ID 파생
+  const nickname = user?.nickname ?? null;
+  const currentUserRole =
+    roomInfo && nickname
+      ? roomInfo.host.nickname === nickname
+        ? 'HOST'
+        : roomInfo.guest?.nickname === nickname
+          ? 'GUEST'
+          : null
+      : null;
+  const currentUserId =
+    roomInfo && nickname
+      ? roomInfo.host.nickname === nickname
+        ? roomInfo.host.userId
+        : roomInfo.guest?.nickname === nickname
+          ? roomInfo.guest.userId
+          : null
+      : null;
+
+  // 최초 fetch 성공 시 STOMP join 발행
+  const joinSentRef = useRef(false);
+  useEffect(() => {
+    if (
+      status !== 'success' ||
+      !roomInfo ||
+      !nickname ||
+      !connected ||
+      currentUserId == null ||
+      joinSentRef.current
+    )
+      return;
+
+    sendJoin(currentUserId, nickname);
+    joinSentRef.current = true;
+  }, [status, roomInfo, nickname, connected, currentUserId, sendJoin]);
 
   // 언마운트 시 store 초기화
   useEffect(() => {
@@ -42,6 +86,26 @@ const LobbyPage = () => {
       resetLobby();
     };
   }, [resetLobby]);
+
+  const handleLeave = async () => {
+    if (!roomId) return;
+
+    const isHost = currentUserRole === 'HOST';
+    const confirmMsg = isHost
+      ? '호스트가 나가면 방이 삭제됩니다. 나가시겠습니까?'
+      : '방을 나가시겠습니까?';
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await leaveMultiRoom(roomId);
+      disconnectStomp();
+      resetLobby();
+      navigate('/selection/theme');
+    } catch (err) {
+      console.error('방 나가기 실패:', err);
+    }
+  };
 
   const guestJoined = roomInfo?.guest != null;
   const invitationCode =
@@ -159,7 +223,7 @@ const LobbyPage = () => {
         <div className="w-full flex justify-end mt-3">
           <button
             type="button"
-            onClick={() => navigate('/selection/theme')}
+            onClick={handleLeave}
             className="text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors bg-transparent border-none"
           >
             {'<<'} 돌아가기

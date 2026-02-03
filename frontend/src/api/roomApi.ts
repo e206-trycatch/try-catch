@@ -105,10 +105,9 @@ export const fetchQuestStories = async (questId: number) => {
 export interface ParticipantInfo {
   userId: number;
   nickname: string;
-  frontId?: number;
-  frontName?: string;
-  backId?: number;
-  backName?: string;
+  position?: 'FRONTEND' | 'BACKEND';
+  frameworkId?: number;
+  frameworkName?: string;
   isReady: boolean;
 }
 
@@ -151,6 +150,21 @@ export const fetchMultiRoomInfo = async (
 ): Promise<MultiRoomInfo> => {
   const { data } = await api.get<MultiRoomInfoResponse>(
     `/rooms/multi/${roomId}`,
+  );
+  return data.result;
+};
+
+// 멀티 모드 방 나가기
+export const leaveMultiRoom = async (roomId: number): Promise<void> => {
+  await api.post(`/rooms/multi/${roomId}/leave`);
+};
+
+// 초대 코드로 멀티모드 방 입장
+export const joinMultiRoomByCode = async (invitationCode: string) => {
+  const { data } = await api.post<{ result: MultiRoomInfo }>(
+    '/rooms/multi/invite',
+    null,
+    { params: { invitationCode } },
   );
   return data.result;
 };

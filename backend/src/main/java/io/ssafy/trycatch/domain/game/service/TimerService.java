@@ -8,6 +8,7 @@ import io.ssafy.trycatch.domain.room.enums.RoomStatus;
 import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.global.exception.ErrorCode;
 import io.ssafy.trycatch.websocket.common.SocketEventType;
 import io.ssafy.trycatch.websocket.common.TimeLimitPolicy;
 import io.ssafy.trycatch.websocket.dto.SocketRespDto;
@@ -22,9 +23,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_USER_NOT_FOUND;
-import static io.ssafy.trycatch.global.exception.ErrorCode.USER_NOT_IN_ROOM;
+import static io.ssafy.trycatch.global.exception.ErrorCode.*;
 
 @Slf4j
 @Service
@@ -38,16 +39,16 @@ public class TimerService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public GameStartRespDto startGame(Long roomId) {
+    public GameStartRespDto startGame(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
-        RoomUser roomUser = roomUserRepository.findByRoomIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_IN_ROOM));
 
         Duration limit = TimeLimitPolicy.resolve(room.getMode());
-        room.startQuestGame();
+        room.startGame();
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
 
         TransactionSynchronizationManager.registerSynchronization(
@@ -79,14 +80,61 @@ public class TimerService {
     }
 
     @Transactional
-    public GameStartRespDto startGameWithBroadcast(Long roomId) {
-        GameStartRespDto result = startGame(roomId);
+    public GameStartRespDto markUserReady(Long roomId, Long userId) {
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        // 1. 유저를 Ready 상태로 변경
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_IN_ROOM));
+
+        roomUser.setGameReady(true);
+
+        log.info("유저 Ready 상태 변경 - roomId: {}, userId: {}", roomId, userId);
+
+        // 2. 모든 유저가 Ready인지 체크
+        List<RoomUser> allUsers = roomUserRepository.findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+        boolean allReady = allUsers.stream()
+                .allMatch(ru -> ru.getIsGameReady() == TrueOrFalse.T);
+
+        // 3. 모두 Ready면 게임 시작
+        if (allReady) {
+            startGameAfterAllReady(roomId);
+        } else {
+            log.info("아직 모든 유저가 준비되지 않음 - roomId: {}, ready: {}/{}",
+                    roomId,
+                    allUsers.stream().filter(ru -> ru.getIsGameReady() == TrueOrFalse.T).count(),
+                    allUsers.size());
+        }
+
+        return GameStartRespDto.builder()
+                .roomId(room.getId())
+                .status(room.getStatus())
+                .build();
+    }
+
+    @Transactional
+    public void startGameAfterAllReady(Long roomId) {
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        Duration limit = TimeLimitPolicy.resolve(room.getMode());
+        room.startGame();
+        LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
+
+        log.info("모든 유저 준비 완료 - 게임 시작: roomId: {}, startedAt: {}, deadlineAt: {}",
+                roomId, room.getStartedAt(), deadlineAt);
+
+
+        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
+        log.info("트랜잭션 커밋 후 타임아웃 스케줄 등록 완료 - roomId: {}", roomId);
 
         // 웹소켓으로 타이머 시작 브로드캐스트
         TimerStartedDto syncData = TimerStartedDto.builder()
-                .roomId(result.getRoomId())
-                .startedAt(result.getStartedAt())
-                .deadlineAt(result.getDeadlineAt())
+                .roomId(roomId)
+                .startedAt(room.getStartedAt())
+                .deadlineAt(deadlineAt)
                 .build();
 
         messagingTemplate.convertAndSend(
@@ -94,16 +142,45 @@ public class TimerService {
                 SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
         );
 
-        log.info("타이머 시작 브로드캐스트 완료 - roomId: {}", roomId);
 
-        return result;
+        // 트랜잭션 커밋 후 타임아웃 스케줄 등록 및 웹소켓 브로드캐스트
+//        TransactionSynchronizationManager.registerSynchronization(
+//                new TransactionSynchronization() {
+//                    @Override
+//                    public void afterCommit() {
+//                        // 타임아웃 스케줄 등록
+//                        timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
+//                        log.info("트랜잭션 커밋 후 타임아웃 스케줄 등록 완료 - roomId: {}", roomId);
+//
+//                        // 웹소켓으로 타이머 시작 브로드캐스트
+//                        TimerStartedDto syncData = TimerStartedDto.builder()
+//                                .roomId(roomId)
+//                                .startedAt(room.getStartedAt())
+//                                .deadlineAt(deadlineAt)
+//                                .build();
+//
+//                        messagingTemplate.convertAndSend(
+//                                "/topic/room/" + roomId + "/game",
+//                                SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
+//                        );
+//
+//                        log.info("타이머 시작 브로드캐스트 완료 - roomId: {}", roomId);
+//                    }
+//
+//                    @Override
+//                    public void afterCompletion(int status) {
+//                        if (status == STATUS_ROLLED_BACK) {
+//                            log.warn("트랜잭션 롤백으로 타임아웃 스케줄 등록 취소 - roomId: {}", roomId);
+//                        }
+//                    }
+//                }
+//        );
     }
 
     @Transactional(readOnly = true)
     public TimerStatusRespDto getSingleTimerStatus(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         RoomUser ru = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));

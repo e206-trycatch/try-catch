@@ -10,6 +10,11 @@ import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
+import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.global.exception.ErrorCode;
+import io.ssafy.trycatch.websocket.dto.lobby.GuestJoinedDto;
+import io.ssafy.trycatch.websocket.dto.lobby.QuestReadyStatusDto;
+import io.ssafy.trycatch.websocket.dto.lobby.ReadyStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -445,6 +450,42 @@ public class MultiRoomService {
                 .collect(Collectors.toList());
     }
 
+    public GuestJoinedDto getGuestJoinedInfo(Long roomId, Long userId) {
+        // 1. RoomUser 조회
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방 참가자가 아닙니다. userId: " + userId));
+
+        // 2. User 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 사용자입니다. userId: " + userId));
+
+        // 3. Room 조회
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 방입니다. roomId: " + roomId));
+
+        // 4. Framework 조회
+        Long frameworkId = roomUser.getPosition() == RoomPosition.FRONTEND
+                ? room.getFrontendId()
+                : room.getBackendId();
+
+        Framework framework = validateFramework(frameworkId);
+
+        log.info("Guest 입장 정보 조회 완료 - roomId: {}, userId: {}", roomId, userId);
+
+        return new GuestJoinedDto(
+                user.getId(),
+                user.getNickname(),
+                user.getProfileUrl(),
+                framework.getId(),
+                framework.getName(),
+                roomUser.getIsReady() == TrueOrFalse.T
+        );
+    }
+
     public MultiQuestDetailRespDto getQuestDetail(Long roomId, Long questId) {
         // 1. Room 조회
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
@@ -502,5 +543,52 @@ public class MultiRoomService {
                 .quest(questDetail)
                 .participants(participants)
                 .build();
+    }
+
+    // ROOM-MULTI-009: 준비 상태 토글
+    @Transactional
+    public ReadyStatusDto toggleReady(Long roomId, Long userId) {
+        // 1. RoomUser 조회
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방 참가자가 아닙니다. userId: " + userId));
+
+        // 2. 준비 상태 토글
+        TrueOrFalse newReady = roomUser.getIsReady() == TrueOrFalse.T
+                ? TrueOrFalse.F
+                : TrueOrFalse.T;
+        roomUser.toggleReady();
+
+        log.info("준비 상태 토글 - roomId: {}, userId: {}, isReady: {}",
+                roomId, userId, newReady);
+
+        return new ReadyStatusDto(userId, newReady == TrueOrFalse.T);
+    }
+
+    // ROOM-MULTI-010: 퀘스트 준비 상태 조회
+    public QuestReadyStatusDto getQuestReadyStatus(Long roomId) {
+        RoomUser host = roomUserRepository
+                .findByRoomIdAndRoleAndIsDeleted(roomId, RoomRole.HOST, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOST_NOT_FOUND));
+
+        RoomUser guest = roomUserRepository
+                .findByRoomIdAndRoleAndIsDeleted(roomId, RoomRole.GUEST, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.GUEST_NOT_FOUND));
+
+        return new QuestReadyStatusDto(
+                new QuestReadyStatusDto.PlayerReadyInfo(
+                        host.getUserId(), host.getIsReady() == TrueOrFalse.T),
+                new QuestReadyStatusDto.PlayerReadyInfo(
+                        guest.getUserId(), guest.getIsReady() == TrueOrFalse.T)
+        );
+    }
+
+    public boolean checkAllReady(Long roomId) {
+        List<RoomUser> roomUsers = roomUserRepository
+                .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+
+        return roomUsers.stream()
+                .allMatch(ru -> ru.getIsReady() == TrueOrFalse.T);
     }
 }

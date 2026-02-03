@@ -14,8 +14,7 @@ export const connectStomp = (token: string | null): Promise<void> => {
 
   return new Promise((resolve, reject) => {
     const stomp = new Client({
-      webSocketFactory: () =>
-        new SockJS(`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/ws`),
+      webSocketFactory: () => new SockJS('/api/ws'),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
