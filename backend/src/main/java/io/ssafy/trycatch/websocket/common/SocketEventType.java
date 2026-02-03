@@ -7,6 +7,10 @@ public enum SocketEventType {
     READY_CHANGED,
     GAME_STARTED,
 
+    // 퀘스트 이벤트
+    QUEST_READY_STATUS,
+    START_QUEST,
+
     // 게임 이벤트
     CODE_SAVED,
     SCREEN_CHANGE,
