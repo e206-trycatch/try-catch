@@ -35,8 +35,7 @@ const LobbyPage = () => {
   const roomId = navState?.roomId ?? roomStoreRoomId;
 
   // 로비 store
-  const { roomInfo, status, errorMessage, setCurrentUser, resetLobby } =
-    useLobbyStore();
+  const { roomInfo, status, errorMessage, resetLobby } = useLobbyStore();
   const connected = useSocketStore((s) => s.connected);
 
   // 데이터 fetch + polling
@@ -45,25 +44,41 @@ const LobbyPage = () => {
   // STOMP 연결 + 구독
   const { sendJoin } = useLobbySocket(roomId);
 
-  // 최초 fetch 성공 시 역할 감지 + STOMP join 발행
+  // roomInfo + 유저 닉네임으로 역할/ID 파생
+  const nickname = user?.nickname ?? null;
+  const currentUserRole =
+    roomInfo && nickname
+      ? roomInfo.host.nickname === nickname
+        ? 'HOST'
+        : roomInfo.guest?.nickname === nickname
+          ? 'GUEST'
+          : null
+      : null;
+  const currentUserId =
+    roomInfo && nickname
+      ? roomInfo.host.nickname === nickname
+        ? roomInfo.host.userId
+        : roomInfo.guest?.nickname === nickname
+          ? roomInfo.guest.userId
+          : null
+      : null;
+
+  // 최초 fetch 성공 시 STOMP join 발행
   const joinSentRef = useRef(false);
   useEffect(() => {
     if (
       status !== 'success' ||
       !roomInfo ||
-      !user?.nickname ||
+      !nickname ||
       !connected ||
+      currentUserId == null ||
       joinSentRef.current
     )
       return;
 
-    setCurrentUser(user.nickname);
-    const { currentUserId: userId } = useLobbyStore.getState();
-    if (userId != null) {
-      sendJoin(userId, user.nickname);
-      joinSentRef.current = true;
-    }
-  }, [status, roomInfo, user?.nickname, connected, setCurrentUser, sendJoin]);
+    sendJoin(currentUserId, nickname);
+    joinSentRef.current = true;
+  }, [status, roomInfo, nickname, connected, currentUserId, sendJoin]);
 
   // 언마운트 시 store 초기화
   useEffect(() => {
@@ -71,8 +86,6 @@ const LobbyPage = () => {
       resetLobby();
     };
   }, [resetLobby]);
-
-  const currentUserRole = useLobbyStore((s) => s.currentUserRole);
 
   const handleLeave = async () => {
     if (!roomId) return;
