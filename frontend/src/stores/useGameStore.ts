@@ -95,7 +95,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   stopTimer: () => {
     if (intervalId) {
-      console.log('time over');
+      console.log('stop!');
       clearInterval(intervalId);
       intervalId = null;
     }

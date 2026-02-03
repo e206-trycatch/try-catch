@@ -40,7 +40,15 @@ export default function GamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
-  const { submissionId } = useGameStore();
+  const {
+    submissionId,
+    startTimer,
+    stopTimer,
+    forceExpire,
+    initializeForRoom,
+  } = useGameStore();
+  const { removeSubscription } = useSocketStore();
+  const { setResult } = useSubmissionStore();
 
   // 초기 게임 상태 설정
   useEffect(() => {
@@ -74,10 +82,10 @@ export default function GamePage() {
         const timeData = await getSingleTimer(Number(roomId));
 
         if (timeData.deadlineAt) {
-          useGameStore.getState().startTimer(timeData.deadlineAt);
+          startTimer(timeData.deadlineAt);
         } else {
           const newTimeData = await startSingleGameTimer(Number(roomId));
-          useGameStore.getState().startTimer(newTimeData.deadlineAt);
+          startTimer(newTimeData.deadlineAt);
         }
       } catch (e) {
         console.error('타이머 시작 실패:', e);
@@ -85,7 +93,14 @@ export default function GamePage() {
     };
 
     initSetting();
-  }, [questId, roomId, submissionId]);
+  }, [questId, roomId, submissionId, startTimer]);
+
+  // 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      stopTimer();
+    };
+  }, [stopTimer]);
 
   // STOMP 연결 및 TIME_OUT 구독
   useEffect(() => {
@@ -97,7 +112,7 @@ export default function GamePage() {
 
       subscribeRoom(Number(roomId), (msg) => {
         if (msg.type === 'TIME_OUT') {
-          useGameStore.getState().forceExpire();
+          forceExpire();
         }
       });
     };
@@ -105,9 +120,9 @@ export default function GamePage() {
     init();
 
     return () => {
-      useSocketStore.getState().removeSubscription(`room-${roomId}`);
+      removeSubscription(`room-${roomId}`);
     };
-  }, [roomId]);
+  }, [roomId, forceExpire, removeSubscription]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
@@ -121,11 +136,9 @@ export default function GamePage() {
 
     // 새 방 진입 시에만 draft에서 초기화 (실패 후 재도전 시에는 현재 값 유지)
     if (currentRoomId !== Number(roomId)) {
-      useGameStore
-        .getState()
-        .initializeForRoom(Number(roomId), draft.life, draft.hints);
+      initializeForRoom(Number(roomId), draft.life, draft.hints);
     }
-  }, [roomId]);
+  }, [roomId, initializeForRoom]);
 
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
@@ -160,7 +173,7 @@ export default function GamePage() {
 
     console.log('requestBody', requestBody);
 
-    useSubmissionStore.getState().setResult(requestBody);
+    setResult(requestBody);
     navigate(`/result/loading/${roomId}`);
   };
 
