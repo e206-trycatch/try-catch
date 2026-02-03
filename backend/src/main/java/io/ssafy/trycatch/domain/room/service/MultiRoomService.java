@@ -444,4 +444,63 @@ public class MultiRoomService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    public MultiQuestDetailRespDto getQuestDetail(Long roomId, Long questId) {
+        // 1. Room 조회
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 방입니다. roomId: " + roomId));
+
+        // 2. Quest 조회 및 테마 검증
+        Quest quest = questRepository.findById(questId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 퀘스트입니다. questId: " + questId));
+
+        if (!quest.getThemeId().equals(room.getThemeId())) {
+            throw new IllegalArgumentException(
+                    "해당 테마의 퀘스트가 아닙니다. questId: " + questId + ", themeId: " + room.getThemeId());
+        }
+
+        // 3. 퀘스트 기본 정보
+        QuestDetailRespDto questDetail = QuestDetailRespDto.builder()
+                .questId(quest.getId())
+                .questOrder(quest.getQuestOrder())
+                .title(quest.getTitle())
+                .description(quest.getDescription())
+                .build();
+
+        // 4. 참가자 목록 조회
+        List<RoomUser> roomUsers = roomUserRepository
+                .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+
+        // 5. 참가자 정보 구성
+        List<MultiQuestDetailRespDto.ParticipantInfo> participants = roomUsers.stream()
+                .map(ru -> {
+                    User user = userRepository.findById(ru.getUserId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "존재하지 않는 사용자입니다. userId: " + ru.getUserId()));
+
+                    Long frameworkId = ru.getPosition() == RoomPosition.FRONTEND
+                            ? room.getFrontendId()
+                            : room.getBackendId();
+
+                    Framework framework = validateFramework(frameworkId);
+
+                    return MultiQuestDetailRespDto.ParticipantInfo.builder()
+                            .userId(user.getId())
+                            .nickname(user.getNickname())
+                            .role(ru.getRole())
+                            .frameworkName(framework.getName())
+                            .isReady(ru.getIsReady() == TrueOrFalse.T)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 6. Response 생성
+        return MultiQuestDetailRespDto.builder()
+                .roomId(roomId)
+                .quest(questDetail)
+                .participants(participants)
+                .build();
+    }
 }
