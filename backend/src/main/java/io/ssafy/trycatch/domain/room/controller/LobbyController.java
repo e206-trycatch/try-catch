@@ -4,11 +4,13 @@ import io.ssafy.trycatch.domain.room.service.MultiRoomService;
 import io.ssafy.trycatch.websocket.common.SocketEventType;
 import io.ssafy.trycatch.websocket.dto.SocketRespDto;
 import io.ssafy.trycatch.websocket.dto.lobby.GuestJoinedDto;
+import io.ssafy.trycatch.websocket.dto.lobby.ReadyStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
@@ -19,6 +21,7 @@ import java.security.Principal;
 public class LobbyController {
 
     private final MultiRoomService multiRoomService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/rooms/{roomId}/join")
     @SendTo("/topic/rooms/{roomId}")
@@ -31,5 +34,18 @@ public class LobbyController {
         GuestJoinedDto guestInfo = multiRoomService.getGuestJoinedInfo(roomId, userId);
 
         return SocketRespDto.of(SocketEventType.PLAYER_JOINED, guestInfo);
+    }
+
+    @MessageMapping("/rooms/{roomId}/ready")
+    @SendTo("/topic/rooms/{roomId}")
+    public SocketRespDto<ReadyStatusDto> handleReady(
+            @DestinationVariable Long roomId,
+            Principal principal) {
+
+        Long userId = Long.parseLong(principal.getName());
+
+        ReadyStatusDto readyStatus = multiRoomService.toggleReady(roomId, userId);
+
+        return SocketRespDto.of(SocketEventType.READY_CHANGED, readyStatus);
     }
 }
