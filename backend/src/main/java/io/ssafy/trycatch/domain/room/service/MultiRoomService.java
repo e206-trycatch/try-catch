@@ -2,20 +2,11 @@ package io.ssafy.trycatch.domain.room.service;
 
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomJoinReqDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomJoinRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomInfoRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.*;
 import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto.FrameworkInfo;
-import io.ssafy.trycatch.domain.room.entity.Framework;
-import io.ssafy.trycatch.domain.room.entity.Room;
-import io.ssafy.trycatch.domain.room.entity.RoomUser;
-import io.ssafy.trycatch.domain.room.entity.Theme;
+import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.*;
-import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
-import io.ssafy.trycatch.domain.room.repository.RoomRepository;
-import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
-import io.ssafy.trycatch.domain.room.repository.ThemeRepository;
+import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
@@ -39,6 +30,8 @@ public class MultiRoomService {
     private final RoomRepository roomRepository;
     private final RoomUserRepository roomUserRepository;
     private final UserRepository userRepository;
+    private final QuestRepository questRepository;
+    private final QuestStoryRepository questStoryRepository;
 
     public MultiRoomSettingRespDto getMultiRoomSettings(Long themeId) {
         // 1. 테마 조회
@@ -414,5 +407,41 @@ public class MultiRoomService {
                 .frameworkName(framework.getName())
                 .isReady(roomUser.getIsReady() == TrueOrFalse.T)
                 .build();
+    }
+
+    public List<QuestStoryRespDto> getQuestStory(Long roomId, Long questId) {
+        // 1. Room 검증
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 방입니다. roomId: " + roomId));
+
+        // 2. Quest 검증 (해당 테마의 퀘스트인지)
+        Quest quest = questRepository.findById(questId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 퀘스트입니다. questId: " + questId));
+
+        if (!quest.getThemeId().equals(room.getThemeId())) {
+            throw new IllegalArgumentException(
+                    "해당 테마의 퀘스트가 아닙니다. questId: " + questId + ", themeId: " + room.getThemeId());
+        }
+
+        // 3. QuestStory 목록 조회 (storyOrder 순)
+        List<QuestStory> questStories = questStoryRepository
+                .findByQuestIdAndIsDeletedOrderByStoryOrderAsc(questId, TrueOrFalse.F);
+
+        if (questStories.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "퀘스트 스토리를 찾을 수 없습니다. questId: " + questId);
+        }
+
+        // 4. Response 생성
+        return questStories.stream()
+                .map(qs -> QuestStoryRespDto.builder()
+                        .storyId(qs.getId())
+                        .storyOrder(qs.getStoryOrder())
+                        .imageUrl(qs.getImageUrl())
+                        .content(qs.getContent())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
