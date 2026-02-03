@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { gsap } from 'gsap';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +6,7 @@ import { joinMultiRoomByCode } from '../../api/roomApi';
 import Envelope from '../../components/invitation-code/InvitationEnvelope';
 import Letter from '../../components/invitation-code/InvitationLetter';
 import { useRoomStore } from '../../stores/useRoomStore';
+import { handleApiError } from '../../utils/errorUtils';
 
 const InvitationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -63,9 +63,6 @@ const InvitationPage: React.FC = () => {
           return;
         }
         setRoomId(roomInfo.roomId);
-        setError(null);
-        setIsLoading(false);
-        setRoomId(roomInfo.roomId);
         navigate('/multi-room/lobby', {
           state: {
             roomId: roomInfo.roomId,
@@ -73,23 +70,16 @@ const InvitationPage: React.FC = () => {
           },
         });
       } catch (err) {
-        if (axios.isAxiosError(err)) {
-          const status = err.response?.status;
-          const serverMessage = err.response?.data?.message;
-          if (status === 404) {
-            setError('존재하지 않는 초대 코드입니다.');
-          } else if (status === 409) {
-            setError('이미 입장한 방 혹은 정원이 가득 찬 방입니다.');
-          } else if (status === 400) {
-            setError(serverMessage || '잘못된 초대 코드 형식입니다.');
-          } else {
-            setError(
-              serverMessage || '초대 코드 확인 중 오류가 발생하였습니다.',
-            );
-          }
-        } else {
-          setError('네트워크 오류가 발생하였습니다. 다시 시도해주세요.');
-        }
+        setError(
+          handleApiError(err, {
+            statusMessages: {
+              404: '존재하지 않는 초대 코드입니다.',
+              409: '이미 입장한 방 혹은 정원이 가득 찬 방입니다.',
+              400: '잘못된 초대 코드 형식입니다.',
+            },
+            defaultMessage: '초대 코드 확인 중 오류가 발생하였습니다.',
+          }),
+        );
       } finally {
         setIsLoading(false);
       }

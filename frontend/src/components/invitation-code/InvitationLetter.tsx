@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useState } from 'react';
 
 import CursorIcon from '../../assets/images/icons/cursor-icon.png';
 import EnvelopeIcon from '../../assets/images/icons/envelope-icon.png';
+import { validateInvitationCode } from '../../utils/validationUtils';
 
 interface LetterProps {
   onSubmit: (code: string) => void;
@@ -14,17 +15,9 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
     const [code, setCode] = useState('');
     const [validationError, setValidationError] = useState<string | null>(null);
 
-    const validateCode = (trimmed: string): string | null => {
-      if (!trimmed) return '초대 코드를 입력해주세요.';
-      if (trimmed.length !== 8) return '초대 코드는 8자리여야 합니다.';
-      if (!/^[a-zA-Z0-9]+$/.test(trimmed))
-        return '초대 코드는 영문자와 숫자만 사용할 수 있습니다.';
-      return null;
-    };
-
     const handleSubmit = () => {
       const trimmed = code.trim();
-      const vError = validateCode(trimmed);
+      const vError = validateInvitationCode(trimmed);
       if (vError) {
         setValidationError(vError);
         return;
