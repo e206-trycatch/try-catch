@@ -78,4 +78,8 @@ public class RoomUser {
     public boolean isReady() {
         return this.isReady == TrueOrFalse.F;
     }
+
+    public void setReady(boolean ready) {
+        this.isReady = ready ? TrueOrFalse.T : TrueOrFalse.F;
+    }
 }

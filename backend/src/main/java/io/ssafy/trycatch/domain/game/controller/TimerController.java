@@ -29,10 +29,13 @@ public class TimerController {
 
     // 멀티 모드 게임 시작
     @PostMapping("/multi/{roomId}/start")
-    public ResponseEntity<ApiRespDto<GameStartRespDto>> startMultiGame(@PathVariable Long roomId) {
-        GameStartRespDto result = timerService.startGameWithBroadcast(roomId);
+    public ResponseEntity<ApiRespDto<Void>> startMultiGame(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId) {
+//        GameStartRespDto result = timerService.startGameWithBroadcast(roomId);
+        timerService.markUserReady(roomId, userId);
         return ResponseEntity.ok(
-                ApiRespDto.success("게임이 시작되었습니다.", result)
+                ApiRespDto.success(null)
         );
     }
 
