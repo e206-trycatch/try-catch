@@ -1,73 +1,95 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import type { ParticipantInfo } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
+import ErrorMessage from '../../components/common/ErrorMessage';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
 import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
+import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
+import { useLobbyData } from './hooks/useLobbyData';
 
-const positionLabel = (pos: string | null): string => {
-  if (pos === 'FRONTEND') return 'Frontend';
-  if (pos === 'BACKEND') return 'Backend';
+const getPosition = (p: ParticipantInfo): string => {
+  if (p.frontId != null) return 'Frontend';
+  if (p.backId != null) return 'Backend';
   return 'Unknown';
 };
 
-const getFrameworkName = (
-  frameworkId: number | null,
-  position: string | null,
-  availableFrameworks: ReturnType<
-    typeof useRoomStore.getState
-  >['availableFrameworks'],
-): string => {
-  if (!frameworkId || !position || !availableFrameworks) return 'Unknown';
-  const list =
-    position === 'FRONTEND'
-      ? availableFrameworks.FRONTEND
-      : availableFrameworks.BACKEND;
-  return list.find((fw) => fw.id === frameworkId)?.name ?? 'Unknown';
+const getFramework = (p: ParticipantInfo): string => {
+  if (p.frontName) return p.frontName;
+  if (p.backName) return p.backName;
+  return 'Unknown';
 };
 
 const LobbyPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const invitationCode =
-    (location.state as { invitationCode?: string })?.invitationCode || '';
-
   const user = useStore((s) => s.user);
-  const { draft, themeName, availableFrameworks } = useRoomStore();
 
-  // Placeholder for future socket integration
-  const [guestJoined] = useState(false);
-  const [guestNickname] = useState('대기중...');
+  // roomId: navigation state 우선, useRoomStore fallback
+  const navState = location.state as {
+    roomId?: number;
+    invitationCode?: string;
+  } | null;
+  const roomStoreRoomId = useRoomStore((s) => s.currentRoomId);
+  const roomId = navState?.roomId ?? roomStoreRoomId;
 
-  const hostPosition = positionLabel(draft.hostPosition);
-  const hostFramework = getFrameworkName(
-    draft.hostFrameworkId,
-    draft.hostPosition,
-    availableFrameworks,
-  );
+  // 로비 store
+  const { roomInfo, status, errorMessage, resetLobby } = useLobbyStore();
 
-  const guestPosition = positionLabel(draft.guestPosition);
-  const guestFramework = getFrameworkName(
-    draft.guestFrameworkId,
-    draft.guestPosition,
-    availableFrameworks,
-  );
+  // 데이터 fetch + polling
+  useLobbyData(roomId);
 
-  const handleGoBack = () => {
-    navigate('/selection/theme');
-  };
+  // 언마운트 시 store 초기화
+  useEffect(() => {
+    return () => {
+      resetLobby();
+    };
+  }, [resetLobby]);
 
-  if (!invitationCode) {
+  const guestJoined = roomInfo?.guest != null;
+  const invitationCode =
+    roomInfo?.invitationCode ?? navState?.invitationCode ?? '';
+
+  // roomId 없음
+  if (!roomId) {
     return (
       <div className="min-h-screen w-full flex flex-col justify-center items-center bg-[#030030]">
-        <div className="text-white text-xl mb-4">초대 코드가 없습니다.</div>
+        <ErrorMessage message="방 정보를 찾을 수 없습니다." />
         <button
-          onClick={handleGoBack}
-          className="text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors"
+          onClick={() => navigate('/selection/theme')}
+          className="mt-4 text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors"
+        >
+          돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  // 로딩 중
+  if (status === 'loading' || status === 'idle') {
+    return (
+      <div className="min-h-screen w-full flex flex-col justify-center items-center bg-[#030030]">
+        <LoadingSpinner />
+        <span className="text-white mt-4">방 정보를 불러오는 중...</span>
+      </div>
+    );
+  }
+
+  // 에러
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen w-full flex flex-col justify-center items-center bg-[#030030]">
+        <ErrorMessage
+          message={errorMessage ?? '알 수 없는 오류가 발생했습니다.'}
+        />
+        <button
+          onClick={() => navigate('/selection/theme')}
+          className="mt-4 text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors"
         >
           돌아가기
         </button>
@@ -108,7 +130,7 @@ const LobbyPage = () => {
               <span className="text-white text-[14px] font-bold">테마명</span>
             </div>
             <span className="text-white text-[18px] font-bold">
-              {themeName ?? '테마'} (Lv.1)
+              {roomInfo?.themeName ?? '테마'}
             </span>
           </div>
 
@@ -116,18 +138,22 @@ const LobbyPage = () => {
           <div className="flex items-center gap-6 mb-8">
             {/* Host card */}
             <PlayerCard
-              nickname={user?.nickname ?? '호스트'}
-              position={hostPosition}
-              framework={hostFramework}
+              nickname={roomInfo?.host?.nickname ?? user?.nickname ?? '호스트'}
+              position={roomInfo?.host ? getPosition(roomInfo.host) : 'Unknown'}
+              framework={
+                roomInfo?.host ? getFramework(roomInfo.host) : 'Unknown'
+              }
               isHost={true}
               isActive={true}
             />
 
             {/* Guest card */}
             <PlayerCard
-              nickname={guestJoined ? guestNickname : '대기중...'}
-              position={guestPosition}
-              framework={guestFramework}
+              nickname={guestJoined ? roomInfo!.guest!.nickname : '대기중...'}
+              position={guestJoined ? getPosition(roomInfo!.guest!) : 'Unknown'}
+              framework={
+                guestJoined ? getFramework(roomInfo!.guest!) : 'Unknown'
+              }
               isHost={false}
               isActive={guestJoined}
             />
@@ -141,7 +167,7 @@ const LobbyPage = () => {
         <div className="w-full flex justify-end mt-3">
           <button
             type="button"
-            onClick={handleGoBack}
+            onClick={() => navigate('/selection/theme')}
             className="text-white/80 text-md font-bold cursor-pointer hover:text-white transition-colors bg-transparent border-none"
           >
             {'<<'} 돌아가기
