@@ -225,6 +225,7 @@ public class SingleRoomService {
                 .collect(Collectors.toList());
     }
 
+    // 문제 파일 조회
     @Transactional
     public ProblemFilesRespDto getProblemFiles(Long roomId, Long questId) {
         // 1. Room 조회
@@ -284,7 +285,7 @@ public class SingleRoomService {
     }
 
     // frontendId/backendId 유무로 position 판단
-    private String determinePosition(Long frontendId, Long backendId) {
+    public String determinePosition(Long frontendId, Long backendId) {
         if (frontendId != null && backendId != null) {
             return "FULLSTACK";
         } else if (frontendId != null && backendId == null) {
@@ -297,7 +298,7 @@ public class SingleRoomService {
     }
 
     // position에 따라 ProblemFramework 조회
-    private ProblemFramework findProblemFrameworkByPosition(
+    public ProblemFramework findProblemFrameworkByPosition(
             Long questId, String position, Long frontendId, Long backendId) {
 
         switch (position) {
@@ -331,7 +332,7 @@ public class SingleRoomService {
     }
 
     // position에 따라 파일 필터링
-    private List<ProblemFile> filterFilesByPosition(List<ProblemFile> files, String position) {
+    public List<ProblemFile> filterFilesByPosition(List<ProblemFile> files, String position) {
         if ("FRONTEND".equals(position)) {
             // FRONTEND만
             return files.stream()
