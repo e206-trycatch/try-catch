@@ -8,6 +8,8 @@ export type RolePayload = {
   files: FilePayload[];
 };
 
+export type GameStatus = 'PLAYING' | null;
+
 export type SubmissionRequest = {
   problemFrameworkId: number | null;
   frontend?: RolePayload;
@@ -67,3 +69,14 @@ export type SubmissionResult = Omit<
   hasNextQuest: boolean;
   nextQuestId: number | null;
 };
+
+export interface GameTimerResponse {
+  roomId: number;
+  status: GameStatus;
+  startedAt: string;
+  deadlineAt: string;
+
+  serverNow?: string | null;
+  remainingSeconds?: number | null;
+  expired?: boolean | null;
+}

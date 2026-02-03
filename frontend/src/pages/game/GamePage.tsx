@@ -2,11 +2,15 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { getSingleTimer } from '../../api/getSingleTimer';
 import { getQuest } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
+import { connectStomp, subscribeRoom } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
+import { useSocketStore } from '../../stores/useSocketStore';
+import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
@@ -15,9 +19,11 @@ import GameInfoBar from './components/GameInfoBar';
 import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
+import TimeOverModal from './components/TimeOverModal';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
+import useTimer from './hooks/useTimer';
 import type { SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
@@ -30,6 +36,13 @@ export default function GamePage() {
   const [problemFrameworkId, setProblemFrameworkId] = useState<number | null>(
     null,
   );
+  const [firstJoin] = useState(() => {
+    const key = `firstJoin-${roomId}`;
+    if (sessionStorage.getItem(key)) return false;
+    sessionStorage.setItem(key, 'true');
+    return true;
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
@@ -64,7 +77,14 @@ export default function GamePage() {
       }
 
       try {
-        await startSingleGameTimer(Number(roomId));
+        const timeData = await getSingleTimer(Number(roomId));
+
+        if (timeData.deadlineAt) {
+          useGameStore.getState().startTimer(timeData.deadlineAt);
+        } else {
+          const newTimeData = await startSingleGameTimer(Number(roomId));
+          useGameStore.getState().startTimer(newTimeData.deadlineAt);
+        }
       } catch (e) {
         console.error('타이머 시작 실패:', e);
       }
@@ -72,6 +92,28 @@ export default function GamePage() {
 
     initSetting();
   }, [questId, roomId, submissionId]);
+
+  // STOMP 연결 및 TIME_OUT 구독
+  useEffect(() => {
+    if (!roomId) return;
+
+    const init = async () => {
+      const token = useStore.getState().accessToken;
+      if (token) await connectStomp(token);
+
+      subscribeRoom(Number(roomId), (msg) => {
+        if (msg.type === 'TIME_OUT') {
+          useGameStore.getState().forceExpire();
+        }
+      });
+    };
+
+    init();
+
+    return () => {
+      useSocketStore.getState().removeSubscription(`room-${roomId}`);
+    };
+  }, [roomId]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
@@ -128,6 +170,7 @@ export default function GamePage() {
     navigate(`/result/loading/${roomId}`);
   };
 
+  const { isExpired } = useTimer();
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
 
@@ -155,6 +198,7 @@ export default function GamePage() {
 
   return (
     <>
+      {isExpired && <TimeOverModal />}
       <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar />
