@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.submission.controller;
 
+import io.ssafy.trycatch.domain.game.service.RetryService;
 import io.ssafy.trycatch.domain.game.service.TimeoutSchedulerService;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +32,7 @@ public class SubmissionController {
     private final SimpMessagingTemplate messagingTemplate;
     private final SubmissionWebSocketService submissionWebSocketService;
     private final TimeoutSchedulerService timeoutSchedulerService;
+    private final RetryService retryService;
 
     @PostMapping("/api/v1/rooms/{roomId}/submissions")
     public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
@@ -123,5 +126,28 @@ public class SubmissionController {
                         submissionService.getProblemFilesForRetry(roomId, submissionId, userId)
                 )
         );
+    }
+
+    @PostMapping("/api/v1/rooms/multi/{roomId}/retry")
+    public ResponseEntity<ApiRespDto<Void>> retryGame(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal Long userId) {
+
+        submissionWebSocketService.validateHost(roomId, userId);
+
+        retryService.retryGame(roomId, userId);
+        // 모든 유저에게 재도전 시작 브로드캐스트
+        RetryStartedRespDto data = RetryStartedRespDto.builder()
+                .roomId(roomId)
+                .build();
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/game",
+                SocketRespDto.of(SocketEventType.RETRY_STARTED, data)
+        );
+
+        log.info("재도전 시작 브로드캐스트 완료 - roomId: {}", roomId);
+
+        return ResponseEntity.ok(ApiRespDto.success(null));
     }
 }
