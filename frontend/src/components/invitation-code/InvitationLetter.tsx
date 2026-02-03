@@ -12,10 +12,25 @@ interface LetterProps {
 const Letter = forwardRef<HTMLDivElement, LetterProps>(
   ({ onSubmit, isLoading, error }, ref) => {
     const [code, setCode] = useState('');
+    const [validationError, setValidationError] = useState<string | null>(null);
+
+    const validateCode = (trimmed: string): string | null => {
+      if (!trimmed) return '초대 코드를 입력해주세요.';
+      if (trimmed.length !== 8) return '초대 코드는 8자리여야 합니다.';
+      if (!/^[a-zA-Z0-9]+$/.test(trimmed))
+        return '초대 코드는 영문자와 숫자만 사용할 수 있습니다.';
+      return null;
+    };
 
     const handleSubmit = () => {
       const trimmed = code.trim();
-      if (!trimmed || isLoading) return;
+      const vError = validateCode(trimmed);
+      if (vError) {
+        setValidationError(vError);
+        return;
+      }
+      if (isLoading) return;
+      setValidationError(null);
       onSubmit(trimmed);
     };
 
@@ -41,7 +56,11 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
                 <input
                   type="text"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    setValidationError(null);
+                  }}
+                  placeholder="초대 코드 입력"
                   onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   disabled={isLoading}
                   className="flex w-[350px] h-[30px] items-center gap-2.5 shrink-0 px-[27px] py-[19px] rounded-[10px] bg-[#FEFEFE] relative z-10"
@@ -59,8 +78,10 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
                   />
                 </button>
               </div>
-              {error && (
-                <span className="text-red-500 text-[13px]">{error}</span>
+              {(validationError || error) && (
+                <span className="text-red-500 text-[13px]">
+                  {validationError || error}
+                </span>
               )}
             </div>
           </div>
