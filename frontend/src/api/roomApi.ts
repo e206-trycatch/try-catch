@@ -127,17 +127,6 @@ type MultiRoomInfoResponse = {
   result: MultiRoomInfo;
 };
 
-type JoinMultiRoomResponse = {
-  roomId: number;
-  roomName: string;
-  guest: {
-    userId: number;
-    position: 'FRONTEND' | 'BACKEND';
-    frameworkId: number;
-    frameworkName: string;
-  };
-};
-
 // 멀티 모드 설정 조회
 export const fetchMultiSetting = async (themeId: number) => {
   const res = await api.get<MultiSettingResponse>('/rooms/multi', {
