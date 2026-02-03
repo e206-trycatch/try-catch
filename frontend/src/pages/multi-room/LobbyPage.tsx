@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import type { ParticipantInfo } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -11,19 +10,8 @@ import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
+import { getFramework, getPosition } from '../../utils/participantUtils';
 import { useLobbyData } from './hooks/useLobbyData';
-
-const getPosition = (p: ParticipantInfo): string => {
-  if (p.frontId != null) return 'Frontend';
-  if (p.backId != null) return 'Backend';
-  return 'Unknown';
-};
-
-const getFramework = (p: ParticipantInfo): string => {
-  if (p.frontName) return p.frontName;
-  if (p.backName) return p.backName;
-  return 'Unknown';
-};
 
 // * 초대코드(invitationCode) 초기화 로직
 // - location.state: 이전 페이지에서 navigate로 넘어온 경우 (최초 진입)
