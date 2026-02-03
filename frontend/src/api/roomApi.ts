@@ -101,6 +101,33 @@ export const fetchQuestStories = async (questId: number) => {
   return res.data;
 };
 
+// 멀티 모드 방 정보 조회용 타입
+export interface ParticipantInfo {
+  userId: number;
+  nickname: string;
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
+  isReady: boolean;
+}
+
+export interface MultiRoomInfo {
+  roomId: number;
+  roomName: string;
+  invitationCode: string;
+  themeId: number;
+  themeName: string;
+  roomStatus: string;
+  host: ParticipantInfo;
+  guest: ParticipantInfo | null;
+}
+
+type MultiRoomInfoResponse = {
+  message: string;
+  result: MultiRoomInfo;
+};
+
 // 멀티 모드 설정 조회
 export const fetchMultiSetting = async (themeId: number) => {
   const res = await api.get<MultiSettingResponse>('/rooms/multi', {
@@ -114,6 +141,16 @@ export const createMultiRoom = async (payload: CreateMultiRoomRequest) => {
   const { data } = await api.post<{ result: CreateMultiRoomResponse }>(
     '/rooms/multi',
     payload,
+  );
+  return data.result;
+};
+
+// 멀티 모드 방 정보 조회 (로비)
+export const fetchMultiRoomInfo = async (
+  roomId: number,
+): Promise<MultiRoomInfo> => {
+  const { data } = await api.get<MultiRoomInfoResponse>(
+    `/rooms/multi/${roomId}`,
   );
   return data.result;
 };
