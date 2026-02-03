@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { gsap } from 'gsap';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -57,9 +58,23 @@ const InvitationPage: React.FC = () => {
           state: { roomId: roomInfo.roomId },
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : '초대 코드가 유효하지 않습니다.',
-        );
+        if (axios.isAxiosError(err)) {
+          const status = err.response?.status;
+          const serverMessage = err.response?.data?.message;
+          if (status === 404) {
+            setError('존재하지 않는 초대 코드입니다.');
+          } else if (status === 409) {
+            setError('이미 입장한 방 혹은 정원이 가득 찬 방입니다.');
+          } else if (status === 400) {
+            setError(serverMessage || '잘못된 초대 코드 형식입니다.');
+          } else {
+            setError(
+              serverMessage || '초대 코드 확인 중 오류가 발생하였습니다.',
+            );
+          }
+        } else {
+          setError('네트워크 오류가 발생하였습니다. 다시 시도해주세요.');
+        }
       } finally {
         setIsLoading(false);
       }
