@@ -25,8 +25,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_USER_NOT_FOUND;
-import static io.ssafy.trycatch.global.exception.ErrorCode.USER_NOT_IN_ROOM;
+import static io.ssafy.trycatch.global.exception.ErrorCode.*;
 
 @Slf4j
 @Service
@@ -42,8 +41,7 @@ public class TimerService {
     @Transactional
     public GameStartRespDto startGame(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         RoomUser roomUser = roomUserRepository
                 .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
@@ -84,8 +82,7 @@ public class TimerService {
     @Transactional
     public GameStartRespDto markUserReady(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         // 1. 유저를 Ready 상태로 변경
         RoomUser roomUser = roomUserRepository
@@ -120,8 +117,7 @@ public class TimerService {
     @Transactional
     public void startGameAfterAllReady(Long roomId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         Duration limit = TimeLimitPolicy.resolve(room.getMode());
         room.startGame();
@@ -167,8 +163,7 @@ public class TimerService {
     @Transactional(readOnly = true)
     public TimerStatusRespDto getSingleTimerStatus(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         RoomUser ru = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
