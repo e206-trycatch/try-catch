@@ -158,3 +158,13 @@ export const fetchMultiRoomInfo = async (
 export const leaveMultiRoom = async (roomId: number): Promise<void> => {
   await api.post(`/rooms/multi/${roomId}/leave`);
 };
+
+// 초대 코드로 멀티모드 방 입장
+export const joinMultiRoomByCode = async (invitationCode: string) => {
+  const { data } = await api.post<{ result: MultiRoomInfo }>(
+    '/rooms/multi/invite',
+    null,
+    { params: { invitationCode } },
+  );
+  return data.result;
+};
