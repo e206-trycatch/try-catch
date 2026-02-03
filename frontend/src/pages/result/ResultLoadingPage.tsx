@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import DinoGame from '../dino-game/components/DinoGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -255,11 +255,14 @@ const ResultLoadingPage = () => {
     );
   }
 
-  // 정상 상태: 로딩 스피너 표시
+  // 정상 상태: 다이노 게임 표시
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4">
-      <LoadingSpinner />
+    <div className="flex h-screen flex-col items-center justify-center gap-6">
       <p className="text-xl text-white">결과를 불러오는 중...</p>
+      <DinoGame />
+      <p className="text-sm text-gray-400">
+        채점이 완료되면 자동으로 이동합니다
+      </p>
     </div>
   );
 };
