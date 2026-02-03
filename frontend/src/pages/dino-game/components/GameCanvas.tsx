@@ -208,7 +208,7 @@ const GameCanvas = ({ gameState }: GameCanvasProps) => {
       ref={canvasRef}
       width={GAME_CONFIG.CANVAS_WIDTH}
       height={GAME_CONFIG.CANVAS_HEIGHT}
-      className="border-2 border-gray-300 rounded-lg"
+      className="rounded-lg"
     />
   );
 };
