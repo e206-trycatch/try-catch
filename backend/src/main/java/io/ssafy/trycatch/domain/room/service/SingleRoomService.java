@@ -233,11 +233,10 @@ public class SingleRoomService {
                         "해당 방을 찾을 수 없습니다. roomId: " + roomId));
 
         // 목숨 초기화 (다음 퀘스트용)
-        room.resetLife(); // 타이머 생기면 삭제
+        room.resetLife();
 
         // 힌트 개수 초기화
-        room.resetHint(); // 타이머 생기면 삭제
-        room.startQuestGame(); // 타이머 생기면 삭제
+        room.resetHint();
         
         roomRepository.save(room);
         // 2. Room에서 frontendId, backendId 추출
