@@ -33,9 +33,9 @@ export const GAME_CONFIG = {
   SCORE_PER_FRAME: 0.15,
 
   // Colors
-  COLOR_DINO: '#535353',
-  COLOR_GROUND: '#535353',
-  COLOR_OBSTACLE: '#535353',
-  COLOR_SKY: '#e0e0e0',
-  COLOR_CLOUD: '#b0b0b0',
+  COLOR_DINO: '#ffffff',
+  COLOR_GROUND: '#ffffff',
+  COLOR_OBSTACLE: '#ffffff',
+  COLOR_SKY: '#030030',
+  COLOR_CLOUD: 'rgba(255, 255, 255, 0.3)',
 } as const;
