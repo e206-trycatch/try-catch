@@ -45,7 +45,7 @@ public class RetryService {
         // 5. 모든 유저를 Ready 해제
         List<RoomUser> roomUsers = roomUserRepository.findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
         for (RoomUser ru : roomUsers) {
-            ru.setReady(false);
+            ru.setGameReady(false);
         }
 
         log.info("게임 재도전 준비 완료 - roomId: {}, life: {}, hint: {}",

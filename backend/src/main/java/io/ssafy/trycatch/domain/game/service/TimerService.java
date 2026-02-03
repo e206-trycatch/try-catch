@@ -25,8 +25,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_USER_NOT_FOUND;
-import static io.ssafy.trycatch.global.exception.ErrorCode.USER_NOT_IN_ROOM;
+import static io.ssafy.trycatch.global.exception.ErrorCode.*;
 
 @Slf4j
 @Service
@@ -40,13 +39,13 @@ public class TimerService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public GameStartRespDto startGame(Long roomId) {
+    public GameStartRespDto startGame(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
-        RoomUser roomUser = roomUserRepository.findByRoomIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_IN_ROOM));
 
         Duration limit = TimeLimitPolicy.resolve(room.getMode());
         room.startGame();
@@ -81,45 +80,23 @@ public class TimerService {
     }
 
     @Transactional
-    public GameStartRespDto startGameWithBroadcast(Long roomId) {
-        GameStartRespDto result = startGame(roomId);
-
-        // 웹소켓으로 타이머 시작 브로드캐스트
-        TimerStartedDto syncData = TimerStartedDto.builder()
-                .roomId(result.getRoomId())
-                .startedAt(result.getStartedAt())
-                .deadlineAt(result.getDeadlineAt())
-                .build();
-
-        messagingTemplate.convertAndSend(
-                "/topic/room/" + roomId + "/game",
-                SocketRespDto.of(SocketEventType.TIMER_STARTED, syncData)
-        );
-
-        log.info("타이머 시작 브로드캐스트 완료 - roomId: {}", roomId);
-
-        return result;
-    }
-
-    @Transactional
     public GameStartRespDto markUserReady(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         // 1. 유저를 Ready 상태로 변경
         RoomUser roomUser = roomUserRepository
                 .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_IN_ROOM));
 
-        roomUser.setReady(true);
+        roomUser.setGameReady(true);
 
         log.info("유저 Ready 상태 변경 - roomId: {}, userId: {}", roomId, userId);
 
         // 2. 모든 유저가 Ready인지 체크
         List<RoomUser> allUsers = roomUserRepository.findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
         boolean allReady = allUsers.stream()
-                .allMatch(ru -> ru.getIsReady() == TrueOrFalse.T);
+                .allMatch(ru -> ru.getIsGameReady() == TrueOrFalse.T);
 
         // 3. 모두 Ready면 게임 시작
         if (allReady) {
@@ -127,7 +104,7 @@ public class TimerService {
         } else {
             log.info("아직 모든 유저가 준비되지 않음 - roomId: {}, ready: {}/{}",
                     roomId,
-                    allUsers.stream().filter(ru -> ru.getIsReady() == TrueOrFalse.T).count(),
+                    allUsers.stream().filter(ru -> ru.getIsGameReady() == TrueOrFalse.T).count(),
                     allUsers.size());
         }
 
@@ -140,11 +117,10 @@ public class TimerService {
     @Transactional
     public void startGameAfterAllReady(Long roomId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         Duration limit = TimeLimitPolicy.resolve(room.getMode());
-        room.startQuestGame();
+        room.startGame();
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
 
         log.info("모든 유저 준비 완료 - 게임 시작: roomId: {}, startedAt: {}, deadlineAt: {}",
@@ -204,8 +180,7 @@ public class TimerService {
     @Transactional(readOnly = true)
     public TimerStatusRespDto getSingleTimerStatus(Long roomId, Long userId) {
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         RoomUser ru = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));

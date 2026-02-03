@@ -1,4 +1,4 @@
-package io.ssafy.trycatch.domain.submission.controller;
+package io.ssafy.trycatch.domain.submission.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
