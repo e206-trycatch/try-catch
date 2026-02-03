@@ -45,9 +45,7 @@ public class TimerService {
                 .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
 
         Duration limit = TimeLimitPolicy.resolve(room.getMode());
-        room.resetLife();
-        room.resetHint();
-        room.startGame();
+        room.startQuestGame();
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
 
         timeoutSchedulerService.scheduleTimeout(roomId, deadlineAt);
