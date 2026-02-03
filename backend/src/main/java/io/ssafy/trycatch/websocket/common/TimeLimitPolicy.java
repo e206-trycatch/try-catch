@@ -6,7 +6,7 @@ import java.time.Duration;
 
 public enum TimeLimitPolicy {
     SINGLE(RoomMode.SINGLE, Duration.ofMinutes(1)),
-    MULTI(RoomMode.MULTI, Duration.ofMinutes(20));
+    MULTI(RoomMode.MULTI, Duration.ofMinutes(1));
 
     private final RoomMode mode;
     private final Duration limit;
