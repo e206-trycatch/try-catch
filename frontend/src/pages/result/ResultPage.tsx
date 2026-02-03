@@ -6,10 +6,7 @@ import { useResultStore } from '../../stores/useResultStore';
 import ErrorDisplay from './components/ErrorDisplay';
 import FailResult from './components/FailResult';
 import SuccessResult from './components/SuccessResult';
-import {
-  ERROR_CONFIGS,
-  type ResultErrorType,
-} from './types/errorTypes';
+import { ERROR_CONFIGS, type ResultErrorType } from './types/errorTypes';
 
 const ResultPage = () => {
   const navigate = useNavigate();
