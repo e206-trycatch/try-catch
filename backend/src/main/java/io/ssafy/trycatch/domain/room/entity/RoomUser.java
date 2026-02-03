@@ -38,6 +38,7 @@ public class RoomUser {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "is_game_ready", nullable = false)
+    @Builder.Default
     private TrueOrFalse isGameReady = TrueOrFalse.F;  // 게임 시작 Ready
 
     @Enumerated(EnumType.STRING)
