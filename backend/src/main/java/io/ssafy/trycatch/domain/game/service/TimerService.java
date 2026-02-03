@@ -49,7 +49,7 @@ public class TimerService {
                 .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
 
         Duration limit = TimeLimitPolicy.resolve(room.getMode());
-        room.startQuestGame();
+        room.startGame();
         LocalDateTime deadlineAt = room.getStartedAt().plus(limit);
 
         TransactionSynchronizationManager.registerSynchronization(
