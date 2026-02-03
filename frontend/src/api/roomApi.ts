@@ -105,10 +105,9 @@ export const fetchQuestStories = async (questId: number) => {
 export interface ParticipantInfo {
   userId: number;
   nickname: string;
-  frontId?: number;
-  frontName?: string;
-  backId?: number;
-  backName?: string;
+  position?: 'FRONTEND' | 'BACKEND';
+  frameworkId?: number;
+  frameworkName?: string;
   isReady: boolean;
 }
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
@@ -9,9 +9,11 @@ import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
+import { useSocketStore } from '../../stores/useSocketStore';
 import { useStore } from '../../stores/useStore';
 import { getFramework, getPosition } from '../../utils/participantUtils';
 import { useLobbyData } from './hooks/useLobbyData';
+import { useLobbySocket } from './hooks/useLobbySocket';
 
 // * 초대코드(invitationCode) 초기화 로직
 // - location.state: 이전 페이지에서 navigate로 넘어온 경우 (최초 진입)
@@ -31,10 +33,35 @@ const LobbyPage = () => {
   const roomId = navState?.roomId ?? roomStoreRoomId;
 
   // 로비 store
-  const { roomInfo, status, errorMessage, resetLobby } = useLobbyStore();
+  const { roomInfo, status, errorMessage, setCurrentUser, resetLobby } =
+    useLobbyStore();
+  const connected = useSocketStore((s) => s.connected);
 
   // 데이터 fetch + polling
   useLobbyData(roomId);
+
+  // STOMP 연결 + 구독
+  const { sendJoin } = useLobbySocket(roomId);
+
+  // 최초 fetch 성공 시 역할 감지 + STOMP join 발행
+  const joinSentRef = useRef(false);
+  useEffect(() => {
+    if (
+      status !== 'success' ||
+      !roomInfo ||
+      !user?.nickname ||
+      !connected ||
+      joinSentRef.current
+    )
+      return;
+
+    setCurrentUser(user.nickname);
+    const { currentUserId: userId } = useLobbyStore.getState();
+    if (userId != null) {
+      sendJoin(userId, user.nickname);
+      joinSentRef.current = true;
+    }
+  }, [status, roomInfo, user?.nickname, connected, setCurrentUser, sendJoin]);
 
   // 언마운트 시 store 초기화
   useEffect(() => {
