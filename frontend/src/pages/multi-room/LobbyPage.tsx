@@ -25,6 +25,10 @@ const getFramework = (p: ParticipantInfo): string => {
   return 'Unknown';
 };
 
+// * 초대코드(invitationCode) 초기화 로직
+// - location.state: 이전 페이지에서 navigate로 넘어온 경우 (최초 진입)
+// - useRoomStore: 페이지를 새로고침하여 location state가 초기화된 경우 (전역 상태)
+// location.state가 우선순위를 가지며, 값이 없을 경우 스토어 값을 fallback으로 사용
 const LobbyPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
