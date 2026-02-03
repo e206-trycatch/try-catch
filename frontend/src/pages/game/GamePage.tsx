@@ -85,6 +85,10 @@ export default function GamePage() {
     };
 
     initSetting();
+
+    return () => {
+      useGameStore.getState().stopTimer();
+    };
   }, [questId, roomId, submissionId]);
 
   // STOMP 연결 및 TIME_OUT 구독
