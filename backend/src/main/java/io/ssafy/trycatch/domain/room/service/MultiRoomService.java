@@ -10,7 +10,10 @@ import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
+import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.global.exception.ErrorCode;
 import io.ssafy.trycatch.websocket.dto.lobby.GuestJoinedDto;
+import io.ssafy.trycatch.websocket.dto.lobby.QuestReadyStatusDto;
 import io.ssafy.trycatch.websocket.dto.lobby.ReadyStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -561,5 +564,31 @@ public class MultiRoomService {
                 roomId, userId, newReady);
 
         return new ReadyStatusDto(userId, newReady == TrueOrFalse.T);
+    }
+
+    // ROOM-MULTI-010: 퀘스트 준비 상태 조회
+    public QuestReadyStatusDto getQuestReadyStatus(Long roomId) {
+        RoomUser host = roomUserRepository
+                .findByRoomIdAndRoleAndIsDeleted(roomId, RoomRole.HOST, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.HOST_NOT_FOUND));
+
+        RoomUser guest = roomUserRepository
+                .findByRoomIdAndRoleAndIsDeleted(roomId, RoomRole.GUEST, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.GUEST_NOT_FOUND));
+
+        return new QuestReadyStatusDto(
+                new QuestReadyStatusDto.PlayerReadyInfo(
+                        host.getUserId(), host.getIsReady() == TrueOrFalse.T),
+                new QuestReadyStatusDto.PlayerReadyInfo(
+                        guest.getUserId(), guest.getIsReady() == TrueOrFalse.T)
+        );
+    }
+
+    public boolean checkAllReady(Long roomId) {
+        List<RoomUser> roomUsers = roomUserRepository
+                .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+
+        return roomUsers.stream()
+                .allMatch(ru -> ru.getIsReady() == TrueOrFalse.T);
     }
 }

@@ -29,6 +29,10 @@ public enum ErrorCode {
     // 테마
 //    THEME_NOT_FOUND(HttpStatus.NOT_FOUND, "테마를 찾을 수 없습니다"),
 
+    // 대기방
+    HOST_NOT_FOUND(HttpStatus.NOT_FOUND, "Host를 찾을 수 없습니다."),
+    GUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "Guest를 찾을 수 없습니다."),
+
     // 문제
 //    PROBLEM_NOT_FOUND(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다");
     GAMEOVER(HttpStatus.BAD_REQUEST, "게임이 종료되었습니다. 남은 목숨이 없습니다."),
