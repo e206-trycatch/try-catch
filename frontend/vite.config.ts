@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
@@ -9,6 +10,11 @@ export default defineConfig({
   // sockjs-client가 Node.js의 global 변수를 참조하므로 브라우저용 호환처리
   define: {
     global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   },
 
   // 로컬호스트로 백엔드 연결하기 위한 vite proxy 세팅
