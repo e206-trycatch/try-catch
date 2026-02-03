@@ -1,13 +1,19 @@
 import { gsap } from 'gsap';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { joinMultiRoomByCode } from '../../api/roomApi';
 import Envelope from '../../components/invitation-code/InvitationEnvelope';
 import Letter from '../../components/invitation-code/InvitationLetter';
 
 const InvitationPage: React.FC = () => {
+  const navigate = useNavigate();
   const flapRef = useRef<HTMLDivElement>(null);
   const letterRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const tl = gsap.timeline({ delay: 0.8 });
@@ -40,6 +46,27 @@ const InvitationPage: React.FC = () => {
     });
   }, []);
 
+  const handleSubmitCode = useCallback(
+    async (invitationCode: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const roomInfo = await joinMultiRoomByCode(invitationCode);
+        navigate('/multi-room/lobby', {
+          state: { roomId: roomInfo.roomId },
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : '초대 코드가 유효하지 않습니다.',
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [navigate],
+  );
+
   return (
     <div className="min-h-screen flex items-center justify-center overflow-hidden">
       <div className="relative mt-32" style={{ perspective: '1500px' }}>
@@ -62,7 +89,12 @@ const InvitationPage: React.FC = () => {
           />
 
           {/* Letter: 내부 편지지 */}
-          <Letter ref={letterRef} />
+          <Letter
+            ref={letterRef}
+            onSubmit={handleSubmitCode}
+            isLoading={isLoading}
+            error={error}
+          />
         </Envelope>
       </div>
     </div>
