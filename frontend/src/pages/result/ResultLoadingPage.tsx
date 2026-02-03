@@ -266,17 +266,20 @@ const ResultLoadingPage = () => {
 
       {/* 채점 완료 모달 */}
       {isCompleted && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white px-8 py-6 text-center shadow-xl">
-            <p className="mb-2 text-xl font-bold text-gray-800">
-              채점이 종료되었습니다
-            </p>
-            <p className="mb-6 text-gray-600">결과 페이지로 넘어갑니다</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="flex flex-col items-center gap-6 border border-white/20 bg-[#0a0a2e] px-12 py-10 text-center shadow-2xl">
+            <span className="text-4xl">✅</span>
+            <div className="flex flex-col gap-2">
+              <p className="text-2xl font-bold text-green-400">
+                채점 완료!
+              </p>
+              <p className="text-gray-400">결과 페이지로 이동합니다</p>
+            </div>
             <button
               onClick={() => navigate(`/result/${roomId}`, { replace: true })}
-              className="rounded-lg bg-blue-500 px-6 py-2 font-semibold text-white transition-colors hover:bg-blue-600"
+              className="mt-2 border border-white px-8 py-3 text-white transition-colors hover:bg-white hover:text-black"
             >
-              확인
+              결과 확인 &gt;
             </button>
           </div>
         </div>
