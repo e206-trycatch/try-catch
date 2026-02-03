@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import CursorIcon from '../../assets/images/icons/cursor-icon.png';
 import EnvelopeIcon from '../../assets/images/icons/envelope-icon.png';
@@ -33,6 +33,14 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
       setValidationError(null);
       onSubmit(trimmed);
     };
+
+    // 언마운트시 cleanup effect 추가
+    useEffect(() => {
+      return () => {
+        setCode('');
+        setValidationError(null);
+      };
+    }, []);
 
     return (
       <div
