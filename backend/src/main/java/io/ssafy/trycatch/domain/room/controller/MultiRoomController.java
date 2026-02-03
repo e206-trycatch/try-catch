@@ -2,16 +2,15 @@ package io.ssafy.trycatch.domain.room.controller;
 
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomCreateReqDto;
 import io.ssafy.trycatch.domain.room.dto.request.MultiRoomJoinReqDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomCreateRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomJoinRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomInfoRespDto;
-import io.ssafy.trycatch.domain.room.dto.response.MultiRoomSettingRespDto;
+import io.ssafy.trycatch.domain.room.dto.response.*;
 import io.ssafy.trycatch.domain.room.service.MultiRoomService;
 import io.ssafy.trycatch.global.common.ApiRespDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/rooms/multi")
@@ -71,6 +70,16 @@ public class MultiRoomController {
         MultiRoomInfoRespDto response = multiRoomService.getMultiRoomInfo(roomId);
         return ResponseEntity.ok(
                 ApiRespDto.success("대기방 정보를 불러왔습니다.", response)
+        );
+    }
+
+    @GetMapping("/{roomId}/story/{questId}")
+    public ResponseEntity<ApiRespDto<List<QuestStoryRespDto>>> getQuestStory(
+            @PathVariable Long roomId,
+            @PathVariable Long questId) {
+        List<QuestStoryRespDto> response = multiRoomService.getQuestStory(roomId, questId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("퀘스트 스토리를 불러왔습니다.", response)
         );
     }
 }
