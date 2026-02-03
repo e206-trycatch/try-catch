@@ -83,7 +83,12 @@ public class RoomUser {
         return this.isReady == TrueOrFalse.F;
     }
 
-    public void setGameReady(boolean ready) {
-        this.isGameReady = ready ? TrueOrFalse.T : TrueOrFalse.F;
+    public void toggleReady() {
+        this.isReady = this.isReady == TrueOrFalse.T
+                ? TrueOrFalse.F
+                : TrueOrFalse.T;
+    }
+    public void setReady(boolean ready) {
+        this.isReady = ready ? TrueOrFalse.T : TrueOrFalse.F;
     }
 }

@@ -1,5 +1,6 @@
 export type NodeType = 'folder' | 'file';
 export type CodeRole = 'FRONTEND' | 'BACKEND' | null;
+export type TimerStatus = 'RUNNING' | 'EXPIRED' | null;
 
 // 백엔드에서 내려주는 데이터(QuestFile) 타입 정의
 export interface QuestFile {

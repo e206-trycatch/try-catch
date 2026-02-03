@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import DinoGame from '../dino-game/components/DinoGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -46,6 +46,7 @@ const ResultLoadingPage = () => {
   // ─────────────────────────────────────────────────────────────
   const [errorType, setErrorType] = useState<ResultErrorType>('none');
   const [retryCount, setRetryCount] = useState(0); // 재시도 횟수 (재시도 버튼 클릭 시 증가)
+  const [isCompleted, setIsCompleted] = useState(false); // 채점 완료 상태 (모달 표시용)
   const hasSubmitted = useRef(false); // 중복 제출 방지 플래그
   const hasHandledResult = useRef(false); // 결과 처리 완료 플래그 (중복 처리 방지)
 
@@ -95,12 +96,11 @@ const ResultLoadingPage = () => {
       setSubmissionId(result.submissionId);
       console.log('[handleResult] setSubmissionId 완료');
 
-      // 4. 결과 페이지로 이동 (뒤로가기 방지: replace)
-      console.log('[handleResult] navigate 시도');
-      navigate(`/result/${roomId}`, { replace: true });
-      console.log('[handleResult] navigate 완료');
+      // 4. 채점 완료 모달 표시 (navigate는 확인 버튼 클릭 시)
+      setIsCompleted(true);
+      console.log('[handleResult] 채점 완료 모달 표시');
     },
-    [navigate, roomId, setGameState, setSubmissionId, setSubmissionResult],
+    [setGameState, setSubmissionId, setSubmissionResult],
   );
 
   // ─────────────────────────────────────────────────────────────
@@ -255,11 +255,35 @@ const ResultLoadingPage = () => {
     );
   }
 
-  // 정상 상태: 로딩 스피너 표시
+  // 정상 상태: 다이노 게임 표시
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4">
-      <LoadingSpinner />
+    <div className="flex h-screen flex-col items-center justify-center gap-6">
       <p className="text-xl text-white">결과를 불러오는 중...</p>
+      <DinoGame disabled={isCompleted} />
+      <p className="text-sm text-gray-400">
+        채점이 완료되면 자동으로 이동합니다
+      </p>
+
+      {/* 채점 완료 모달 */}
+      {isCompleted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="flex flex-col items-center gap-6 border border-white/20 bg-[#0a0a2e] px-12 py-10 text-center shadow-2xl">
+            <span className="text-4xl">✅</span>
+            <div className="flex flex-col gap-2">
+              <p className="text-2xl font-bold text-green-400">
+                채점 완료!
+              </p>
+              <p className="text-gray-400">결과 페이지로 이동합니다</p>
+            </div>
+            <button
+              onClick={() => navigate(`/result/${roomId}`, { replace: true })}
+              className="mt-2 border border-white px-8 py-3 text-white transition-colors hover:bg-white hover:text-black"
+            >
+              결과 확인 &gt;
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

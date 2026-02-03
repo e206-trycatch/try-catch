@@ -67,6 +67,16 @@ export interface StartQuestMessage {
   message: string;
 }
 
+export interface TimeOutMessage {
+  type: 'TIME_OUT';
+  data: {
+    roomId: number;
+    message: string;
+    deadlineAt: string;
+  };
+  timestamp: string;
+}
+
 // 클라이언트 -> 서버
 export type ClientToServerMessage =
   | JoinRoomMessage
@@ -87,4 +97,5 @@ export type ServerToClientMessage =
   | GameStartMessage
   | QuestReadyStatusMessage
   | StartQuestMessage
-  | TimerSyncMessage;
+  | TimerSyncMessage
+  | TimeOutMessage;
