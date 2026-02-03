@@ -1,10 +1,13 @@
 package io.ssafy.trycatch.domain.submission.controller;
 
+import io.ssafy.trycatch.domain.game.service.TimeoutSchedulerService;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionCompleteRespDto;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
+import io.ssafy.trycatch.domain.submission.dto.response.SubmissionStartRespDto;
 import io.ssafy.trycatch.domain.submission.service.SubmissionService;
+import io.ssafy.trycatch.domain.submission.service.SubmissionWebSocketService;
 import io.ssafy.trycatch.global.common.ApiRespDto;
 import io.ssafy.trycatch.websocket.common.SocketEventType;
 import io.ssafy.trycatch.websocket.dto.SocketRespDto;
@@ -16,6 +19,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -23,15 +28,19 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final SubmissionWebSocketService submissionWebSocketService;
+    private final TimeoutSchedulerService timeoutSchedulerService;
 
     @PostMapping("/api/v1/rooms/{roomId}/submissions")
     public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
             @PathVariable Long roomId,
             @RequestBody SubmissionReqDto request) {
         Long userId = getCurrentUserId();
-
+        LocalDateTime submittedAt = LocalDateTime.now();
+        timeoutSchedulerService.cancelTimeout(roomId); // 타임아웃 취소 처리
+        SubmissionRespDto response = submissionService.submit(roomId, userId, request, submittedAt);
         return ResponseEntity.ok(
-                ApiRespDto.success(submissionService.submit(roomId, userId, request))
+                ApiRespDto.success(response)
         );
     }
 
@@ -62,7 +71,21 @@ public class SubmissionController {
             @RequestBody SubmissionReqDto request) {
         Long userId = getCurrentUserId();
 
-        SubmissionRespDto response = submissionService.submit(roomId, userId, request);
+        // 제출 시각
+        LocalDateTime submittedAt = LocalDateTime.now();
+        submissionWebSocketService.validateHost(roomId, userId);
+
+        SubmissionStartRespDto startDto = SubmissionStartRespDto.builder()
+                .roomId(roomId)
+                .submittedAt(submittedAt).build();
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/game",
+                SocketRespDto.of(SocketEventType.SUBMISSION_STARTED, startDto)
+        );
+
+        timeoutSchedulerService.cancelTimeout(roomId); // 타임아웃 취소 처리
+        SubmissionRespDto response = submissionService.submit(roomId, userId, request, submittedAt);
 
         // 2. WebSocket으로 "제출 완료" 신호 브로드캐스트
         SubmissionCompleteRespDto completeDto = SubmissionCompleteRespDto.builder()

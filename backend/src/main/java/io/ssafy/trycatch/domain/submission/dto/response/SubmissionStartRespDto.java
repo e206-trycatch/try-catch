@@ -5,12 +5,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class SubmissionStartRespDto {
-    private Long userId;
-    private String nickname;
-    private String message;
+    private Long roomId;
+    private LocalDateTime submittedAt;
 }
