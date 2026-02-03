@@ -36,12 +36,6 @@ export default function GamePage() {
   const [problemFrameworkId, setProblemFrameworkId] = useState<number | null>(
     null,
   );
-  const [firstJoin] = useState(() => {
-    const key = `firstJoin-${roomId}`;
-    if (sessionStorage.getItem(key)) return false;
-    sessionStorage.setItem(key, 'true');
-    return true;
-  });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
