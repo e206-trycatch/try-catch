@@ -10,6 +10,7 @@ import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
+import io.ssafy.trycatch.websocket.dto.lobby.GuestJoinedDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -443,6 +444,42 @@ public class MultiRoomService {
                         .content(qs.getContent())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public GuestJoinedDto getGuestJoinedInfo(Long roomId, Long userId) {
+        // 1. RoomUser 조회
+        RoomUser roomUser = roomUserRepository
+                .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "방 참가자가 아닙니다. userId: " + userId));
+
+        // 2. User 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 사용자입니다. userId: " + userId));
+
+        // 3. Room 조회
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 방입니다. roomId: " + roomId));
+
+        // 4. Framework 조회
+        Long frameworkId = roomUser.getPosition() == RoomPosition.FRONTEND
+                ? room.getFrontendId()
+                : room.getBackendId();
+
+        Framework framework = validateFramework(frameworkId);
+
+        log.info("Guest 입장 정보 조회 완료 - roomId: {}, userId: {}", roomId, userId);
+
+        return new GuestJoinedDto(
+                user.getId(),
+                user.getNickname(),
+                user.getProfileUrl(),
+                framework.getId(),
+                framework.getName(),
+                roomUser.getIsReady() == TrueOrFalse.T
+        );
     }
 
     public MultiQuestDetailRespDto getQuestDetail(Long roomId, Long questId) {
