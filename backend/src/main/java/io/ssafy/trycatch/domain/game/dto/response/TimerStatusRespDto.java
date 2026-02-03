@@ -1,4 +1,4 @@
-package io.ssafy.trycatch.domain.room.dto.response;
+package io.ssafy.trycatch.domain.game.dto.response;
 
 import io.ssafy.trycatch.domain.room.enums.RoomStatus;
 import lombok.Builder;

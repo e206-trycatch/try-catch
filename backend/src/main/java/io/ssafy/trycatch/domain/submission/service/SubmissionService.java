@@ -23,6 +23,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -63,11 +64,11 @@ public class SubmissionService {
             """;
 
     @Transactional
-    public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request) {
+    public SubmissionRespDto submit(Long roomId, Long userId, SubmissionReqDto request, LocalDateTime submittedAt) {
         // 1단계: DB 작업 (트랜잭션 내)
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         SubmissionContext context = transactionTemplate.execute(status ->
-                createSubmissions(roomId, userId, request)
+                createSubmissions(roomId, userId, request, submittedAt)
         );
         if (context == null) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR); // 네 에러코드에 맞게
@@ -237,7 +238,7 @@ public class SubmissionService {
     }
 
     @Transactional
-    public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request) {
+    public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request, LocalDateTime submittedAt) {
 //        Room room = roomRepository.findById(roomId)
 //                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
         Room room = roomRepository.findByIdForUpdate(roomId)
@@ -275,19 +276,19 @@ public class SubmissionService {
 
         if (hasFrontend && hasBackend) {
             // 풀스택: 둘 다 저장
-            processFullstackSubmission(roomId, userId, request, problemFrameworkId, context);
+            processFullstackSubmission(roomId, userId, request, problemFrameworkId, context, submittedAt);
 //            processRoleSubmission(roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context);
 //            processRoleSubmission(roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context);
             return context;
         }
 
         if (hasFrontend) {
-            processRoleSubmission(roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context);
+            processRoleSubmission(roomId, userId, request.getFrontend(), "FRONTEND", problemFrameworkId, context, submittedAt);
             return context;
         }
 
         // hasBackend
-        processRoleSubmission(roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context);
+        processRoleSubmission(roomId, userId, request.getBackend(), "BACKEND", problemFrameworkId, context, submittedAt);
 
         return context;
     }
@@ -298,7 +299,8 @@ public class SubmissionService {
             SubmissionReqDto.SubmissionItem item,
             String roleName,
             Long problemFrameworkId,
-            SubmissionContext context
+            SubmissionContext context,
+            LocalDateTime submittedAt
     ) {
         // Submission 생성 및 저장
         Submission submission = Submission.builder()
@@ -306,6 +308,7 @@ public class SubmissionService {
                 .roomId(roomId)
                 .problemFrameworkId(problemFrameworkId)
                 .status(Submission.Status.FAIL)
+                .submittedAt(submittedAt)
                 .build();
         submission = submissionRepository.save(submission);
 
@@ -337,13 +340,15 @@ public class SubmissionService {
             Long userId,
             SubmissionReqDto request,
             Long problemFrameworkId,
-            SubmissionContext context
+            SubmissionContext context,
+            LocalDateTime submittedAt
     ) {
         Submission submission = Submission.builder()
                 .userId(userId)
                 .roomId(roomId)
                 .problemFrameworkId(problemFrameworkId)
                 .status(Submission.Status.FAIL)
+                .submittedAt(submittedAt)
                 .build();
         submission = submissionRepository.save(submission);
 
@@ -401,12 +406,12 @@ public class SubmissionService {
                     .filter(f -> f.getCodeRole() == SubmissionFile.CodeRole.BACKEND)
                     .toList();
 
-            // GPT 1번 호출로 통합 채점
             ScoreResult fullstackScore = scoreFullstackIntegrated(
                     fullstackData.getFrameworkId(),
                     frontendFiles,
                     backendFiles,
-                    room
+                    room,
+                    context.getSubmissions().getFirst().getSubmittedAt()
             );
 
             return List.of(fullstackScore);
@@ -451,7 +456,8 @@ public class SubmissionService {
             Long problemFrameworkId,
             List<SubmissionFile> frontendFiles,
             List<SubmissionFile> backendFiles,
-            Room room) {
+            Room room,
+            LocalDateTime submittedAt) {
 
         ProblemFramework problemFramework = problemFrameworkRepository
                 .findByIdAndIsDeleted(problemFrameworkId, TrueOrFalse.F)
@@ -481,7 +487,8 @@ public class SubmissionService {
                 frontendFramework.getLanguage(),
                 backendFramework.getName(),
                 backendFramework.getLanguage(),
-                room
+                room,
+                submittedAt
         );
     }
 
@@ -533,7 +540,8 @@ public class SubmissionService {
                 data.getRoleName(),
                 expectedFramework,
                 expectedLanguage,
-                room
+                room,
+                data.getSubmission().getSubmittedAt()
         );
     }
 

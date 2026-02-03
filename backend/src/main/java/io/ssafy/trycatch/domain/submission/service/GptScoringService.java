@@ -43,7 +43,8 @@ public class GptScoringService {
             String roleName,
             String expectedFramework,
             String expectedLanguage,
-            Room room) {
+            Room room,
+            LocalDateTime submittedAt) {
         try {
             String prompt = buildQualityPrompt(
                     problemDoc,
@@ -54,23 +55,23 @@ public class GptScoringService {
                     expectedLanguage
             );
             GptRespDto response = callGptApi(prompt);
-            return parseScoreResult(response, room);
+            return parseScoreResult(response, room, submittedAt);
         } catch (Exception e) {
             log.error("GPT 품질 채점 중 오류 발생", e);
             return ScoreResult.builder()
                     .success(false)
                     .score(0)
                     .errorLog("채점 시스템 오류: " + e.getMessage())
-                    .executionTime(calculateExecutionTime(room))
+                    .executionTime(calculateExecutionTime(room, submittedAt))
                     .build();
         }
     }
 
-    private long calculateExecutionTime(Room room) {
+    private long calculateExecutionTime(Room room, LocalDateTime submittedAt) {
         if (room == null || room.getStartedAt() == null) {
             return 0L;
         }
-        Duration duration = Duration.between(room.getStartedAt(), LocalDateTime.now());
+        Duration duration = Duration.between(room.getStartedAt(), submittedAt);
         long hours = duration.toHours();
         long minutes = duration.toMinutesPart();
         long seconds = duration.toSecondsPart();
@@ -129,6 +130,7 @@ public class GptScoringService {
                    - 상태 관리가 적절한가?
                    - 이벤트 핸들러가 제대로 연결되었는가?
                    - API 호출 코드가 있는가? (경로는 검증하지 않음)
+                   - 불필요한 재렌더링이 발생하지 않도록 의존성 배열이 정확히 설정되어 있는가?
                 """, expectedFramework, expectedLanguage, expectedFramework, expectedFramework)
                 : String.format("""
                 **코드 역할 및 프레임워크 검증:**
@@ -196,7 +198,8 @@ public class GptScoringService {
             String frontendLanguage,
             String backendFramework,
             String backendLanguage,
-            Room room) {
+            Room room,
+            LocalDateTime submittedAt) {
         try {
             String prompt = buildFullstackIntegratedPrompt(
                     problemDoc,
@@ -208,14 +211,14 @@ public class GptScoringService {
                     backendLanguage
             );
             GptRespDto response = callGptApi(prompt);
-            return parseScoreResult(response, room);
+            return parseScoreResult(response, room, submittedAt);
         } catch (Exception e) {
             log.error("GPT Fullstack 통합 채점 중 오류 발생", e);
             return ScoreResult.builder()
                     .success(false)
                     .score(0)
                     .errorLog("채점 시스템 오류: " + e.getMessage())
-                    .executionTime(calculateExecutionTime(room))
+                    .executionTime(calculateExecutionTime(room, submittedAt))
                     .build();
         }
     }
@@ -385,7 +388,7 @@ public class GptScoringService {
         return response.getBody();
     }
 
-    private ScoreResult parseScoreResult(GptRespDto response, Room room) {
+    private ScoreResult parseScoreResult(GptRespDto response, Room room, LocalDateTime submittedAt) {
         String content = null;
         try {
             content = response.getChoices().get(0).getMessage().getContent();
@@ -416,7 +419,7 @@ public class GptScoringService {
             if (score < 0) score = 0;
             if (score > 100) score = 100;
 
-            long execTime = calculateExecutionTime(room);
+            long execTime = calculateExecutionTime(room, submittedAt);
 
             return ScoreResult.builder()
                     .success(success)
