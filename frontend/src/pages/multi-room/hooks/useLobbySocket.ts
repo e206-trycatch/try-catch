@@ -22,9 +22,7 @@ export const useLobbySocket = (roomId: number | null) => {
           useLobbyStore.getState().updateGuestJoined(msg.guest);
           break;
         case 'READY_STATUS_CHANGED':
-          useLobbyStore
-            .getState()
-            .updateReadyStatus(msg.userId, msg.role, msg.isReady);
+          useLobbyStore.getState().updateReadyStatus(msg.role, msg.isReady);
           break;
         case 'GAME_START':
           navigate('/story');
