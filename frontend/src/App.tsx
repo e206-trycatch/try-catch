@@ -7,6 +7,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import GuestRoute from './components/routes/GuestRoute';
 import PrivateRoute from './components/routes/PrivateRoute';
 import MainLayout from './layouts/AppLayout';
+import DinoGamePage from './pages/dino-game/DinoGamePage';
 import GamePage from './pages/game/GamePage';
 import HomePage from './pages/home/HomePage';
 import InvitationPage from './pages/invitation-code/InvitationCodePage';
@@ -95,6 +96,7 @@ function App() {
         <Route element={<MainLayout />}>
           {/* Public - 누구나 접근 가능 */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/dino" element={<DinoGamePage />} />
 
           {/* Guest Only - 비로그인 유저만 접근 가능 */}
           <Route element={<GuestRoute />}>
