@@ -147,7 +147,6 @@ const StoryPage = () => {
             imageUrl={story.imageUrl}
             content={story.content}
             isActive={index === currentIndex}
-            isTypingDone={isTypingDone}
             onTypingComplete={handleTypingComplete}
             playSound={playSound}
             stopSound={stopSound}

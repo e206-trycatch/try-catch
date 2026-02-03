@@ -5,7 +5,6 @@ interface StorySlideProps {
   imageUrl: string;
   content: string;
   isActive: boolean;
-  isTypingDone: boolean;
   onTypingComplete?: () => void;
   playSound: () => void;
   stopSound: () => void;
@@ -18,7 +17,6 @@ const StorySlide = ({
   imageUrl,
   content,
   isActive,
-  isTypingDone: isTypingDoneProp,
   onTypingComplete,
   playSound,
   stopSound,
@@ -114,7 +112,7 @@ const StorySlide = ({
       />
 
       {/* 텍스트: 이미지 위에 absolute 오버레이, 하단 35%, 반투명(50%) */}
-      <div className="absolute bottom-0 left-0 right-0 h-[290px] bg-black/70 flex items-center justify-center px-8 py-6">
+      <div className="absolute bottom-0 left-0 right-0 h-73 bg-black/70 flex items-center justify-center px-8 py-6">
         <p className="text-white text-[22px] leading-relaxed text-center max-w-4xl whitespace-pre-line break-keep">
           {displayedText.split(/(?<=[.!?])\s+/).map((sentence, i) => (
             <React.Fragment key={i}>
@@ -127,7 +125,7 @@ const StorySlide = ({
           )}
         </p>
         {/* 클릭 안내 - 타이핑 완료 시에만 표시 */}
-        {isTypingDoneProp && (
+        {isTypingDone && (
           <div className="absolute bottom-55 left-1/2 -translate-x-1/2 text-white/70 text-2xl font-semibold animate-pulse">
             {'>'}
           </div>
