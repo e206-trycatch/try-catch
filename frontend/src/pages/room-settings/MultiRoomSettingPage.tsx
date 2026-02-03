@@ -78,7 +78,7 @@ const MultiRoomSettingPage = () => {
       const result = await createMultiRoom(payload);
       setRoomId(result.roomId);
       navigate('/multi-room/lobby', {
-        state: { invitationCode: result.invitationCode },
+        state: { roomId: result.roomId, invitationCode: result.invitationCode },
       });
     } catch (error) {
       console.error('방 생성 실패:', error);

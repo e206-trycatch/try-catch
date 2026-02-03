@@ -1,4 +1,4 @@
-package io.ssafy.trycatch.domain.submission.dto.response;
+package io.ssafy.trycatch.domain.game.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,10 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class SubmissionStartRespDto {
+@AllArgsConstructor
+public class TimeOutEventRespDto {
     private Long roomId;
-    private LocalDateTime submittedAt;
+    private String message;
+    private LocalDateTime deadlineAt;
 }

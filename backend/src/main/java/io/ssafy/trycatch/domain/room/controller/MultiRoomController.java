@@ -82,4 +82,14 @@ public class MultiRoomController {
                 ApiRespDto.success("퀘스트 스토리를 불러왔습니다.", response)
         );
     }
+
+    @GetMapping("/{roomId}/quest/{questId}")
+    public ResponseEntity<ApiRespDto<MultiQuestDetailRespDto>> getQuestDetail(
+            @PathVariable Long roomId,
+            @PathVariable Long questId) {
+        MultiQuestDetailRespDto response = multiRoomService.getQuestDetail(roomId, questId);
+        return ResponseEntity.ok(
+                ApiRespDto.success("퀘스트 상세 정보를 불러왔습니다.", response)
+        );
+    }
 }

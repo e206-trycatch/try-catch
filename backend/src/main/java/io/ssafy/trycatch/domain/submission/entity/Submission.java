@@ -47,7 +47,6 @@ public class Submission {
     @Column(name = "processing_status", nullable = false)
     private ProcessingStatus processingStatus = ProcessingStatus.PENDING;
 
-    @CreationTimestamp
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
@@ -71,8 +70,8 @@ public class Submission {
 
     @Builder
     public Submission(Long userId, Long roomId, Long problemFrameworkId,
-                      String language, Status status, Long executionTime,
-                      String errorLog, Integer score) {
+                      Status status, Long executionTime,
+                      String errorLog, Integer score, LocalDateTime submittedAt) {
         this.userId = userId;
         this.roomId = roomId;
         this.problemFrameworkId = problemFrameworkId;
@@ -81,7 +80,7 @@ public class Submission {
         this.errorLog = errorLog;
         this.score = score;
         this.processingStatus = ProcessingStatus.PENDING;  // 항상 PENDING으로 초기화
-        this.submittedAt = LocalDateTime.now();
+        this.submittedAt = submittedAt;
     }
 
     public void updateResult(Status status, Long executionTime, String errorLog, Integer score) {
