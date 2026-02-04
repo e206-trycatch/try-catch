@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class HintCreateReqDto {
-
-    private Long roomId;
     private Long problemFrameworkId;
     private String framework;
     private String userQuestion;

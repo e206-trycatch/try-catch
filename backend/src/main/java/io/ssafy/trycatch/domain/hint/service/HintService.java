@@ -3,6 +3,7 @@ package io.ssafy.trycatch.domain.hint.service;
 import io.ssafy.trycatch.domain.ai.client.AiClient;
 import io.ssafy.trycatch.domain.ai.dto.request.HintReqDto;
 import io.ssafy.trycatch.domain.ai.dto.response.HintRespDto;
+import io.ssafy.trycatch.domain.hint.dto.HintChatMessage;
 import io.ssafy.trycatch.domain.hint.dto.HintHistory;
 import io.ssafy.trycatch.domain.hint.dto.response.HintHistoryRespDto;
 import io.ssafy.trycatch.domain.room.entity.ProblemFile;
@@ -32,6 +33,7 @@ public class HintService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ProblemFileRepository problemFileRepository;
 
+    private static final long CHAT_TTL_HOURS = 24;
     private static final long HINT_TTL_HOURS = 24;  // 24시간 TTL
     private static final long CODE_TTL_MINUTES = 5;
 
@@ -65,7 +67,7 @@ public class HintService {
             response = aiClient.generateHint(request);
 
             // 3. Redis에 힌트 저장
-            saveHintToRedis(roomId, userId, problemFrameworkId, framework, userQuestion, response, now);
+            saveResponse(roomId, userId, response, now);
 
             if (response.isSuccess()) {
                 log.info("힌트 생성 및 저장 성공 - roomId: {}, userId: {}, problemId: {}",
@@ -89,9 +91,36 @@ public class HintService {
                     .rejectionReason("일시적으로 힌트를 생성할 수 없습니다. 잠시 후 다시 시도해주세요.")
                     .build();
 
-            saveHintToRedis(roomId, userId, problemFrameworkId, framework, userQuestion, response, now);
+            saveResponse(roomId, userId, response, now);
 
             return response;
+        }
+    }
+
+    /**
+     * 응답을 Redis에 저장 (채팅 이력)
+     */
+    private void saveResponse(Long roomId, Long userId, HintRespDto response,
+                              LocalDateTime timestamp) {
+        try {
+            HintChatMessage message = HintChatMessage.builder()
+                    .type("RESPONSE")
+                    .roomId(roomId)
+                    .userId(userId)
+                    .content(response.getHint())
+                    .success(response.isSuccess())
+                    .guardrailPassed(response.isGuardrailPassed())
+                    .rejectionReason(response.getRejectionReason())
+                    .timestamp(timestamp)
+                    .build();
+
+            String key = HintChatMessage.generateKey(roomId, timestamp);
+            redisTemplate.opsForValue().set(key, message, CHAT_TTL_HOURS, TimeUnit.HOURS);
+
+            log.debug("응답 저장 - key: {}", key);
+
+        } catch (Exception e) {
+            log.error("응답 저장 실패 - roomId: {}, userId: {}", roomId, userId, e);
         }
     }
 
@@ -118,40 +147,25 @@ public class HintService {
     }
 
     /**
-     * 특정 방의 힌트 이력 조회 (새로고침용)
+     * 특정 방의 힌트 채팅 이력 조회 (새로고침용)
      */
-    public List<HintHistoryRespDto> getHintHistory(Long roomId) {
+    public List<HintChatMessage> getChatHistory(Long roomId) {
         try {
-            // Redis에서 해당 방의 모든 힌트 키 조회
-            String pattern = String.format("hint:%d:*", roomId);
+            String pattern = String.format("hint-chat:%d:*", roomId);
             Set<String> keys = redisTemplate.keys(pattern);
 
             if (keys == null || keys.isEmpty()) {
                 return new ArrayList<>();
             }
 
-            // 각 키에 대한 값 조회 후 DTO로 변환
             return keys.stream()
-                    .map(key -> {
-                        HintHistory history = (HintHistory) redisTemplate.opsForValue().get(key);
-                        if (history == null) return null;
-
-                        return HintHistoryRespDto.builder()
-                                .hintId(key)
-                                .userId(history.getUserId())
-                                .userQuestion(history.getUserQuestion())
-                                .hintContent(history.getHintContent())
-                                .guardrailPassed(history.isGuardrailPassed())
-                                .rejectionReason(history.getRejectionReason())
-                                .createdAt(history.getCreatedAt())
-                                .build();
-                    })
-                    .filter(dto -> dto != null)
-                    .sorted((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))  // 시간순 정렬
+                    .map(key -> (HintChatMessage) redisTemplate.opsForValue().get(key))
+                    .filter(message -> message != null)
+                    .sorted((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            log.error("힌트 이력 조회 실패 - roomId: {}, error: {}", roomId, e.getMessage());
+            log.error("채팅 이력 조회 실패 - roomId: {}", roomId, e);
             return new ArrayList<>();
         }
     }
@@ -177,6 +191,27 @@ public class HintService {
             // 저장 실패해도 계속 진행 (AI 서버가 코드 없이도 힌트 생성 가능)
         }
     }
+
+    /**
+     * 질문을 Redis에 저장 (채팅 이력)
+     */
+    public void saveQuestion(Long roomId, Long userId, String question) {
+        LocalDateTime now = LocalDateTime.now();
+
+        HintChatMessage message = HintChatMessage.builder()
+                .type("QUESTION")
+                .roomId(roomId)
+                .userId(userId)
+                .content(question)
+                .timestamp(now)
+                .build();
+
+        String key = HintChatMessage.generateKey(roomId, now);
+        redisTemplate.opsForValue().set(key, message, CHAT_TTL_HOURS, TimeUnit.HOURS);
+
+        log.debug("질문 저장 - key: {}", key);
+    }
+
 
     /**
      * Redis에 힌트 저장 (RedisTemplate 사용)
