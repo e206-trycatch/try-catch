@@ -1,7 +1,7 @@
 // api.ts
 // Axios 공통 설정
 
-import type { AxiosError } from 'axios';
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
 
 import { useStore } from '../stores/useStore';
@@ -23,37 +23,98 @@ api.interceptors.request.use((config) => {
 });
 
 // ===== 응답 인터셉터 =====
-// 401 에러 시 로그아웃 처리 (토큰 갱신은 25분 주기로 자동 수행)
-let isLoggingOut = false;
+// 401 에러 시 토큰 갱신 후 재시도, 실패 시 로그아웃
+
+// 토큰 갱신 상태 관리
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+// refresh 완료 시 대기 중인 요청들에게 새 토큰 전달
+const onRefreshed = (token: string) => {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+};
+
+// refresh 완료 대기열에 추가
+const addSubscriber = (callback: (token: string) => void) => {
+  refreshSubscribers.push(callback);
+};
+
+// 재시도 플래그를 위한 타입 확장
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 api.interceptors.response.use(
   (response) => response,
 
   async (error: AxiosError) => {
+    const originalRequest = error.config as CustomAxiosRequestConfig;
+
     // 취소된 요청은 무시
     if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
       return Promise.reject(error);
     }
 
-    // 401 에러 처리: 세션 만료로 간주하고 로그아웃
+    // 401 에러 처리
     if (error.response?.status === 401) {
-      const url = error.config?.url || '';
+      const url = originalRequest?.url || '';
 
       // 로그인 요청 실패는 그대로 반환 (잘못된 비밀번호 등)
       if (url.includes('/auth/login')) {
         return Promise.reject(error);
       }
 
-      // 이미 로그아웃 처리 중이면 중복 실행 방지
-      if (isLoggingOut) {
+      // refresh 요청 자체가 실패하면 로그아웃
+      if (url.includes('/auth/refresh')) {
+        await useStore.getState().logout();
+        window.location.href = '/login';
         return Promise.reject(error);
       }
 
-      // 세션 만료 → 알림 후 로그아웃
-      isLoggingOut = true;
-      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-      await useStore.getState().logout();
-      window.location.href = '/login';
+      // 이미 재시도한 요청이면 로그아웃 (무한 루프 방지)
+      if (originalRequest._retry) {
+        await useStore.getState().logout();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      // 토큰 갱신 중이면 대기열에 추가
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addSubscriber((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      // 토큰 갱신 시작
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { data } = await axios.post('/api/v1/auth/refresh', null, {
+          withCredentials: true,
+        });
+
+        const newToken = data.result.accessToken;
+        useStore.getState().setAccessToken(newToken);
+
+        // 대기 중인 요청들에게 새 토큰 전달
+        onRefreshed(newToken);
+
+        // 원래 요청 재시도
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch {
+        // refresh 실패 → 로그아웃
+        await useStore.getState().logout();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
     return Promise.reject(error);
