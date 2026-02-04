@@ -22,14 +22,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static io.ssafy.trycatch.global.exception.ErrorCode.NO_HINTS_REMAINING;
-import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_NOT_FOUND;
+import static io.ssafy.trycatch.global.exception.ErrorCode.*;
 
 @Slf4j
 @Service
@@ -45,6 +45,7 @@ public class HintService {
     private static final long CHAT_TTL_HOURS = 24;
     private static final long HINT_TTL_HOURS = 24;  // 24시간 TTL
     private static final long CODE_TTL_MINUTES = 5;
+    private static final long HINT_COOLDOWN_SECONDS = 10;
 
     /**
      * 힌트 요청 및 Redis 저장
@@ -217,15 +218,29 @@ public class HintService {
     }
 
     /**
-     * 힌트 사용 가능 여부 검증
+     * 방 조회 및 힌트 사용 가능 여부 검증 (쿨다운 포함)
      */
     public Room validateAndGetRoom(Long roomId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
+        // 1. 힌트 개수 체크
         if (room.getRemainingHintCount() <= 0) {
-            log.warn("힌트 개수 부족 - roomId: {}, remaining: {}", roomId, room.getRemainingHintCount());
+            log.warn("힌트 개수 부족 - roomId: {}, remaining: {}",
+                    roomId, room.getRemainingHintCount());
             throw new CustomException(NO_HINTS_REMAINING);
+        }
+
+        // 2. 게임 시작 여부 및 쿨다운 체크
+        if (room.getStartedAt() != null) {
+            long elapsedSeconds = Duration.between(room.getStartedAt(), LocalDateTime.now()).getSeconds();
+
+            if (elapsedSeconds < HINT_COOLDOWN_SECONDS) {
+                long remainingCooldown = HINT_COOLDOWN_SECONDS - elapsedSeconds;
+                log.warn("힌트 쿨다운 중 - roomId: {}, 경과 시간: {}초, 남은 시간: {}초",
+                        roomId, elapsedSeconds, remainingCooldown);
+                throw new CustomException(HINT_COOLDOWN_ACTIVE);
+            }
         }
 
         return room;
