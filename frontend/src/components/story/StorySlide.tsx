@@ -5,6 +5,7 @@ interface StorySlideProps {
   imageUrl: string;
   content: string;
   isActive: boolean;
+  isTextBoxVisible: boolean;
   onTypingComplete?: () => void;
   playSound: () => void;
   stopSound: () => void;
@@ -17,6 +18,7 @@ const StorySlide = ({
   imageUrl,
   content,
   isActive,
+  isTextBoxVisible,
   onTypingComplete,
   playSound,
   stopSound,
@@ -112,7 +114,13 @@ const StorySlide = ({
       />
 
       {/* 텍스트: 이미지 위에 absolute 오버레이, 하단 35%, 반투명(50%) */}
-      <div className="absolute bottom-0 left-0 right-0 h-73 bg-black/70 flex items-center justify-center px-8 py-6">
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-73 bg-black/70 flex items-center justify-center px-8 py-6 transition-all duration-300 ease-in-out ${
+          isTextBoxVisible
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-full opacity-0'
+        }`}
+      >
         <p className="text-white text-[22px] leading-relaxed text-center max-w-4xl whitespace-pre-line break-keep">
           {displayedText.split(/(?<=[.!?])\s+/).map((sentence, i) => (
             <React.Fragment key={i}>
