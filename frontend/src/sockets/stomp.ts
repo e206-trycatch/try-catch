@@ -131,7 +131,10 @@ export const sendSocketMessage = (
       destination,
       body: JSON.stringify(body),
     });
-    console.log('[sendSocketMessage] Message published successfully to:', destination);
+    console.log(
+      '[sendSocketMessage] Message published successfully to:',
+      destination,
+    );
   } catch (err) {
     console.error('[sendSocketMessage] Publish failed:', err);
   }
