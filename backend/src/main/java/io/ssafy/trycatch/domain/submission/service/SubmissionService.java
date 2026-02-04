@@ -602,6 +602,8 @@ public class SubmissionService {
         Long currentQuestId = getCurrentQuestId(problemFrameworkId);
         Integer currentQuestOrder = getCurrentQuestOrder(problemFrameworkId);
 
+        room.endTimer();
+
         if (allSuccess) {
             return buildSuccessResponse(
                     submission.getId(),
