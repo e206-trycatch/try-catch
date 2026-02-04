@@ -46,6 +46,15 @@ public class LobbyController {
 
         ReadyStatusDto readyStatus = multiRoomService.toggleReady(roomId, userId);
 
+        if (multiRoomService.checkAllReady(roomId)) {
+
+            messagingTemplate.convertAndSend(
+                    "/topic/rooms/" + roomId,
+                    SocketRespDto.of(SocketEventType.GAME_STARTED,
+                            roomId)
+            );
+        }
+
         return SocketRespDto.of(SocketEventType.READY_CHANGED, readyStatus);
     }
 
