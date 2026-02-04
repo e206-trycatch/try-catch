@@ -2,9 +2,11 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { getMultiQuest } from '@/api/multiQuestFile';
+
 import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
-import { getQuest } from '../../api/questFile';
+import { getQuestFile } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
@@ -58,21 +60,33 @@ export default function GamePage() {
   // 초기 게임 상태 설정
   useEffect(() => {
     if (!roomId) return;
+    const mode = useRoomStore.getState().draft.mode;
 
     const initSetting = async () => {
       try {
         setLoading(true);
         setError(null);
+
         let data = null;
 
-        if (submissionId === null) {
-          data = await getQuest(questId, roomId);
-        } else if (submissionId) {
-          data = await getRetryQuestFile(submissionId, roomId);
+        if (mode === 'MULTI') {
+          if (submissionId === null) {
+            data = await getMultiQuest(questId, roomId);
+          } else if (submissionId) {
+            // Todo: multi로 변경
+            data = await getRetryQuestFile(submissionId, roomId);
+          } else {
+            throw new Error('submissionId가 올바르지 않습니다.');
+          }
         } else {
-          throw new Error('submissionId가 올바르지 않습니다.');
+          if (submissionId === null) {
+            data = await getQuestFile(questId, roomId);
+          } else if (submissionId) {
+            data = await getRetryQuestFile(submissionId, roomId);
+          } else {
+            throw new Error('submissionId가 올바르지 않습니다.');
+          }
         }
-
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
       } catch (e) {
@@ -82,8 +96,6 @@ export default function GamePage() {
       } finally {
         setLoading(false);
       }
-
-      const mode = useRoomStore.getState().draft.mode;
 
       if (mode === 'MULTI') {
         try {
