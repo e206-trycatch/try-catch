@@ -109,7 +109,7 @@ export default function GamePage() {
         try {
           const timeData = await getSingleTimer(Number(roomId));
 
-          if (timeData.deadlineAt) {
+          if (timeData.startedAt) {
             startTimer(timeData.deadlineAt);
           } else {
             const newTimeData = await startSingleGameTimer(Number(roomId));
