@@ -4,6 +4,7 @@ import Node from './Node';
 type Props = {
   root: FileNode; // 프로젝트 최상단 폴더
   expanded: Set<string>; // 현재 열려있는 폴더 id 목록
+  activeFileId: string | null; // 현재 활성화된 파일 id
   onToggleFolder: (id: string) => void; // 폴더를 클릭했을 때 실행할 함수
   onOpenFile: (file: FileNode) => void; // 파일을 클릭했을 때 실행할 함수
 };
@@ -11,6 +12,7 @@ type Props = {
 export default function Explorer({
   root,
   expanded,
+  activeFileId,
   onToggleFolder,
   onOpenFile,
 }: Props) {
@@ -22,6 +24,7 @@ export default function Explorer({
         node={root}
         depth={0}
         expanded={expanded}
+        activeFileId={activeFileId}
         onToggleFolder={onToggleFolder}
         onOpenFile={onOpenFile}
       />

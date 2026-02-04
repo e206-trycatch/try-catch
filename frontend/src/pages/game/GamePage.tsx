@@ -292,6 +292,7 @@ export default function GamePage() {
                         expanded={ide.expanded}
                         onToggleFolder={ide.toggleFolder}
                         onOpenFile={ide.openFile}
+                        activeFileId={ide.activeFileId}
                       />
                     </div>
                   </div>

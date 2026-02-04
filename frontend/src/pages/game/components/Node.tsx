@@ -5,12 +5,14 @@ export default function Node({
   node,
   depth, // 트리 깊이
   expanded,
+  activeFileId,
   onToggleFolder,
   onOpenFile,
 }: {
   node: FileNode;
   depth: number;
   expanded: Set<string>;
+  activeFileId: string | null;
   onToggleFolder: (id: string) => void;
   onOpenFile: (file: FileNode) => void;
 }) {
@@ -42,6 +44,7 @@ export default function Node({
               node={child}
               depth={depth + 1}
               expanded={expanded}
+              activeFileId={activeFileId}
               onToggleFolder={onToggleFolder}
               onOpenFile={onOpenFile}
             />
@@ -52,9 +55,11 @@ export default function Node({
 
   // 2. 파일인 경우
   else {
+    const isActive = node.id === activeFileId;
+
     return (
       <div
-        className="flex items-center gap-1.5 h-7 cursor-pointer select-none my-[2px]"
+        className={`flex items-center gap-1.5 h-7 cursor-pointer select-none my-[2px] ${isActive ? 'bg-white/10 text-amber-300' : 'hover:bg-white/5'}`}
         style={{ paddingLeft: indent + 10 }}
         onClick={() => {
           onOpenFile(node);
