@@ -14,7 +14,7 @@ export default function Node({
   onToggleFolder: (id: string) => void;
   onOpenFile: (file: FileNode) => void;
 }) {
-  const indent = 10 + depth * 14; // 왼쪽 여백 설정
+  const indent = depth * 14; // 왼쪽 여백 설정
 
   // 1. 폴더인 경우
   if (node.type === 'folder') {
@@ -25,7 +25,7 @@ export default function Node({
       <div>
         {/* 폴더 한 개 렌더링 */}
         <div
-          className="flex items-center gap-1.5 h-7 cursor-pointer select-none w-full"
+          className="flex items-center gap-1.5 h-7 cursor-pointer select-none w-full my-[2px]"
           style={{ paddingLeft: indent }}
           onClick={() => onToggleFolder(node.id)}
         >
@@ -54,8 +54,8 @@ export default function Node({
   else {
     return (
       <div
-        className="flex items-center gap-1.5 h-7 cursor-pointer select-none "
-        style={{ paddingLeft: indent }}
+        className="flex items-center gap-1.5 h-7 cursor-pointer select-none my-[2px]"
+        style={{ paddingLeft: indent + 10 }}
         onClick={() => {
           onOpenFile(node);
         }}

@@ -17,7 +17,9 @@ export default function CodeEditor({
 }: CodeEditorProps) {
   if (!activeFile) {
     return (
-      <div style={{ color: '#888', padding: '20px' }}>파일을 선택해주세요.</div>
+      <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
+        파일을 선택해주세요
+      </div>
     );
   }
   return (
