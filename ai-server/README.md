@@ -2,7 +2,7 @@
 
 > 가드레일 기반 프레임워크 특화 힌트 생성 시스템
 
-ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Django, Spring, Vue) 코드 디버깅 중 질문을 하면, **가드레일 검증** 후 **단계별 힌트**를 생성합니다.
+ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Django, Spring, Vue, React) 코드 디버깅 중 질문을 하면, **가드레일 검증** 후 **단계별 힌트**를 생성합니다.
 
 ---
 
@@ -22,7 +22,7 @@ ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Djan
 
 - **정답 코드를 직접 제공하지 않음**
 - 사용자가 **스스로 문제를 해결**할 수 있도록 유도
-- 프레임워크별 특화된 힌트 제공 (Django, Spring, Vue)
+- 프레임워크별 특화된 힌트 제공 (Django, Spring, Vue, React)
 
 ### 3. 처리 흐름
 
@@ -77,7 +77,7 @@ ErrorScape 프로젝트의 AI 서버입니다. 사용자가 프레임워크(Djan
 {
   "user_id": "string (필수) - 사용자 ID",
   "problem_id": "string (필수) - 문제 ID (problem_framework_id)",
-  "framework": "django | spring | vue (필수)",
+  "framework": "django | spring | vue | react (필수)",
   "problem_description": "string (필수) - 문제 설명 (DOC 파일 내용)",
   "user_question": "string (필수) - 사용자 질문"
 }
@@ -342,3 +342,4 @@ AI 서버가 힌트 생성 시 사용자의 현재 코드를 참조하기 위해
 | Django | `django` | Python 웹 프레임워크 |
 | Spring | `spring` | Java/Spring Boot 프레임워크 |
 | Vue | `vue` | Vue.js 프론트엔드 프레임워크 |
+| React | `react` | React 프론트엔드 프레임워크 |

@@ -63,7 +63,27 @@ VUE_HINT_PROMPT = """당신은 Vue.js 프레임워크 전문가입니다.
 """
 
 
-def get_hint_system_prompt(framework: Literal["django", "spring", "vue"]) -> str:
+REACT_HINT_PROMPT = """당신은 React 프레임워크 전문가입니다.
+
+**역할**: 사용자가 React 디버깅 문제를 스스로 해결할 수 있도록 짧은 힌트를 제공합니다.
+
+**핵심 원칙**:
+1. 정답 코드를 직접 제공하지 마세요.
+2. 힌트는 반드시 1-2문장으로 간결하게 작성하세요.
+3. 확인해야 할 핵심 포인트 하나만 짚어주세요.
+4. 모든 답변은 한국어로 작성하세요.
+
+**React 특화 지식**: Hooks(useState, useEffect, useContext 등), 컴포넌트 라이프사이클, Props, State, JSX, React Router, 상태관리(Redux, Zustand)
+
+**응답 형식**: 반드시 1-2문장으로만 답변하세요. 길게 설명하지 마세요.
+
+**응답 예시**:
+- "useEffect의 의존성 배열에 필요한 값이 모두 포함되어 있는지 확인해보세요."
+- "useState로 상태를 업데이트할 때 이전 상태를 기반으로 업데이트해야 하는지 점검해보세요."
+"""
+
+
+def get_hint_system_prompt(framework: Literal["django", "spring", "vue", "react"]) -> str:
     """
     프레임워크에 따라 적절한 시스템 프롬프트 반환
 
@@ -76,7 +96,8 @@ def get_hint_system_prompt(framework: Literal["django", "spring", "vue"]) -> str
     prompts = {
         "django": DJANGO_HINT_PROMPT,
         "spring": SPRING_HINT_PROMPT,
-        "vue": VUE_HINT_PROMPT
+        "vue": VUE_HINT_PROMPT,
+        "react": REACT_HINT_PROMPT
     }
 
     return prompts.get(framework, SPRING_HINT_PROMPT)  # 기본값은 Spring

@@ -9,13 +9,14 @@ class Framework(str, Enum):
     DJANGO = "django"
     SPRING = "spring"
     VUE = "vue"
+    REACT = "react"
 
 
 class HintRequest(BaseModel):
     """힌트 요청 스키마 (Backend → AI Server)"""
     user_id: str = Field(..., description="사용자 ID")
     problem_id: str = Field(..., description="문제 ID (problem_framework_id)")
-    framework: Framework = Field(..., description="선택한 프레임워크 (django, spring, vue)")
+    framework: Framework = Field(..., description="선택한 프레임워크 (django, spring, vue, react)")
     problem_description: str = Field(..., description="문제 설명 (DOC 파일 내용)")
     user_question: str = Field(..., description="사용자 질문")
 
