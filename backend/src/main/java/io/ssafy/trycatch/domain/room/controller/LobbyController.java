@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -27,9 +28,15 @@ public class LobbyController {
     @SendTo("/topic/rooms/{roomId}")
     public SocketRespDto<GuestJoinedDto> handleJoin(
             @DestinationVariable Long roomId,
-            Principal principal) {
+            SimpMessageHeaderAccessor headerAccessor) {
 
-        Long userId = Long.parseLong(principal.getName());
+        // 세션에서 userId 가져오기
+        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
+
+        if (userId == null) {
+            log.error("세션에 userId가 없습니다. roomId={}", roomId);
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
 
         GuestJoinedDto guestInfo = multiRoomService.getGuestJoinedInfo(roomId, userId);
 
@@ -40,9 +47,15 @@ public class LobbyController {
     @SendTo("/topic/rooms/{roomId}")
     public SocketRespDto<ReadyStatusDto> handleReady(
             @DestinationVariable Long roomId,
-            Principal principal) {
+            SimpMessageHeaderAccessor headerAccessor) {
 
-        Long userId = Long.parseLong(principal.getName());
+        // 세션에서 userId 가져오기
+        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
+
+        if (userId == null) {
+            log.error("세션에 userId가 없습니다. roomId={}", roomId);
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
 
         ReadyStatusDto readyStatus = multiRoomService.toggleReady(roomId, userId);
 
@@ -63,9 +76,15 @@ public class LobbyController {
     public SocketRespDto<QuestReadyStatusDto> handleQuestReady(
             @DestinationVariable Long roomId,
             @Payload QuestReadyReqDto request,
-            Principal principal) {
+            SimpMessageHeaderAccessor headerAccessor) {
 
-        Long userId = Long.parseLong(principal.getName());
+        // 세션에서 userId 가져오기
+        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
+
+        if (userId == null) {
+            log.error("세션에 userId가 없습니다. roomId={}", roomId);
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
 
         // 1. 준비 상태 토글
         multiRoomService.toggleReady(roomId, userId);
