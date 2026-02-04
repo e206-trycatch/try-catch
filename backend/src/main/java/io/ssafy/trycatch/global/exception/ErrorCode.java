@@ -48,7 +48,17 @@ public enum ErrorCode {
     ROOM_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "방 참가 유저를 찾을 수 없습니다."),
     USER_NOT_IN_ROOM(HttpStatus.NOT_FOUND, "유저가 해당 방에 존재하지 않습니다."),
     QUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "퀘스트를 찾을 수 없습니다."),
-    SUBMISSION_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 처리 중인 제출이 있습니다.")
+    SUBMISSION_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 처리 중인 제출이 있습니다."),
+
+    // AI Server 관련
+    AI_SERVER_CONNECTION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버와 연결할 수 없습니다."),
+    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI 서버 응답 시간이 초과되었습니다."),
+    AI_SERVER_INTERNAL_ERROR(HttpStatus.BAD_GATEWAY, "AI 서버에 일시적인 문제가 발생했습니다."),
+    AI_SERVER_BAD_REQUEST(HttpStatus.BAD_REQUEST, "AI 서버 요청이 올바르지 않습니다."),
+
+    // Hint 관련
+    HINT_NOT_FOUND(HttpStatus.NOT_FOUND, "힌트를 찾을 수 없습니다."),
+    CODE_TTL_EXPIRED(HttpStatus.GONE, "코드 유효 시간이 만료되었습니다."),
     ;
 
     private final HttpStatus status;

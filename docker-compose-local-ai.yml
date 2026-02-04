@@ -41,8 +41,8 @@ services:
       
       TZ: Asia/Seoul
     # 포트 노출 안함 - 백엔드에서만 접근
-    expose:
-      - "8000"
+    ports:
+    - "8000:8000"
     networks:
       - network
     depends_on:
