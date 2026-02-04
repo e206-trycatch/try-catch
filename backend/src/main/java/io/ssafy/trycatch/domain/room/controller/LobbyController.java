@@ -54,7 +54,6 @@ public class LobbyController {
 
         if (userId == null) {
             log.error("세션에 userId가 없습니다. roomId={}", roomId);
-            throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
 
         ReadyStatusDto readyStatus = multiRoomService.toggleReady(roomId, userId);
