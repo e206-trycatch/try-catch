@@ -109,7 +109,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
 
   setStartQuestData: (data) => set({ startQuestData: data }),
 
-  setGameStarted: (roomId) => set({ gameStarted: true }),
+  setGameStarted: () => set({ gameStarted: true }),
 
   resetLobby: () =>
     set({

@@ -207,7 +207,6 @@ const LobbyPage = () => {
   const guestJoined = roomInfo?.guest != null;
   const invitationCode =
     roomInfo?.invitationCode ?? navState?.invitationCode ?? '';
-  const isHost = currentUserRole === 'HOST';
 
   // roomId 없음
   if (!roomId) {

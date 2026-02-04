@@ -1,5 +1,5 @@
-import projectAiMainImage from '../assets/images/project_ai/Project_ai_quest_main.png';
 import graveyardOfTheDeepMainImage from '../assets/images/Graveyard_of_the_deep_quest_main.png';
+import projectAiMainImage from '../assets/images/project_ai/Project_ai_quest_main.png';
 
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
