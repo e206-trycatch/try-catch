@@ -35,15 +35,21 @@ const LobbyPage = () => {
   const roomId = navState?.roomId ?? roomStoreRoomId;
 
   // 로비 store
-  const { roomInfo, status, errorMessage, resetLobby, startQuestData } =
-    useLobbyStore();
+  const {
+    roomInfo,
+    status,
+    errorMessage,
+    resetLobby,
+    startQuestData,
+    gameStarted,
+  } = useLobbyStore();
   const connected = useSocketStore((s) => s.connected);
 
   // 데이터 fetch + polling
   useLobbyData(roomId);
 
   // STOMP 연결 + 구독
-  const { sendJoin, sendQuestReady } = useLobbySocket(roomId);
+  const { sendJoin, sendReady } = useLobbySocket(roomId);
 
   // 퀘스트 목록 사전 로딩
   const [firstQuestId, setFirstQuestId] = useState<number | null>(null);
@@ -113,8 +119,38 @@ const LobbyPage = () => {
     joinSentRef.current = true;
   }, [status, roomInfo, nickname, connected, currentUserId, sendJoin]);
 
-  // START_QUEST 수신 시 네비게이션
+  // GAME_STARTED 수신 시 자동 네비게이션
+  // 백엔드: 양쪽 모두 준비 완료 → checkAllReady() → 자동으로 GAME_STARTED 이벤트 브로드캐스트
+  // 프론트: GAME_STARTED 수신 → 모든 참가자 자동으로 /story 이동
   const navigatingRef = useRef(false);
+  useEffect(() => {
+    console.log('[LobbyPage] Navigation check:', {
+      gameStarted,
+      roomInfo: !!roomInfo,
+      firstQuestId,
+      navigating: navigatingRef.current,
+    });
+
+    if (!gameStarted || !roomInfo || !firstQuestId || navigatingRef.current)
+      return;
+
+    console.log('[LobbyPage] Starting navigation to /story');
+    navigatingRef.current = true;
+    isNavigatingToGameRef.current = true;
+
+    const roomStore = useRoomStore.getState();
+
+    // 멀티모드 설정을 먼저 수행
+    roomStore.setMode('MULTI');
+    roomStore.setRoomId(roomInfo.roomId);
+    roomStore.setCurrentQuestId(firstQuestId);
+
+    // 스토리 페이지로 바로 이동
+    // StoryPage에서 fetchMultiQuestStories를 호출하여 스토리 데이터를 불러옴
+    navigate('/story');
+  }, [gameStarted, roomInfo, firstQuestId, navigate]);
+
+  // START_QUEST 수신 시 네비게이션 (기존 로직 - quest/ready 사용 시)
   useEffect(() => {
     if (!startQuestData || !roomInfo || navigatingRef.current) return;
 
@@ -140,12 +176,9 @@ const LobbyPage = () => {
     };
   }, [resetLobby]);
 
-  // 호스트 시작하기
-  const handleStart = () => {
-    if (firstQuestId == null || !roomInfo) return;
-
-    // STOMP 메시지 전송 (호스트와 게스트 모두 START_QUEST 메시지를 받아서 이동)
-    sendQuestReady(firstQuestId);
+  // 준비 버튼 클릭 핸들러
+  const handleReady = () => {
+    sendReady();
   };
 
   const handleLeave = async () => {
@@ -282,6 +315,8 @@ const LobbyPage = () => {
               isHost={true}
               isActive={true}
               isReady={roomInfo?.host.isReady}
+              isCurrentUser={currentUserRole === 'HOST'}
+              onReadyClick={handleReady}
             />
 
             {/* Guest card */}
@@ -294,29 +329,26 @@ const LobbyPage = () => {
               isHost={false}
               isActive={guestJoined}
               isReady={guestJoined ? roomInfo!.guest!.isReady : undefined}
+              isCurrentUser={currentUserRole === 'GUEST'}
+              onReadyClick={handleReady}
             />
           </div>
 
           {/* Invite code section */}
           <InviteCodeSection invitationCode={invitationCode} />
 
-          {/* 시작 버튼 영역 - 호스트만 표시, 두 명 모두 있을 때만 활성화 */}
-          {isHost && (
-            <div className="flex flex-col items-center gap-3 mt-6">
-              <button
-                type="button"
-                onClick={handleStart}
-                disabled={!guestJoined || firstQuestId == null}
-                className={`px-10 py-3 text-[18px] font-bold rounded-[8px] transition-colors cursor-pointer ${
-                  guestJoined && firstQuestId != null
-                    ? 'bg-[#1a1a3e] text-white hover:bg-[#2b2949] animate-lobby-blink'
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                시작하기
-              </button>
-            </div>
-          )}
+          {/* 자동 시작 안내 메시지 */}
+          {guestJoined &&
+            roomInfo?.host.isReady &&
+            roomInfo?.guest?.isReady && (
+              <div className="flex flex-col items-center gap-2 mt-6">
+                <div className="px-6 py-3 bg-green-500/20 border-2 border-green-500 rounded-lg animate-pulse">
+                  <span className="text-green-400 text-[16px] font-bold">
+                    🎮 게임이 곧 시작됩니다...
+                  </span>
+                </div>
+              </div>
+            )}
         </div>
 
         {/* Go back link */}

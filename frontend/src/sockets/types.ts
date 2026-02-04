@@ -41,6 +41,10 @@ export interface GameStartMessage {
   message: string;
 }
 
+export interface GameStartedData {
+  roomId: number;
+}
+
 // ROOM-MULTI-010
 export interface QuestReadyMessage {
   type: 'QUEST_READY';
@@ -123,6 +127,11 @@ export interface PlayerJoinedData {
 }
 
 export interface ReadyChangedData {
+  userId: number;
+  isReady: boolean;
+}
+
+export interface ReadyStatusDto {
   userId: number;
   isReady: boolean;
 }

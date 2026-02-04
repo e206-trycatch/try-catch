@@ -5,8 +5,7 @@
 /* ! 전역 스타일 설정 */
 @font-face {
   font-family: 'Umdot';
-  src: url('./assets/fonts/Umdot11.woff')
-    format('woff2');
+  src: url('./assets/fonts/Umdot11.woff') format('woff2');
   font-weight: normal;
   font-display: swap;
 }
@@ -71,12 +70,13 @@
 }
 
 .blinking-text {
-  animation: blink 1.0s infinite;
+  animation: blink 1s infinite;
 }
 
 /* 호스트 시작 버튼 깜빡이는 효과 */
 @keyframes lobby-blink {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     box-shadow: 0 0 8px rgba(254, 254, 254, 0);
   }
@@ -88,17 +88,19 @@
 
 .animate-lobby-blink {
   animation: lobby-blink 1.2s ease-in-out infinite;
-/* 타이머 경고 */
-@keyframes timer-blink {
-  0%, 100% {
-    opacity: 1;
+  /* 타이머 경고 */
+  @keyframes timer-blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.2;
+    }
   }
-  50% {
-    opacity: 0.2;
-  }
-}
 
-.timer-warning {
-  color: #ef4444;
-  animation: timer-blink 1s linear infinite;
+  .timer-warning {
+    color: #ef4444;
+    animation: timer-blink 1s linear infinite;
+  }
 }

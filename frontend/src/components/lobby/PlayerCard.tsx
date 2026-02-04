@@ -8,6 +8,8 @@ interface PlayerCardProps {
   isHost: boolean;
   isActive: boolean;
   isReady?: boolean;
+  isCurrentUser?: boolean;
+  onReadyClick?: () => void;
 }
 
 const FRAMEWORK_COLORS: Record<string, string> = {
@@ -24,6 +26,8 @@ const PlayerCard = ({
   isHost,
   isActive,
   isReady,
+  isCurrentUser,
+  onReadyClick,
 }: PlayerCardProps) => {
   const frameworkColor = isActive
     ? (FRAMEWORK_COLORS[framework] ?? '#9e9e9e')
@@ -80,11 +84,38 @@ const PlayerCard = ({
           {framework}
         </span>
 
-        {/* 준비(Ready) 상태 배지 */}
-        {isActive && isReady && (
-          <span className="inline-block w-fit px-3 py-1 rounded-[6px] text-[13px] font-bold text-white bg-green-500">
-            READY
-          </span>
+        {/* READY 배지 - 항상 표시 */}
+        {isActive && (
+          <>
+            {/* 본인 카드 - 클릭 가능한 배지 */}
+            {isCurrentUser && onReadyClick ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReadyClick();
+                }}
+                className={`inline-block w-fit px-4 py-1.5 rounded-[6px] text-[13px] font-bold transition-all cursor-pointer ${
+                  isReady
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-gray-300 text-gray-600 hover:bg-green-400 hover:text-white'
+                }`}
+              >
+                {isReady ? '✔️ Ready' : 'Ready'}
+              </button>
+            ) : (
+              /* 상대방 카드 - 표시만 */
+              <span
+                className={`inline-block w-fit px-4 py-1.5 rounded-[6px] text-[13px] font-bold ${
+                  isReady
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {isReady ? '✔️ Ready' : 'Ready'}
+              </span>
+            )}
+          </>
         )}
       </div>
     </div>
