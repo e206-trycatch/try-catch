@@ -2,6 +2,7 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
 import { getQuest } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
@@ -38,6 +39,8 @@ export default function GamePage() {
     null,
   );
 
+  const [hostName, setHostName] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
@@ -83,6 +86,9 @@ export default function GamePage() {
 
       if (mode === 'MULTI') {
         try {
+          const gameSession = await getGameSession(Number(roomId));
+          setHostName(gameSession.host.nickname);
+          setGuestName(gameSession.guest.nickname);
           await startMultiGameTimer(Number(roomId));
         } catch (e) {
           console.error('멀티 타이머 준비 실패:', e);
@@ -222,7 +228,7 @@ export default function GamePage() {
       {isExpired && <TimeOverModal />}
       <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
-          <GameInfoBar />
+          <GameInfoBar hostName={hostName} guestName={guestName} />
           <SubmitBtn onClick={submitCode} />
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">

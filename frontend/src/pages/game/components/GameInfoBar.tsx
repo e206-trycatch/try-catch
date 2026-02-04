@@ -4,13 +4,18 @@ import EmptyHeartIcon from '../../../assets/images/icons/empty_heart_icon.png';
 import FullHeartIcon from '../../../assets/images/icons/full_heart_icon.png';
 import { useGameStore } from '../../../stores/useGameStore';
 import useTimer from '../hooks/useTimer';
-export default function GameInfoBar() {
+
+interface GameInfoBarProps {
+  hostName: string;
+  guestName: string;
+}
+
+export default function GameInfoBar({ hostName, guestName }: GameInfoBarProps) {
   const { currentLife } = useGameStore();
   const { display, isWarning } = useTimer();
   const loseLife = 3 - currentLife;
 
   return (
-    // 목숨
     <div className="flex gap-[45px] items-center justify-center">
       <div className="flex gap-3 justify-center items-center">
         <img src={TimerIcon} alt=" 남은 시간" className="w-[20px]" />
@@ -39,6 +44,14 @@ export default function GameInfoBar() {
               className="w-[22px] h-[20px]"
             />
           ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 justify-center items-center">
+        <span>참여자</span>
+        <div className="flex gap-2 items-center justify-cente">
+          {hostName && <span>{hostName}</span>}
+          {guestName && <span>{guestName}</span>}
         </div>
       </div>
     </div>

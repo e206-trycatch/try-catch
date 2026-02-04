@@ -80,3 +80,30 @@ export interface GameTimerResponse {
   remainingSeconds?: number | null;
   expired?: boolean | null;
 }
+
+export interface GameSessionHost {
+  userId: number;
+  nickname: string;
+  frontId: number;
+  frontName: string;
+  isReady: boolean;
+}
+
+export interface GameSessionGuest {
+  userId: number;
+  nickname: string;
+  backId: number;
+  backName: string;
+  isReady: boolean;
+}
+
+export interface GameSessionResponse {
+  roomId: number;
+  roomName: string;
+  invitationCode: string;
+  themeId: number;
+  themeName: string;
+  host: GameSessionHost;
+  guest: GameSessionGuest;
+  roomStatus: string;
+}
