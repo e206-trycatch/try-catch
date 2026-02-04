@@ -22,6 +22,16 @@ spring:
         show_sql: true
         format_sql: false
 
+  data:
+    redis:
+      host: localhost  # Docker Compose 환경
+      port: 6379
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
   type-aliases-package: io.ssafy.trycatch.domain
@@ -55,6 +65,10 @@ minio:
 
 app:
   file-base-url: ${FILE_BASE_URL}
+
+ai:
+  server:
+    base-url: ${AI_SERVER_URL}
 
 # 서버 설정
 server:
