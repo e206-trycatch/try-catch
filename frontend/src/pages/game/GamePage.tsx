@@ -305,7 +305,9 @@ export default function GamePage() {
                   onSelectTab={ide.selectTab}
                   onCloseTab={ide.closeTab}
                 />
-                <div className="flex-1 min-h-0 bg-[#1E1E1EE6]">
+                <div
+                  className={`flex-1 min-h-0 ${ide.activeFile ? `bg-[#1E1E1E00]` : `bg-[#1E1E1EE6]`}`}
+                >
                   <CodeEditor
                     activeFile={ide.activeFile}
                     code={ide.currentCode}

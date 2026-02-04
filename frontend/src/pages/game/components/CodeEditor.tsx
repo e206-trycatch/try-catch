@@ -61,7 +61,7 @@ export default function CodeEditor({
             inherit: true,
             rules: [],
             colors: {
-              'editor.background': '#1E1E1EE6',
+              'editor.background': '#1E1E1EA3',
             },
           });
           monacoInstance.editor.setTheme('transparent-dark');
