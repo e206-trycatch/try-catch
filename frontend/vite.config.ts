@@ -27,7 +27,7 @@ export default defineConfig({
       '/api': {
         target: 'https://i14e206.p.ssafy.io/', // 백엔드 서버 주소
         // target: 'http://localhost:8081/', // 백엔드 서버 주소(로컬 테스트용)
-        
+
         changeOrigin: true, // 요청 헤더의 Host를 target 주소로 변경 (CORS 우회)
         ws: true, // WebSocket 업그레이드 프록시 허용
       },

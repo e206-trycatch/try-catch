@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { GAME_CONFIG } from '../constants/gameConfig';
-import type { GameState, ObstacleState, ObstacleType } from '../types/gameTypes';
+import type {
+  GameState,
+  ObstacleState,
+  ObstacleType,
+} from '../types/gameTypes';
 
 interface UseGameLoopProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -80,113 +84,114 @@ export const useGameLoop = ({ setGameState }: UseGameLoopProps) => {
   const obstacleTimerRef = useRef<number>(0);
   const nextObstacleAtRef = useRef<number>(500);
 
-  const updateGame = useCallback(() => {
-    if (!isRunningRef.current) return;
-
-    const now = performance.now();
-    const deltaTime = lastTimeRef.current ? now - lastTimeRef.current : 16;
-    lastTimeRef.current = now;
-
-    // 장애물 타이머 업데이트 및 생성 결정 (setGameState 바깥에서)
-    obstacleTimerRef.current += deltaTime;
-
-    // 장애물 생성 여부 결정 (setGameState 바깥에서)
-    let newObstacle: ObstacleState | null = null;
-    if (obstacleTimerRef.current >= nextObstacleAtRef.current) {
-      newObstacle = createObstacle();
-      obstacleTimerRef.current = 0;
-      nextObstacleAtRef.current =
-        GAME_CONFIG.MIN_OBSTACLE_INTERVAL +
-        Math.random() *
-          (GAME_CONFIG.MAX_OBSTACLE_INTERVAL -
-            GAME_CONFIG.MIN_OBSTACLE_INTERVAL);
-    }
-
-    setGameState((prev) => {
-      if (prev.status !== 'playing') return prev;
-
-      // 공룡 물리 업데이트
-      let newDinoY = prev.dino.y;
-      let newVelocityY = prev.dino.velocityY;
-      let newIsJumping = prev.dino.isJumping;
-
-      if (prev.dino.isJumping) {
-        newVelocityY += GAME_CONFIG.GRAVITY;
-        newDinoY += newVelocityY;
-
-        const groundLevel = prev.dino.isDucking
-          ? GAME_CONFIG.GROUND_Y - GAME_CONFIG.DINO_DUCK_HEIGHT
-          : GAME_CONFIG.GROUND_Y - GAME_CONFIG.DINO_HEIGHT;
-
-        if (newDinoY >= groundLevel) {
-          newDinoY = groundLevel;
-          newVelocityY = 0;
-          newIsJumping = false;
-        }
-      }
-
-      // 속도 증가
-      const newSpeed = Math.min(
-        prev.speed + GAME_CONFIG.SPEED_INCREMENT,
-        GAME_CONFIG.MAX_SPEED,
-      );
-
-      // 장애물 이동 및 제거
-      const newObstacles = prev.obstacles
-        .map((obs) => ({ ...obs, x: obs.x - newSpeed }))
-        .filter((obs) => obs.x > -obs.width);
-
-      // 새 장애물 추가 (클로저로 캡처된 값 사용)
-      if (newObstacle) {
-        newObstacles.push(newObstacle);
-      }
-
-      // 바닥 스크롤
-      const newGroundOffset =
-        (prev.groundOffset + newSpeed) % GAME_CONFIG.CANVAS_WIDTH;
-
-      // 점수 업데이트
-      const newScore = prev.score + GAME_CONFIG.SCORE_PER_FRAME;
-
-      const newState: GameState = {
-        ...prev,
-        score: newScore,
-        speed: newSpeed,
-        groundOffset: newGroundOffset,
-        dino: {
-          ...prev.dino,
-          y: newDinoY,
-          velocityY: newVelocityY,
-          isJumping: newIsJumping,
-        },
-        obstacles: newObstacles,
-      };
-
-      // 충돌 체크
-      if (checkCollision(newState)) {
-        isRunningRef.current = false;
-        return {
-          ...newState,
-          status: 'gameover',
-          highScore: Math.max(prev.highScore, Math.floor(newScore)),
-        };
-      }
-
-      return newState;
-    });
-
-    if (isRunningRef.current) {
-      animationFrameRef.current = requestAnimationFrame(updateGame);
-    }
-  }, [setGameState]);
-
   const startLoop = useCallback(() => {
     lastTimeRef.current = 0;
     obstacleTimerRef.current = 0;
     nextObstacleAtRef.current = 500;
     isRunningRef.current = true;
-    animationFrameRef.current = requestAnimationFrame(updateGame);
-  }, [updateGame]);
+
+    const loop = () => {
+      if (!isRunningRef.current) return;
+
+      const now = performance.now();
+      const deltaTime = lastTimeRef.current ? now - lastTimeRef.current : 16;
+      lastTimeRef.current = now;
+
+      // 장애물 타이머 업데이트 및 생성 결정 (setGameState 바깥에서)
+      obstacleTimerRef.current += deltaTime;
+
+      // 장애물 생성 여부 결정 (setGameState 바깥에서)
+      let newObstacle: ObstacleState | null = null;
+      if (obstacleTimerRef.current >= nextObstacleAtRef.current) {
+        newObstacle = createObstacle();
+        obstacleTimerRef.current = 0;
+        nextObstacleAtRef.current =
+          GAME_CONFIG.MIN_OBSTACLE_INTERVAL +
+          Math.random() *
+            (GAME_CONFIG.MAX_OBSTACLE_INTERVAL -
+              GAME_CONFIG.MIN_OBSTACLE_INTERVAL);
+      }
+
+      setGameState((prev) => {
+        if (prev.status !== 'playing') return prev;
+
+        // 공룡 물리 업데이트
+        let newDinoY = prev.dino.y;
+        let newVelocityY = prev.dino.velocityY;
+        let newIsJumping = prev.dino.isJumping;
+
+        if (prev.dino.isJumping) {
+          newVelocityY += GAME_CONFIG.GRAVITY;
+          newDinoY += newVelocityY;
+
+          const groundLevel = prev.dino.isDucking
+            ? GAME_CONFIG.GROUND_Y - GAME_CONFIG.DINO_DUCK_HEIGHT
+            : GAME_CONFIG.GROUND_Y - GAME_CONFIG.DINO_HEIGHT;
+
+          if (newDinoY >= groundLevel) {
+            newDinoY = groundLevel;
+            newVelocityY = 0;
+            newIsJumping = false;
+          }
+        }
+
+        // 속도 증가
+        const newSpeed = Math.min(
+          prev.speed + GAME_CONFIG.SPEED_INCREMENT,
+          GAME_CONFIG.MAX_SPEED,
+        );
+
+        // 장애물 이동 및 제거
+        const newObstacles = prev.obstacles
+          .map((obs) => ({ ...obs, x: obs.x - newSpeed }))
+          .filter((obs) => obs.x > -obs.width);
+
+        // 새 장애물 추가 (클로저로 캡처된 값 사용)
+        if (newObstacle) {
+          newObstacles.push(newObstacle);
+        }
+
+        // 바닥 스크롤
+        const newGroundOffset =
+          (prev.groundOffset + newSpeed) % GAME_CONFIG.CANVAS_WIDTH;
+
+        // 점수 업데이트
+        const newScore = prev.score + GAME_CONFIG.SCORE_PER_FRAME;
+
+        const newState: GameState = {
+          ...prev,
+          score: newScore,
+          speed: newSpeed,
+          groundOffset: newGroundOffset,
+          dino: {
+            ...prev.dino,
+            y: newDinoY,
+            velocityY: newVelocityY,
+            isJumping: newIsJumping,
+          },
+          obstacles: newObstacles,
+        };
+
+        // 충돌 체크
+        if (checkCollision(newState)) {
+          isRunningRef.current = false;
+          return {
+            ...newState,
+            status: 'gameover',
+            highScore: Math.max(prev.highScore, Math.floor(newScore)),
+          };
+        }
+
+        return newState;
+      });
+
+      if (isRunningRef.current) {
+        animationFrameRef.current = requestAnimationFrame(loop);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(loop);
+  }, [setGameState]);
 
   const stopLoop = useCallback(() => {
     isRunningRef.current = false;
