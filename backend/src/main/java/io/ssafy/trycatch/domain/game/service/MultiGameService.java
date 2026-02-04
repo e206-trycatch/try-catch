@@ -1,11 +1,14 @@
 package io.ssafy.trycatch.domain.game.service;
 
+import io.ssafy.trycatch.domain.game.dto.request.CodeSaveReqDto;
 import io.ssafy.trycatch.domain.game.dto.response.MultiProblemFileListRespDto;
+import io.ssafy.trycatch.domain.game.mapper.CodeSaveMapper;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
 import io.ssafy.trycatch.domain.room.entity.ProblemFile;
 import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
 import io.ssafy.trycatch.domain.room.entity.Room;
 import io.ssafy.trycatch.domain.room.entity.RoomUser;
+import io.ssafy.trycatch.domain.room.enums.RoomStatus;
 import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
@@ -22,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static io.ssafy.trycatch.global.exception.ErrorCode.USER_NOT_IN_ROOM;
+import static io.ssafy.trycatch.global.exception.ErrorCode.*;
 
 
 @Slf4j
@@ -35,6 +38,7 @@ public class MultiGameService {
     private final RoomRepository roomRepository;
     private final ProblemFileRepository problemFileRepository;
     private final RoomUserRepository roomUserRepository;
+    private final CodeSaveMapper codeSaveMapper;
 
     // 멀티 문제 파일 조회
     public MultiProblemFileListRespDto getMultiProblemFiles(
@@ -44,8 +48,7 @@ public class MultiGameService {
 
         // 1. Room 조회
         Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "해당 방을 찾을 수 없습니다. roomId: " + roomId));
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         // 목숨 초기화 (다음 퀘스트용)
         room.resetLife(); // 타이머 생기면 삭제
@@ -102,5 +105,38 @@ public class MultiGameService {
                 .files(fileDtos)
                 .build();
 
+    }
+
+    // 멀티 - 문제 임시 저장
+    @Transactional
+    public void saveCode(Long roomId, Long userId, CodeSaveReqDto request) {
+        // (예외) 방 존재 여부
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        // (예외) 방 상태가 PLAYING인지
+        if (room.getStatus() != RoomStatus.PLAYING) {
+            throw new CustomException(ROOM_NOT_PLAYING);
+        }
+
+        // room_user에서 유저의 position 조회
+        RoomUser roomUser = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
+
+        // 저장한 유저의 포지션에 맞춰 코드 role 지정
+        String codeRole = roomUser.getPosition().name();  // FRONTEND or BACKEND
+
+        // 2. 파일별로 upsert
+        for (CodeSaveReqDto.FileItem file : request.getFiles()) {
+            codeSaveMapper.upsertSavedCode(
+                    roomId,
+                    request.getProblemFrameworkId(),
+                    userId,
+                    codeRole,
+                    file.getFileType(),
+                    file.getFilePath(),
+                    file.getCode()
+            );
+        }
     }
 }
