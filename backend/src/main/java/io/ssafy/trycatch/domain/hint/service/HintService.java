@@ -234,8 +234,12 @@ public class HintService {
                     .createdAt(createdAt)
                     .build();
 
-            // Redis에 저장 (24시간 TTL)
-            redisTemplate.opsForValue().set(key, history, HINT_TTL_HOURS, TimeUnit.HOURS);
+            List<HintChatMessage> messages = keys.stream()
+                    .map(key -> redisTemplate.opsForValue().get(key))
+                    .filter(obj -> obj instanceof LinkedHashMap)
+                    .map(obj -> convertToHintChatMessage((LinkedHashMap<?, ?>) obj))
+                    .sorted(Comparator.comparing(HintChatMessage::getTimestamp))
+                    .toList();
 
 //            log.debug("힌트 Redis 저장 완료 - key: {}", key);
 
