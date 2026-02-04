@@ -26,7 +26,7 @@ import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
-import type { SubmissionRequest } from './types/apiTypes';
+import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 import { buildFilesRequestData } from './utils/codeSubmissionMapper';
@@ -39,8 +39,9 @@ export default function GamePage() {
     null,
   );
 
-  const [hostName, setHostName] = useState('');
-  const [guestName, setGuestName] = useState('');
+  const [gameSession, setGameSession] = useState<GameSessionResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
@@ -86,9 +87,8 @@ export default function GamePage() {
 
       if (mode === 'MULTI') {
         try {
-          const gameSession = await getGameSession(Number(roomId));
-          setHostName(gameSession.host.nickname);
-          setGuestName(gameSession.guest.nickname);
+          const session = await getGameSession(Number(roomId));
+          setGameSession(session);
           await startMultiGameTimer(Number(roomId));
         } catch (e) {
           console.error('멀티 타이머 준비 실패:', e);
@@ -228,7 +228,7 @@ export default function GamePage() {
       {isExpired && <TimeOverModal />}
       <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
-          <GameInfoBar hostName={hostName} guestName={guestName} />
+          <GameInfoBar gameSession={gameSession} />
           <SubmitBtn onClick={submitCode} />
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">

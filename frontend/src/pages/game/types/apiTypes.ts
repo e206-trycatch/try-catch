@@ -81,20 +81,20 @@ export interface GameTimerResponse {
   expired?: boolean | null;
 }
 
-export interface GameSessionHost {
+export interface Participant {
   userId: number;
   nickname: string;
-  frontId: number;
-  frontName: string;
   isReady: boolean;
 }
 
-export interface GameSessionGuest {
-  userId: number;
-  nickname: string;
+export interface GameSessionHost extends Participant {
+  frontId: number;
+  frontName: string;
+}
+
+export interface GameSessionGuest extends Participant {
   backId: number;
   backName: string;
-  isReady: boolean;
 }
 
 export interface GameSessionResponse {

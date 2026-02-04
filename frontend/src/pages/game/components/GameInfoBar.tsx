@@ -2,15 +2,15 @@ import TimerIcon from '@/assets/images/icons/timer-icon.png';
 
 import EmptyHeartIcon from '../../../assets/images/icons/empty_heart_icon.png';
 import FullHeartIcon from '../../../assets/images/icons/full_heart_icon.png';
+import type { GameSessionResponse } from '../../../pages/game/types/apiTypes';
 import { useGameStore } from '../../../stores/useGameStore';
 import useTimer from '../hooks/useTimer';
 
 interface GameInfoBarProps {
-  hostName: string;
-  guestName: string;
+  gameSession: GameSessionResponse | null;
 }
 
-export default function GameInfoBar({ hostName, guestName }: GameInfoBarProps) {
+export default function GameInfoBar({ gameSession }: GameInfoBarProps) {
   const { currentLife } = useGameStore();
   const { display, isWarning } = useTimer();
   const loseLife = 3 - currentLife;
@@ -47,13 +47,15 @@ export default function GameInfoBar({ hostName, guestName }: GameInfoBarProps) {
         </div>
       </div>
 
-      <div className="flex gap-3 justify-center items-center">
-        <span>참여자</span>
-        <div className="flex gap-2 items-center justify-cente">
-          {hostName && <span>{hostName}</span>}
-          {guestName && <span>{guestName}</span>}
+      {gameSession && (
+        <div className="flex gap-3 justify-center items-center">
+          <span>참여자</span>
+          <div className="flex gap-2 items-center justify-center">
+            <span>{gameSession.host.nickname}</span>
+            <span>{gameSession.guest.nickname}</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
