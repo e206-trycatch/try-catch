@@ -73,3 +73,18 @@
 .blinking-text {
   animation: blink 1.0s infinite;
 }
+
+/* 타이머 경고 */
+@keyframes timer-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.timer-warning {
+  color: #ef4444;
+  animation: timer-blink 1s linear infinite;
+}

@@ -6,7 +6,7 @@ import { useGameStore } from '../../../stores/useGameStore';
 import useTimer from '../hooks/useTimer';
 export default function GameInfoBar() {
   const { currentLife } = useGameStore();
-  const { display } = useTimer();
+  const { display, isWarning } = useTimer();
   const loseLife = 3 - currentLife;
 
   return (
@@ -15,7 +15,9 @@ export default function GameInfoBar() {
       <div className="flex gap-3 justify-center items-center">
         <img src={TimerIcon} alt=" 남은 시간" className="w-[20px]" />
         <span>남은 시간</span>
-        <div className="text-xl">{display}</div>
+        <div className={`text-xl ${isWarning ? 'timer-warning' : ''}`}>
+          {display}
+        </div>
       </div>
 
       <div className="flex gap-3 justify-center items-center">

@@ -9,8 +9,9 @@ export default function useTimer() {
   const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return {
-    remaining: remainingSeconds,
     display,
     isExpired: deadlineAt !== null && remainingSeconds <= 0,
+    isWarning:
+      deadlineAt !== null && remainingSeconds > 0 && remainingSeconds <= 60,
   };
 }

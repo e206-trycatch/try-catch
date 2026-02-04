@@ -67,11 +67,23 @@ export interface StartQuestMessage {
   message: string;
 }
 
+// ROOM-SINGLE-008
 export interface TimeOutMessage {
   type: 'TIME_OUT';
   data: {
     roomId: number;
     message: string;
+    deadlineAt: string;
+  };
+  timestamp: string;
+}
+
+// ROOM-SINGLE-007 (ROOM-MULTI-007)
+export interface TimerStartedMessage {
+  type: 'TIMER_STARTED';
+  data: {
+    roomId: number;
+    startedAt: string;
     deadlineAt: string;
   };
   timestamp: string;
@@ -83,13 +95,6 @@ export type ClientToServerMessage =
   | ReadyMessage
   | QuestReadyMessage;
 
-// GAME-TIMER
-export interface TimerSyncMessage {
-  type: 'TIMER_SYNC';
-  remainingSeconds: number;
-  status: 'RUNNING' | 'EXPIRED';
-}
-
 // 서버 -> 클라이언트
 export type ServerToClientMessage =
   | GuestJoinedMessage
@@ -97,5 +102,5 @@ export type ServerToClientMessage =
   | GameStartMessage
   | QuestReadyStatusMessage
   | StartQuestMessage
-  | TimerSyncMessage
+  | TimerStartedMessage
   | TimeOutMessage;
