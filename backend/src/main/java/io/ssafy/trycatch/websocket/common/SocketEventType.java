@@ -21,6 +21,6 @@ public enum SocketEventType {
     SUBMISSION_COMPLETED,
     RETRY_STARTED,
 
-    // 힌트 채팅 이벤트
-    HINT_MESSAGE
+    HINT_ERROR, // 힌트 채팅 이벤트
+    HINT_QUESTION, HINT_MESSAGE
 }
