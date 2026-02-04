@@ -1,6 +1,5 @@
 import { Editor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { Bounce, toast, ToastContainer } from 'react-toastify';
 
 import type { FileNode } from '../types/ideTypes';
 
@@ -22,24 +21,6 @@ export default function CodeEditor({
   }
   return (
     <>
-      <ToastContainer
-        position="top-center"
-        autoClose={800}
-        hideProgressBar
-        transition={Bounce}
-        style={{ marginTop: '12px' }}
-        newestOnTop
-        toastStyle={{
-          backgroundColor: '#2d0a0a',
-          border: '1px solid #dc2626',
-          color: '#fca5a5',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: 500,
-          padding: '12px 12px',
-          minHeight: 'auto',
-        }}
-      />
       <Editor
         key={activeFile.id}
         width="100%"
@@ -55,21 +36,12 @@ export default function CodeEditor({
         onChange={(f) => onChange(f ?? '')}
         onMount={(editor) => {
           editor.onKeyDown((e) => {
-            const isCopy =
-              (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyC;
+            const isSave =
+              (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS;
 
-            const isPaste =
-              (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyV;
-
-            if (isCopy || isPaste) {
+            if (isSave) {
               e.preventDefault();
-              toast.error('복사 및 붙여넣기를 할 수 없습니다.');
             }
-          });
-
-          // 클립보드(윈도우 + V) 클릭해서 붙여넣기 했을 때 막기 위해
-          editor.onDidPaste(() => {
-            toast.error('복사 및 붙여넣기를 할 수 없습니다.');
           });
         }}
       />
