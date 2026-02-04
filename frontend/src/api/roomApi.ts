@@ -101,6 +101,17 @@ export const fetchQuestStories = async (questId: number) => {
   return res.data;
 };
 
+// [멀티] 퀘스트 스토리 목록 조회
+export const fetchMultiQuestStories = async (
+  roomId: number,
+  questId: number,
+) => {
+  const res = await api.get<QuestStoryResponse>(
+    `/rooms/multi/${roomId}/story/${questId}`,
+  );
+  return res.data;
+};
+
 // 멀티 모드 방 정보 조회용 타입
 export interface ParticipantInfo {
   userId: number;

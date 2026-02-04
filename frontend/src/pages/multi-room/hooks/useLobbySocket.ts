@@ -5,13 +5,16 @@ import {
   disconnectStomp,
   sendSocketMessage,
   subscribeLobby,
+  subscribeLobbyQuest,
 } from '../../../sockets/stomp';
 import type {
   PlayerJoinedData,
-  ReadyChangedData,
+  QuestReadyStatusData,
   SocketRespDto,
+  StartQuestData,
 } from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
+import { useSocketStore } from '../../../stores/useSocketStore';
 import { useStore } from '../../../stores/useStore';
 
 export const useLobbySocket = (roomId: number | null) => {
@@ -30,16 +33,16 @@ export const useLobbySocket = (roomId: number | null) => {
         });
         break;
       }
-      case 'READY_CHANGED': {
-        const data = msg.data as ReadyChangedData;
-        const roomInfo = useLobbyStore.getState().roomInfo;
-        if (!roomInfo) break;
-        const role = data.userId === roomInfo.host.userId ? 'HOST' : 'GUEST';
-        useLobbyStore.getState().updateReadyStatus(role, data.isReady);
+      case 'QUEST_READY_STATUS': {
+        const data = msg.data as QuestReadyStatusData;
+        const store = useLobbyStore.getState();
+        store.updateReadyStatus('HOST', data.host.isReady);
+        store.updateReadyStatus('GUEST', data.guest.isReady);
         break;
       }
-      case 'GAME_START': {
-        useLobbyStore.getState().setGameStarted(true);
+      case 'START_QUEST': {
+        const data = msg.data as StartQuestData;
+        useLobbyStore.getState().setStartQuestData(data);
         break;
       }
     }
@@ -56,6 +59,7 @@ export const useLobbySocket = (roomId: number | null) => {
         await connectStomp(token);
         connectedRef.current = true;
         subscribeLobby(roomId, handleMessage);
+        subscribeLobbyQuest(roomId, handleMessage);
       } catch (err) {
         console.error('STOMP 연결 실패:', err);
       }
@@ -82,18 +86,19 @@ export const useLobbySocket = (roomId: number | null) => {
     [roomId],
   );
 
-  const sendReady = useCallback(
-    (userId: number, isReady: boolean) => {
+  const sendQuestReady = useCallback(
+    (questId: number) => {
       if (!roomId) return;
-      sendSocketMessage(`/app/rooms/${roomId}/ready`, {
-        type: 'READY',
-        roomId,
-        userId,
-        isReady,
+      const { client, connected } = useSocketStore.getState();
+      if (!client || !connected) return;
+
+      client.publish({
+        destination: `/app/rooms/${roomId}/quest/ready`,
+        body: JSON.stringify({ questId }),
       });
     },
     [roomId],
   );
 
-  return { sendJoin, sendReady };
+  return { sendJoin, sendQuestReady };
 };

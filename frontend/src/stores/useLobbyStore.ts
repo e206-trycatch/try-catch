@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import type { MultiRoomInfo } from '../api/roomApi';
-import type { GuestInfo } from '../sockets/types';
+import type { GuestInfo, StartQuestData } from '../sockets/types';
 
 type LobbyStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -9,7 +9,7 @@ interface LobbyState {
   roomInfo: MultiRoomInfo | null;
   status: LobbyStatus;
   errorMessage: string | null;
-  gameStarted: boolean;
+  startQuestData: StartQuestData | null;
 
   setRoomInfo: (info: MultiRoomInfo) => void;
   updateGuestJoined: (guest: GuestInfo) => void;
@@ -17,7 +17,7 @@ interface LobbyState {
   removeGuest: () => void;
   setStatus: (status: LobbyStatus) => void;
   setError: (message: string) => void;
-  setGameStarted: (started: boolean) => void;
+  setStartQuestData: (data: StartQuestData) => void;
   resetLobby: () => void;
 }
 
@@ -25,7 +25,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
   roomInfo: null,
   status: 'idle',
   errorMessage: null,
-  gameStarted: false,
+  startQuestData: null,
 
   setRoomInfo: (info) =>
     set({
@@ -84,13 +84,13 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
 
   setError: (message) => set({ status: 'error', errorMessage: message }),
 
-  setGameStarted: (started) => set({ gameStarted: started }),
+  setStartQuestData: (data) => set({ startQuestData: data }),
 
   resetLobby: () =>
     set({
       roomInfo: null,
       status: 'idle',
       errorMessage: null,
-      gameStarted: false,
+      startQuestData: null,
     }),
 }));

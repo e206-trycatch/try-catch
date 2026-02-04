@@ -73,3 +73,19 @@
 .blinking-text {
   animation: blink 1.0s infinite;
 }
+
+/* 호스트 시작 버튼 깜빡이는 효과 */
+@keyframes lobby-blink {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(254, 254, 254, 0);
+  }
+  50% {
+    opacity: 0.85;
+    box-shadow: 0 0 5px #fefefe;
+  }
+}
+
+.animate-lobby-blink {
+  animation: lobby-blink 1.2s ease-in-out infinite;
+}

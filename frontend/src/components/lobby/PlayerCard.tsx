@@ -80,14 +80,10 @@ const PlayerCard = ({
           {framework}
         </span>
 
-        {/* 준비(Ready) 활성화 버튼 */}
-        {isActive && isReady !== undefined && (
-          <span
-            className={`inline-block w-fit px-3 py-1 rounded-[6px] text-[13px] font-bold text-white ${
-              isReady ? 'bg-green-500' : 'bg-gray-400'
-            }`}
-          >
-            {isReady ? 'READY' : 'NOT READY'}
+        {/* 준비(Ready) 상태 배지 */}
+        {isActive && isReady && (
+          <span className="inline-block w-fit px-3 py-1 rounded-[6px] text-[13px] font-bold text-white bg-green-500">
+            READY
           </span>
         )}
       </div>

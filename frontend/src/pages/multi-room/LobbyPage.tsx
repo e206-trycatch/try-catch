@@ -35,7 +35,7 @@ const LobbyPage = () => {
   const roomId = navState?.roomId ?? roomStoreRoomId;
 
   // 로비 store
-  const { roomInfo, status, errorMessage, resetLobby, gameStarted } =
+  const { roomInfo, status, errorMessage, resetLobby, startQuestData } =
     useLobbyStore();
   const connected = useSocketStore((s) => s.connected);
 
@@ -43,10 +43,15 @@ const LobbyPage = () => {
   useLobbyData(roomId);
 
   // STOMP 연결 + 구독
-  const { sendJoin, sendReady } = useLobbySocket(roomId);
+  const { sendJoin, sendQuestReady } = useLobbySocket(roomId);
 
-  // 시작 대기 상태 (호스트가 시작 클릭 후 게스트 준비 대기)
-  const [waitingForGuest, setWaitingForGuest] = useState(false);
+  // 퀘스트 목록 사전 로딩
+  const [firstQuestId, setFirstQuestId] = useState<number | null>(null);
+  const questFetchedRef = useRef(false);
+
+  // 네비게이션/이탈 가드 ref
+  const isNavigatingToGameRef = useRef(false);
+  const isLeavingRef = useRef(false);
 
   // roomInfo + 유저 닉네임으로 역할/ID 파생
   const nickname = user?.nickname ?? null;
@@ -67,7 +72,31 @@ const LobbyPage = () => {
           : null
       : null;
 
-  // 최초 fetch 성공 시 STOMP join 발행 + 게스트 자동 ready
+  // 퀘스트 목록 사전 로딩 (roomInfo 확보 시)
+  useEffect(() => {
+    if (!roomInfo || questFetchedRef.current) return;
+    questFetchedRef.current = true;
+
+    const loadQuests = async () => {
+      try {
+        const questResponse = await fetchQuestList(roomInfo.themeId);
+        const quests = questResponse.result;
+        if (!quests || quests.length === 0) return;
+        const firstQuest = quests.find((q) => q.questOrder === 1) || quests[0];
+        setFirstQuestId(firstQuest.questId);
+
+        // useRoomStore에 캐싱
+        const roomStore = useRoomStore.getState();
+        roomStore.setQuestList(roomInfo.themeId, quests);
+      } catch (err) {
+        console.error('퀘스트 목록 로드 실패:', err);
+      }
+    };
+
+    loadQuests();
+  }, [roomInfo]);
+
+  // 최초 fetch 성공 시 STOMP join 발행
   const joinSentRef = useRef(false);
   useEffect(() => {
     if (
@@ -82,59 +111,27 @@ const LobbyPage = () => {
 
     sendJoin(currentUserId, nickname);
     joinSentRef.current = true;
+  }, [status, roomInfo, nickname, connected, currentUserId, sendJoin]);
 
-    // 게스트는 입장 시 자동으로 ready 전송
-    if (currentUserRole === 'GUEST') {
-      sendReady(currentUserId, true);
-    }
-  }, [
-    status,
-    roomInfo,
-    nickname,
-    connected,
-    currentUserId,
-    currentUserRole,
-    sendJoin,
-    sendReady,
-  ]);
-
-  // 양쪽 모두 ready 또는 GAME_START 수신 시 네비게이션
+  // START_QUEST 수신 시 네비게이션
   const navigatingRef = useRef(false);
   useEffect(() => {
-    const bothReady = roomInfo?.host.isReady && roomInfo?.guest?.isReady;
-    if ((!bothReady && !gameStarted) || !roomInfo || navigatingRef.current)
-      return;
+    if (!startQuestData || !roomInfo || navigatingRef.current) return;
 
     navigatingRef.current = true;
+    isNavigatingToGameRef.current = true;
 
-    const startGame = async () => {
-      try {
-        const questResponse = await fetchQuestList(roomInfo.themeId);
-        const quests = questResponse.result;
+    const roomStore = useRoomStore.getState();
 
-        if (!quests || quests.length === 0) {
-          alert('해당 테마에 퀘스트가 없습니다.');
-          navigatingRef.current = false;
-          return;
-        }
+    // 멀티모드 설정을 먼저 수행
+    roomStore.setMode('MULTI');
+    roomStore.setRoomId(roomInfo.roomId);
+    roomStore.setCurrentQuestId(startQuestData.questId);
 
-        const firstQuest = quests.find((q) => q.questOrder === 1) || quests[0];
-
-        const roomStore = useRoomStore.getState();
-        roomStore.setRoomId(roomInfo.roomId);
-        roomStore.setCurrentQuestId(firstQuest.questId);
-        roomStore.setQuestList(roomInfo.themeId, quests);
-
-        navigate('/story');
-      } catch (err) {
-        console.error('게임 시작 실패:', err);
-        alert('게임 시작에 실패했습니다.');
-        navigatingRef.current = false;
-      }
-    };
-
-    startGame();
-  }, [roomInfo, gameStarted, navigate]);
+    // 스토리 페이지로 바로 이동
+    // StoryPage에서 fetchMultiQuestStories를 호출하여 스토리 데이터를 불러옴
+    navigate('/story');
+  }, [startQuestData, roomInfo, navigate]);
 
   // 언마운트 시 store 초기화
   useEffect(() => {
@@ -143,40 +140,25 @@ const LobbyPage = () => {
     };
   }, [resetLobby]);
 
-  // 게스트 준비 토글
-  const handleReady = () => {
-    if (currentUserId == null) return;
-    sendReady(currentUserId, !(roomInfo?.guest?.isReady ?? false));
-  };
-
   // 호스트 시작하기
   const handleStart = () => {
-    if (currentUserId == null || !roomInfo) return;
+    if (firstQuestId == null || !roomInfo) return;
 
-    const guestReady = roomInfo.guest?.isReady ?? false;
-    if (!guestReady) {
-      setWaitingForGuest(true);
-      // 게스트가 준비되지 않았으면 대기
-      sendReady(currentUserId, true);
-      return;
-    }
-
-    // 게스트가 준비되었으면 호스트 ready 전송하고 즉시 게임 시작
-    sendReady(currentUserId, true);
-
-    // 양쪽 모두 준비되었으므로 즉시 게임 시작 상태로 설정
-    useLobbyStore.getState().setGameStarted(true);
+    // STOMP 메시지 전송 (호스트와 게스트 모두 START_QUEST 메시지를 받아서 이동)
+    sendQuestReady(firstQuestId);
   };
 
   const handleLeave = async () => {
     if (!roomId) return;
 
-    const isHost = currentUserRole === 'HOST';
-    const confirmMsg = isHost
+    const isHostLeaving = currentUserRole === 'HOST';
+    const confirmMsg = isHostLeaving
       ? '호스트가 나가면 방이 삭제됩니다. 나가시겠습니까?'
       : '방을 나가시겠습니까?';
 
     if (!window.confirm(confirmMsg)) return;
+
+    isLeavingRef.current = true;
 
     try {
       await leaveMultiRoom(roomId);
@@ -185,6 +167,7 @@ const LobbyPage = () => {
       navigate('/selection/theme');
     } catch (err) {
       console.error('방 나가기 실패:', err);
+      isLeavingRef.current = false;
     }
   };
 
@@ -192,7 +175,6 @@ const LobbyPage = () => {
   const invitationCode =
     roomInfo?.invitationCode ?? navState?.invitationCode ?? '';
   const isHost = currentUserRole === 'HOST';
-  const isGuest = currentUserRole === 'GUEST';
 
   // roomId 없음
   if (!roomId) {
@@ -290,7 +272,7 @@ const LobbyPage = () => {
 
           {/* Player cards */}
           <div className="flex items-center gap-6 mb-8">
-            {/* Host card - 호스트는 항상 방에 있으므로 READY 표시 */}
+            {/* Host card */}
             <PlayerCard
               nickname={roomInfo?.host?.nickname ?? user?.nickname ?? '호스트'}
               position={roomInfo?.host ? getPosition(roomInfo.host) : 'Unknown'}
@@ -299,10 +281,10 @@ const LobbyPage = () => {
               }
               isHost={true}
               isActive={true}
-              isReady={true}
+              isReady={roomInfo?.host.isReady}
             />
 
-            {/* Guest card - 게스트 입장 시 자동 ready */}
+            {/* Guest card */}
             <PlayerCard
               nickname={guestJoined ? roomInfo!.guest!.nickname : '대기중...'}
               position={guestJoined ? getPosition(roomInfo!.guest!) : 'Unknown'}
@@ -311,50 +293,28 @@ const LobbyPage = () => {
               }
               isHost={false}
               isActive={guestJoined}
-              isReady={guestJoined ? true : undefined}
+              isReady={guestJoined ? roomInfo!.guest!.isReady : undefined}
             />
           </div>
 
           {/* Invite code section */}
           <InviteCodeSection invitationCode={invitationCode} />
 
-          {/* 준비 / 시작 버튼 영역 */}
-          {guestJoined && (
+          {/* 시작 버튼 영역 - 호스트만 표시, 두 명 모두 있을 때만 활성화 */}
+          {isHost && (
             <div className="flex flex-col items-center gap-3 mt-6">
-              {/* 게스트: 준비하기 토글 버튼 */}
-              {isGuest && (
-                <button
-                  type="button"
-                  onClick={handleReady}
-                  className={`px-8 py-3 text-[16px] font-bold rounded-[8px] transition-colors cursor-pointer ${
-                    roomInfo?.guest?.isReady
-                      ? 'bg-green-500 text-white hover:bg-green-600'
-                      : 'bg-gray-400 text-white hover:bg-gray-500'
-                  }`}
-                >
-                  {roomInfo?.guest?.isReady ? '준비 완료!' : '준비하기'}
-                </button>
-              )}
-
-              {/* 호스트: 시작하기 버튼 */}
-              {isHost && (
-                <button
-                  type="button"
-                  onClick={handleStart}
-                  disabled={roomInfo?.host.isReady && !roomInfo?.guest?.isReady}
-                  className={`px-10 py-3 text-[18px] font-bold rounded-[8px] transition-colors ${
-                    roomInfo?.host.isReady && !roomInfo?.guest?.isReady
-                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                      : 'bg-[#1a1a3e] text-white cursor-pointer hover:bg-[#2b2949]'
-                  }`}
-                >
-                  {waitingForGuest &&
-                  roomInfo?.host.isReady &&
-                  !roomInfo?.guest?.isReady
-                    ? '게스트 준비 대기 중...'
-                    : '시작하기'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleStart}
+                disabled={!guestJoined || firstQuestId == null}
+                className={`px-10 py-3 text-[18px] font-bold rounded-[8px] transition-colors cursor-pointer ${
+                  guestJoined && firstQuestId != null
+                    ? 'bg-[#1a1a3e] text-white hover:bg-[#2b2949] animate-lobby-blink'
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                시작하기
+              </button>
             </div>
           )}
         </div>

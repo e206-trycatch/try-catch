@@ -126,3 +126,24 @@ export interface GameStartData {
   roomId: number;
   message: string;
 }
+
+export interface QuestReadyBody {
+  questId: number;
+}
+
+export interface QuestReadyStatusData {
+  host: {
+    userId: number;
+    isReady: boolean;
+  };
+  guest: {
+    userId: number;
+    isReady: boolean;
+  };
+}
+
+export interface StartQuestData {
+  roomId: number;
+  questId: number;
+  message: string;
+}

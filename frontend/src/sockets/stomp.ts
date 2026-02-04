@@ -117,3 +117,14 @@ export const subscribeLobby = (
     `/topic/rooms/${roomId}`,
     handler,
   );
+
+// 로비 퀘스트 topic 구독 (백엔드: /topic/rooms/{roomId}/quest)
+export const subscribeLobbyQuest = (
+  roomId: number,
+  handler: (msg: SocketRespDto) => void,
+) =>
+  subscribe<SocketRespDto>(
+    `lobby-quest-${roomId}`,
+    `/topic/rooms/${roomId}/quest`,
+    handler,
+  );
