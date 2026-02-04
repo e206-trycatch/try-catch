@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getSingleTimer } from '../../api/getSingleTimer';
 import { getQuest } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
+import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
 import { connectStomp, subscribeRoom } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
@@ -44,7 +45,7 @@ export default function GamePage() {
     submissionId,
     startTimer,
     stopTimer,
-    forceExpire,
+    expireTimer,
     initializeForRoom,
   } = useGameStore();
   const { removeSubscription } = useSocketStore();
@@ -78,17 +79,27 @@ export default function GamePage() {
         setLoading(false);
       }
 
-      try {
-        const timeData = await getSingleTimer(Number(roomId));
+      const mode = useRoomStore.getState().draft.mode;
 
-        if (timeData.deadlineAt) {
-          startTimer(timeData.deadlineAt);
-        } else {
-          const newTimeData = await startSingleGameTimer(Number(roomId));
-          startTimer(newTimeData.deadlineAt);
+      if (mode === 'MULTI') {
+        try {
+          await startMultiGameTimer(Number(roomId));
+        } catch (e) {
+          console.error('멀티 타이머 준비 실패:', e);
         }
-      } catch (e) {
-        console.error('타이머 시작 실패:', e);
+      } else {
+        try {
+          const timeData = await getSingleTimer(Number(roomId));
+
+          if (timeData.deadlineAt) {
+            startTimer(timeData.deadlineAt);
+          } else {
+            const newTimeData = await startSingleGameTimer(Number(roomId));
+            startTimer(newTimeData.deadlineAt);
+          }
+        } catch (e) {
+          console.error('타이머 시작 실패:', e);
+        }
       }
     };
 
@@ -111,8 +122,11 @@ export default function GamePage() {
       if (token) await connectStomp(token);
 
       subscribeRoom(Number(roomId), (msg) => {
+        if (msg.type === 'TIMER_STARTED') {
+          startTimer(msg.data.deadlineAt);
+        }
         if (msg.type === 'TIME_OUT') {
-          forceExpire();
+          expireTimer();
         }
       });
     };
@@ -122,7 +136,7 @@ export default function GamePage() {
     return () => {
       removeSubscription(`room-${roomId}`);
     };
-  }, [roomId, forceExpire, removeSubscription]);
+  }, [roomId, startTimer, expireTimer, removeSubscription]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
