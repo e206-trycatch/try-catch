@@ -4,6 +4,8 @@ type Props = {
 
 export default function TerminalLogView({ log }: Props) {
   return (
-    <div className="flex-1 overflow-auto whitespace-pre-wrap p-4">{log}</div>
+    <div className="flex-1 overflow-auto whitespace-pre-wrap p-4 text-base/7">
+      {log ? log : 'No problems found'}
+    </div>
   );
 }
