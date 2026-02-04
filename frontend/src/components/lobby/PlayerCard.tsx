@@ -7,6 +7,9 @@ interface PlayerCardProps {
   framework: string;
   isHost: boolean;
   isActive: boolean;
+  isReady?: boolean;
+  isCurrentUser?: boolean;
+  onReadyClick?: () => void;
 }
 
 const FRAMEWORK_COLORS: Record<string, string> = {
@@ -22,6 +25,9 @@ const PlayerCard = ({
   framework,
   isHost,
   isActive,
+  isReady,
+  isCurrentUser,
+  onReadyClick,
 }: PlayerCardProps) => {
   const frameworkColor = isActive
     ? (FRAMEWORK_COLORS[framework] ?? '#9e9e9e')
@@ -57,12 +63,12 @@ const PlayerCard = ({
 
       {/* 오른쪽 정보 */}
       <div className="flex flex-col justify-center gap-3 px-5 flex-1">
-        {/* Nickname */}
+        {/* 닉네임 */}
         <span className="text-[18px] font-bold" style={{ color: textColor }}>
           {isHost && <span className="mr-1">👑</span>}[ {nickname} ]
         </span>
 
-        {/* Position badge */}
+        {/* 포지션 배지 */}
         <span
           className="inline-block w-fit px-4 py-1 rounded-[6px] text-[14px] font-bold text-white"
           style={{ backgroundColor: positionBg }}
@@ -70,13 +76,47 @@ const PlayerCard = ({
           {position}
         </span>
 
-        {/* Framework badge */}
+        {/* 프레임워크 배지 */}
         <span
           className="inline-block w-fit px-4 py-1 rounded-[20px] text-[14px] font-bold text-white"
           style={{ backgroundColor: frameworkColor }}
         >
           {framework}
         </span>
+
+        {/* READY 배지 - 항상 표시 */}
+        {isActive && (
+          <>
+            {/* 본인 카드 - 클릭 가능한 배지 */}
+            {isCurrentUser && onReadyClick ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReadyClick();
+                }}
+                className={`inline-block w-fit px-4 py-1.5 rounded-[6px] text-[13px] font-bold transition-all cursor-pointer ${
+                  isReady
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-gray-300 text-gray-600 hover:bg-green-400 hover:text-white'
+                }`}
+              >
+                {isReady ? '✔️ Ready' : 'Ready'}
+              </button>
+            ) : (
+              /* 상대방 카드 - 표시만 */
+              <span
+                className={`inline-block w-fit px-4 py-1.5 rounded-[6px] text-[13px] font-bold ${
+                  isReady
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {isReady ? '✔️ Ready' : 'Ready'}
+              </span>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

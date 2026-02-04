@@ -3,7 +3,11 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 import { useSocketStore } from '../stores/useSocketStore';
-import type { ClientToServerMessage, ServerToClientMessage } from './types';
+import type {
+  ClientToServerMessage,
+  ServerToClientMessage,
+  SocketRespDto,
+} from './types';
 
 // STOMP 서버에 연결
 export const connectStomp = (token: string | null): Promise<void> => {
@@ -20,6 +24,11 @@ export const connectStomp = (token: string | null): Promise<void> => {
       },
       // 연결 끊김 시 5초 후 자동 재연결
       reconnectDelay: 5000,
+
+      // STOMP 디버그 활성화
+      debug: (str) => {
+        console.log('[STOMP Debug]', str);
+      },
 
       onConnect: () => {
         console.log('STOMP 연결 성공');
@@ -57,25 +66,37 @@ export const disconnectStomp = () => {
   setConnected(false);
 };
 
-// 범용 토픽 구독
-const subscribe = (
+// 범용 토픽 구독 (제네릭)
+const subscribe = <T = ServerToClientMessage>(
   key: string,
   topic: string,
-  handler: (msg: ServerToClientMessage) => void,
+  handler: (msg: T) => void,
 ) => {
   const { client, addSubscription, removeSubscription, connected } =
     useSocketStore.getState();
 
-  if (!client || !connected) return;
+  console.log(`[subscribe] Attempting to subscribe to ${topic}`, {
+    hasClient: !!client,
+    connected,
+  });
+
+  if (!client || !connected) {
+    console.error(`[subscribe] Cannot subscribe to ${topic} - not connected`);
+    return;
+  }
 
   removeSubscription(key);
 
   const sub = client.subscribe(topic, (message: IMessage) => {
-    const response: ServerToClientMessage = JSON.parse(message.body);
+    console.log(`[subscribe] Message received on ${topic}:`, message.body);
+    const response: T = JSON.parse(message.body);
     handler(response);
   });
 
   addSubscription(key, sub);
+  console.log(
+    `[subscribe] Successfully subscribed to ${topic} with key: ${key}`,
+  );
 };
 
 // 게임 topic 구독
@@ -92,13 +113,48 @@ export const sendSocketMessage = (
 ) => {
   const { client, connected } = useSocketStore.getState();
 
+  console.log('[sendSocketMessage] Attempting to send:', {
+    destination,
+    body,
+    hasClient: !!client,
+    connected,
+    clientActive: client?.active,
+  });
+
   if (!client || !connected) {
-    console.warn('STOMP 연결 안됐는데, 전송 시도 중');
+    console.error('[sendSocketMessage] Cannot send - not connected');
     return;
   }
 
-  client.publish({
-    destination,
-    body: JSON.stringify(body),
-  });
+  try {
+    client.publish({
+      destination,
+      body: JSON.stringify(body),
+    });
+    console.log('[sendSocketMessage] Message published successfully to:', destination);
+  } catch (err) {
+    console.error('[sendSocketMessage] Publish failed:', err);
+  }
 };
+
+// 로비 topic 구독 (백엔드: /topic/rooms/{roomId})
+export const subscribeLobby = (
+  roomId: number,
+  handler: (msg: SocketRespDto) => void,
+) =>
+  subscribe<SocketRespDto>(
+    `lobby-${roomId}`,
+    `/topic/rooms/${roomId}`,
+    handler,
+  );
+
+// 로비 퀘스트 topic 구독 (백엔드: /topic/rooms/{roomId}/quest)
+export const subscribeLobbyQuest = (
+  roomId: number,
+  handler: (msg: SocketRespDto) => void,
+) =>
+  subscribe<SocketRespDto>(
+    `lobby-quest-${roomId}`,
+    `/topic/rooms/${roomId}/quest`,
+    handler,
+  );

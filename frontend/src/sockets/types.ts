@@ -41,6 +41,10 @@ export interface GameStartMessage {
   message: string;
 }
 
+export interface GameStartedData {
+  roomId: number;
+}
+
 // ROOM-MULTI-010
 export interface QuestReadyMessage {
   type: 'QUEST_READY';
@@ -104,3 +108,56 @@ export type ServerToClientMessage =
   | StartQuestMessage
   | TimerStartedMessage
   | TimeOutMessage;
+
+// 백엔드 SocketRespDto 래퍼 형식
+export interface SocketRespDto<T = unknown> {
+  type: string;
+  data: T;
+  timestamp: string;
+}
+
+// 백엔드 로비 이벤트 데이터 타입
+export interface PlayerJoinedData {
+  userId: number;
+  nickname: string;
+  profileUrl: string | null;
+  frameworkId: number;
+  frameworkName: string;
+  isReady: boolean;
+}
+
+export interface ReadyChangedData {
+  userId: number;
+  isReady: boolean;
+}
+
+export interface ReadyStatusDto {
+  userId: number;
+  isReady: boolean;
+}
+
+export interface GameStartData {
+  roomId: number;
+  message: string;
+}
+
+export interface QuestReadyBody {
+  questId: number;
+}
+
+export interface QuestReadyStatusData {
+  host: {
+    userId: number;
+    isReady: boolean;
+  };
+  guest: {
+    userId: number;
+    isReady: boolean;
+  };
+}
+
+export interface StartQuestData {
+  roomId: number;
+  questId: number;
+  message: string;
+}

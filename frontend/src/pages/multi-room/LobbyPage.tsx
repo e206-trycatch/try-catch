@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { leaveMultiRoom } from '../../api/roomApi';
+import { fetchQuestList, leaveMultiRoom } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -35,14 +35,29 @@ const LobbyPage = () => {
   const roomId = navState?.roomId ?? roomStoreRoomId;
 
   // 로비 store
-  const { roomInfo, status, errorMessage, resetLobby } = useLobbyStore();
+  const {
+    roomInfo,
+    status,
+    errorMessage,
+    resetLobby,
+    startQuestData,
+    gameStarted,
+  } = useLobbyStore();
   const connected = useSocketStore((s) => s.connected);
 
   // 데이터 fetch + polling
   useLobbyData(roomId);
 
   // STOMP 연결 + 구독
-  const { sendJoin } = useLobbySocket(roomId);
+  const { sendJoin, sendReady } = useLobbySocket(roomId);
+
+  // 퀘스트 목록 사전 로딩
+  const [firstQuestId, setFirstQuestId] = useState<number | null>(null);
+  const questFetchedRef = useRef(false);
+
+  // 네비게이션/이탈 가드 ref
+  const isNavigatingToGameRef = useRef(false);
+  const isLeavingRef = useRef(false);
 
   // roomInfo + 유저 닉네임으로 역할/ID 파생
   const nickname = user?.nickname ?? null;
@@ -63,6 +78,30 @@ const LobbyPage = () => {
           : null
       : null;
 
+  // 퀘스트 목록 사전 로딩 (roomInfo 확보 시)
+  useEffect(() => {
+    if (!roomInfo || questFetchedRef.current) return;
+    questFetchedRef.current = true;
+
+    const loadQuests = async () => {
+      try {
+        const questResponse = await fetchQuestList(roomInfo.themeId);
+        const quests = questResponse.result;
+        if (!quests || quests.length === 0) return;
+        const firstQuest = quests.find((q) => q.questOrder === 1) || quests[0];
+        setFirstQuestId(firstQuest.questId);
+
+        // useRoomStore에 캐싱
+        const roomStore = useRoomStore.getState();
+        roomStore.setQuestList(roomInfo.themeId, quests);
+      } catch (err) {
+        console.error('퀘스트 목록 로드 실패:', err);
+      }
+    };
+
+    loadQuests();
+  }, [roomInfo]);
+
   // 최초 fetch 성공 시 STOMP join 발행
   const joinSentRef = useRef(false);
   useEffect(() => {
@@ -80,6 +119,56 @@ const LobbyPage = () => {
     joinSentRef.current = true;
   }, [status, roomInfo, nickname, connected, currentUserId, sendJoin]);
 
+  // GAME_STARTED 수신 시 자동 네비게이션
+  // 백엔드: 양쪽 모두 준비 완료 → checkAllReady() → 자동으로 GAME_STARTED 이벤트 브로드캐스트
+  // 프론트: GAME_STARTED 수신 → 모든 참가자 자동으로 /story 이동
+  const navigatingRef = useRef(false);
+  useEffect(() => {
+    console.log('[LobbyPage] Navigation check:', {
+      gameStarted,
+      roomInfo: !!roomInfo,
+      firstQuestId,
+      navigating: navigatingRef.current,
+    });
+
+    if (!gameStarted || !roomInfo || !firstQuestId || navigatingRef.current)
+      return;
+
+    console.log('[LobbyPage] Starting navigation to /story');
+    navigatingRef.current = true;
+    isNavigatingToGameRef.current = true;
+
+    const roomStore = useRoomStore.getState();
+
+    // 멀티모드 설정을 먼저 수행
+    roomStore.setMode('MULTI');
+    roomStore.setRoomId(roomInfo.roomId);
+    roomStore.setCurrentQuestId(firstQuestId);
+
+    // 스토리 페이지로 바로 이동
+    // StoryPage에서 fetchMultiQuestStories를 호출하여 스토리 데이터를 불러옴
+    navigate('/story');
+  }, [gameStarted, roomInfo, firstQuestId, navigate]);
+
+  // START_QUEST 수신 시 네비게이션 (기존 로직 - quest/ready 사용 시)
+  useEffect(() => {
+    if (!startQuestData || !roomInfo || navigatingRef.current) return;
+
+    navigatingRef.current = true;
+    isNavigatingToGameRef.current = true;
+
+    const roomStore = useRoomStore.getState();
+
+    // 멀티모드 설정을 먼저 수행
+    roomStore.setMode('MULTI');
+    roomStore.setRoomId(roomInfo.roomId);
+    roomStore.setCurrentQuestId(startQuestData.questId);
+
+    // 스토리 페이지로 바로 이동
+    // StoryPage에서 fetchMultiQuestStories를 호출하여 스토리 데이터를 불러옴
+    navigate('/story');
+  }, [startQuestData, roomInfo, navigate]);
+
   // 언마운트 시 store 초기화
   useEffect(() => {
     return () => {
@@ -87,15 +176,22 @@ const LobbyPage = () => {
     };
   }, [resetLobby]);
 
+  // 준비 버튼 클릭 핸들러
+  const handleReady = () => {
+    sendReady();
+  };
+
   const handleLeave = async () => {
     if (!roomId) return;
 
-    const isHost = currentUserRole === 'HOST';
-    const confirmMsg = isHost
+    const isHostLeaving = currentUserRole === 'HOST';
+    const confirmMsg = isHostLeaving
       ? '호스트가 나가면 방이 삭제됩니다. 나가시겠습니까?'
       : '방을 나가시겠습니까?';
 
     if (!window.confirm(confirmMsg)) return;
+
+    isLeavingRef.current = true;
 
     try {
       await leaveMultiRoom(roomId);
@@ -104,12 +200,14 @@ const LobbyPage = () => {
       navigate('/selection/theme');
     } catch (err) {
       console.error('방 나가기 실패:', err);
+      isLeavingRef.current = false;
     }
   };
 
   const guestJoined = roomInfo?.guest != null;
   const invitationCode =
     roomInfo?.invitationCode ?? navState?.invitationCode ?? '';
+  const isHost = currentUserRole === 'HOST';
 
   // roomId 없음
   if (!roomId) {
@@ -178,16 +276,31 @@ const LobbyPage = () => {
           </div>
 
           {/* Theme info */}
-          <div className="flex items-center gap-3 mt-6 mb-6">
-            <div
-              className="px-4 py-1 bg-[#1a1a3e] flex items-center justify-center"
-              style={{ clipPath: titleClipPath }}
-            >
-              <span className="text-white text-[14px] font-bold">테마명</span>
+          <div className="flex items-center gap-35 mt-6 mb-6">
+            <div className="flex items-center gap-3">
+              <div
+                className="px-4 py-1 bg-[#fefefe] flex items-center justify-center"
+                style={{ clipPath: titleClipPath }}
+              >
+                <span className="text-[#1a1a3e] text-[14px] font-bold">
+                  방 제목
+                </span>
+              </div>
+              <span className="text-white text-[18px] font-bold">
+                {roomInfo?.roomName ?? 'try-catch'}
+              </span>
             </div>
-            <span className="text-white text-[18px] font-bold">
-              {roomInfo?.themeName ?? '테마'}
-            </span>
+            <div className="flex items-center gap-3">
+              <div
+                className="px-4 py-1 bg-[#1a1a3e] flex items-center justify-center"
+                style={{ clipPath: titleClipPath }}
+              >
+                <span className="text-white text-[14px] font-bold">테마명</span>
+              </div>
+              <span className="text-white text-[18px] font-bold">
+                {roomInfo?.themeName ?? 'try-catch'}
+              </span>
+            </div>
           </div>
 
           {/* Player cards */}
@@ -201,6 +314,9 @@ const LobbyPage = () => {
               }
               isHost={true}
               isActive={true}
+              isReady={roomInfo?.host.isReady}
+              isCurrentUser={currentUserRole === 'HOST'}
+              onReadyClick={handleReady}
             />
 
             {/* Guest card */}
@@ -212,11 +328,27 @@ const LobbyPage = () => {
               }
               isHost={false}
               isActive={guestJoined}
+              isReady={guestJoined ? roomInfo!.guest!.isReady : undefined}
+              isCurrentUser={currentUserRole === 'GUEST'}
+              onReadyClick={handleReady}
             />
           </div>
 
           {/* Invite code section */}
           <InviteCodeSection invitationCode={invitationCode} />
+
+          {/* 자동 시작 안내 메시지 */}
+          {guestJoined &&
+            roomInfo?.host.isReady &&
+            roomInfo?.guest?.isReady && (
+              <div className="flex flex-col items-center gap-2 mt-6">
+                <div className="px-6 py-3 bg-green-500/20 border-2 border-green-500 rounded-lg animate-pulse">
+                  <span className="text-green-400 text-[16px] font-bold">
+                    🎮 게임이 곧 시작됩니다...
+                  </span>
+                </div>
+              </div>
+            )}
         </div>
 
         {/* Go back link */}

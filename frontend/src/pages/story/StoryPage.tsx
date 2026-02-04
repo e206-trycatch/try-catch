@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { fetchQuestStories, type QuestStory } from '../../api/roomApi';
+import {
+  fetchMultiQuestStories,
+  fetchQuestStories,
+  type QuestStory,
+} from '../../api/roomApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageFlipTransition from '../../components/story/PageFlipTransition';
 import StorySlide from '../../components/story/StorySlide';
@@ -12,6 +16,7 @@ const StoryPage = () => {
   const navigate = useNavigate();
   const currentQuestId = useRoomStore((s) => s.currentQuestId);
   const currentRoomId = useRoomStore((s) => s.currentRoomId);
+  const gameMode = useRoomStore((s) => s.draft.mode);
 
   const [stories, setStories] = useState<QuestStory[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -36,7 +41,11 @@ const StoryPage = () => {
 
     const loadStories = async () => {
       try {
-        const response = await fetchQuestStories(currentQuestId);
+        // 게임 모드에 따라 다른 API 호출
+        const response =
+          gameMode === 'MULTI'
+            ? await fetchMultiQuestStories(currentRoomId, currentQuestId)
+            : await fetchQuestStories(currentQuestId);
 
         if (!response.result || response.result.length === 0) {
           // 스토리가 없으면 바로 퀘스트 설명으로
@@ -59,7 +68,7 @@ const StoryPage = () => {
     };
 
     loadStories();
-  }, [currentQuestId, currentRoomId, navigate]);
+  }, [currentQuestId, currentRoomId, gameMode, navigate]);
 
   // 슬라이드 변경 시 타이핑 상태 리셋
   useEffect(() => {
