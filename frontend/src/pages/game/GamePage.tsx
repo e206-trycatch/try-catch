@@ -286,7 +286,7 @@ export default function GamePage() {
                   }}
                 >
                   <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
-                    <div className="p-3 pb-10 min-w-full">
+                    <div className="py-5 px-4 pb-10 min-w-full">
                       <Explorer
                         root={rootNode}
                         expanded={ide.expanded}
@@ -315,7 +315,7 @@ export default function GamePage() {
             </div>
             {/* 터미널 */}
             <Resizable
-              defaultSize={{ width: '100%', height: 230 }}
+              defaultSize={{ width: '100%', height: 200 }}
               enable={{ top: true }}
               className="shrink-0 border border-gray-700"
               minHeight={50}
