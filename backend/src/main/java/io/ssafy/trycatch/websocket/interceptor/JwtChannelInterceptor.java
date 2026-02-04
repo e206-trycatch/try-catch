@@ -9,6 +9,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -45,6 +46,13 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
             Long userId = jwtTokenProvider.getUserId(token);
             accessor.getSessionAttributes().put("userId", userId);
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            String.valueOf(userId),
+                            null,
+                            null
+                    );
+            accessor.setUser(authentication);
             log.info("WebSocket 연결 성공: userId={}", userId);
         }
 
