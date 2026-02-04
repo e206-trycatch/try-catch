@@ -1,11 +1,13 @@
 package io.ssafy.trycatch.domain.submission.service;
 
+import io.ssafy.trycatch.domain.game.dto.response.MultiProblemFileListRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
 import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.FileType;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
 import io.ssafy.trycatch.domain.room.repository.*;
+import io.ssafy.trycatch.domain.room.service.SingleRoomService;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
 import io.ssafy.trycatch.domain.submission.dto.response.ScoreResult;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
@@ -47,6 +49,7 @@ public class SubmissionService {
     private final FrameworkRepository frameworkRepository;
     private final RoomUserRepository roomUserRepository;
     private final TransactionTemplate transactionTemplate;
+    private final SingleRoomService singleRoomService;
 
 
     private static final String FRONTEND_RUBRIC = """
@@ -818,7 +821,7 @@ public class SubmissionService {
      * - 해당 problemFramework의 DOC 파일 (ProblemFile)
      */
     @Transactional(readOnly = true)
-    public ProblemFilesRespDto getProblemFilesForRetry(Long roomId, Long submissionId, Long userId) {
+    public MultiProblemFileListRespDto getProblemFilesForRetry(Long roomId, Long submissionId, Long userId) {
         // 1. Room 존재 확인
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
@@ -902,9 +905,13 @@ public class SubmissionService {
         allFiles.addAll(submittedFiles);
         allFiles.addAll(docFileDtos);
 
+        RoomUser roomUser = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
+
         // 9. 응답 생성
-        return ProblemFilesRespDto.builder()
+        return MultiProblemFileListRespDto.builder()
                 .problemFrameworkId(problemFrameworkId)
+                .myPosition(roomUser.getPosition().name())
                 .frontendErrorLog(frontendErrorLog)
                 .backendErrorLog(backendErrorLog)
                 .files(allFiles)

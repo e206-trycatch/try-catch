@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.submission.controller;
 
+import io.ssafy.trycatch.domain.game.dto.response.MultiProblemFileListRespDto;
 import io.ssafy.trycatch.domain.game.service.RetryService;
 import io.ssafy.trycatch.domain.game.service.TimeoutSchedulerService;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
@@ -116,7 +117,7 @@ public class SubmissionController {
      * 재도전을 위한 문제 파일 조회
      */
     @GetMapping("/api/v1/rooms/{roomId}/submissions/{submissionId}")
-    public ResponseEntity<ApiRespDto<ProblemFilesRespDto>> getProblemFiles(
+    public ResponseEntity<ApiRespDto<MultiProblemFileListRespDto>> getProblemFiles(
             @PathVariable Long roomId,
             @PathVariable Long submissionId) {
         Long userId = getCurrentUserId();
