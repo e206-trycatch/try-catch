@@ -107,3 +107,10 @@ export interface GameSessionResponse {
   guest: GameSessionGuest;
   roomStatus: string;
 }
+
+export interface QuestStoreisResponse {
+  storyId: number;
+  storyOrder: number;
+  imageUrl: string;
+  content: string;
+}

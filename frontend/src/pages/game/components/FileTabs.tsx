@@ -15,7 +15,7 @@ export default function FileTabs({
   onCloseTab,
 }: Props) {
   return (
-    <div className="flex shrink-0 border border-[#333] bg-stone-900 items-stretch">
+    <div className="flex shrink-0 border border-[#333] bg-stone-900/90 items-stretch">
       <div className="flex overflow-x-auto overflow-y-hidden w-full scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
         {openTabs.map((tab) => {
           // 현재 순회 중인 탭의 id와 현재 활성화 된 파일의 id가 같으면 true

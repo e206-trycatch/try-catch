@@ -53,7 +53,17 @@ export default function CodeEditor({
           contextmenu: false,
         }}
         onChange={(f) => onChange(f ?? '')}
-        onMount={(editor) => {
+        onMount={(editor, monacoInstance) => {
+          monacoInstance.editor.defineTheme('transparent-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [],
+            colors: {
+              'editor.background': '#1E1E1EE6',
+            },
+          });
+          monacoInstance.editor.setTheme('transparent-dark');
+
           editor.onKeyDown((e) => {
             const isSave =
               (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS;
