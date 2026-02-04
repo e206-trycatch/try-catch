@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { leaveMultiRoom } from '../../api/roomApi';
+import { fetchQuestList, leaveMultiRoom } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -35,14 +35,18 @@ const LobbyPage = () => {
   const roomId = navState?.roomId ?? roomStoreRoomId;
 
   // 로비 store
-  const { roomInfo, status, errorMessage, resetLobby } = useLobbyStore();
+  const { roomInfo, status, errorMessage, resetLobby, gameStarted } =
+    useLobbyStore();
   const connected = useSocketStore((s) => s.connected);
 
   // 데이터 fetch + polling
   useLobbyData(roomId);
 
   // STOMP 연결 + 구독
-  const { sendJoin } = useLobbySocket(roomId);
+  const { sendJoin, sendReady } = useLobbySocket(roomId);
+
+  // 시작 대기 상태 (호스트가 시작 클릭 후 게스트 준비 대기)
+  const [waitingForGuest, setWaitingForGuest] = useState(false);
 
   // roomInfo + 유저 닉네임으로 역할/ID 파생
   const nickname = user?.nickname ?? null;
@@ -63,7 +67,7 @@ const LobbyPage = () => {
           : null
       : null;
 
-  // 최초 fetch 성공 시 STOMP join 발행
+  // 최초 fetch 성공 시 STOMP join 발행 + 게스트 자동 ready
   const joinSentRef = useRef(false);
   useEffect(() => {
     if (
@@ -78,7 +82,59 @@ const LobbyPage = () => {
 
     sendJoin(currentUserId, nickname);
     joinSentRef.current = true;
-  }, [status, roomInfo, nickname, connected, currentUserId, sendJoin]);
+
+    // 게스트는 입장 시 자동으로 ready 전송
+    if (currentUserRole === 'GUEST') {
+      sendReady(currentUserId, true);
+    }
+  }, [
+    status,
+    roomInfo,
+    nickname,
+    connected,
+    currentUserId,
+    currentUserRole,
+    sendJoin,
+    sendReady,
+  ]);
+
+  // 양쪽 모두 ready 또는 GAME_START 수신 시 네비게이션
+  const navigatingRef = useRef(false);
+  useEffect(() => {
+    const bothReady = roomInfo?.host.isReady && roomInfo?.guest?.isReady;
+    if ((!bothReady && !gameStarted) || !roomInfo || navigatingRef.current)
+      return;
+
+    navigatingRef.current = true;
+
+    const startGame = async () => {
+      try {
+        const questResponse = await fetchQuestList(roomInfo.themeId);
+        const quests = questResponse.result;
+
+        if (!quests || quests.length === 0) {
+          alert('해당 테마에 퀘스트가 없습니다.');
+          navigatingRef.current = false;
+          return;
+        }
+
+        const firstQuest = quests.find((q) => q.questOrder === 1) || quests[0];
+
+        const roomStore = useRoomStore.getState();
+        roomStore.setRoomId(roomInfo.roomId);
+        roomStore.setCurrentQuestId(firstQuest.questId);
+        roomStore.setQuestList(roomInfo.themeId, quests);
+
+        navigate('/story');
+      } catch (err) {
+        console.error('게임 시작 실패:', err);
+        alert('게임 시작에 실패했습니다.');
+        navigatingRef.current = false;
+      }
+    };
+
+    startGame();
+  }, [roomInfo, gameStarted, navigate]);
 
   // 언마운트 시 store 초기화
   useEffect(() => {
@@ -86,6 +142,31 @@ const LobbyPage = () => {
       resetLobby();
     };
   }, [resetLobby]);
+
+  // 게스트 준비 토글
+  const handleReady = () => {
+    if (currentUserId == null) return;
+    sendReady(currentUserId, !(roomInfo?.guest?.isReady ?? false));
+  };
+
+  // 호스트 시작하기
+  const handleStart = () => {
+    if (currentUserId == null || !roomInfo) return;
+
+    const guestReady = roomInfo.guest?.isReady ?? false;
+    if (!guestReady) {
+      setWaitingForGuest(true);
+      // 게스트가 준비되지 않았으면 대기
+      sendReady(currentUserId, true);
+      return;
+    }
+
+    // 게스트가 준비되었으면 호스트 ready 전송하고 즉시 게임 시작
+    sendReady(currentUserId, true);
+
+    // 양쪽 모두 준비되었으므로 즉시 게임 시작 상태로 설정
+    useLobbyStore.getState().setGameStarted(true);
+  };
 
   const handleLeave = async () => {
     if (!roomId) return;
@@ -110,6 +191,8 @@ const LobbyPage = () => {
   const guestJoined = roomInfo?.guest != null;
   const invitationCode =
     roomInfo?.invitationCode ?? navState?.invitationCode ?? '';
+  const isHost = currentUserRole === 'HOST';
+  const isGuest = currentUserRole === 'GUEST';
 
   // roomId 없음
   if (!roomId) {
@@ -184,7 +267,9 @@ const LobbyPage = () => {
                 className="px-4 py-1 bg-[#fefefe] flex items-center justify-center"
                 style={{ clipPath: titleClipPath }}
               >
-                <span className="text-[#1a1a3e] text-[14px] font-bold">방 제목</span>
+                <span className="text-[#1a1a3e] text-[14px] font-bold">
+                  방 제목
+                </span>
               </div>
               <span className="text-white text-[18px] font-bold">
                 {roomInfo?.roomName ?? 'try-catch'}
@@ -205,7 +290,7 @@ const LobbyPage = () => {
 
           {/* Player cards */}
           <div className="flex items-center gap-6 mb-8">
-            {/* Host card */}
+            {/* Host card - 호스트는 항상 방에 있으므로 READY 표시 */}
             <PlayerCard
               nickname={roomInfo?.host?.nickname ?? user?.nickname ?? '호스트'}
               position={roomInfo?.host ? getPosition(roomInfo.host) : 'Unknown'}
@@ -214,9 +299,10 @@ const LobbyPage = () => {
               }
               isHost={true}
               isActive={true}
+              isReady={true}
             />
 
-            {/* Guest card */}
+            {/* Guest card - 게스트 입장 시 자동 ready */}
             <PlayerCard
               nickname={guestJoined ? roomInfo!.guest!.nickname : '대기중...'}
               position={guestJoined ? getPosition(roomInfo!.guest!) : 'Unknown'}
@@ -225,11 +311,52 @@ const LobbyPage = () => {
               }
               isHost={false}
               isActive={guestJoined}
+              isReady={guestJoined ? true : undefined}
             />
           </div>
 
           {/* Invite code section */}
           <InviteCodeSection invitationCode={invitationCode} />
+
+          {/* 준비 / 시작 버튼 영역 */}
+          {guestJoined && (
+            <div className="flex flex-col items-center gap-3 mt-6">
+              {/* 게스트: 준비하기 토글 버튼 */}
+              {isGuest && (
+                <button
+                  type="button"
+                  onClick={handleReady}
+                  className={`px-8 py-3 text-[16px] font-bold rounded-[8px] transition-colors cursor-pointer ${
+                    roomInfo?.guest?.isReady
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-gray-400 text-white hover:bg-gray-500'
+                  }`}
+                >
+                  {roomInfo?.guest?.isReady ? '준비 완료!' : '준비하기'}
+                </button>
+              )}
+
+              {/* 호스트: 시작하기 버튼 */}
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  disabled={roomInfo?.host.isReady && !roomInfo?.guest?.isReady}
+                  className={`px-10 py-3 text-[18px] font-bold rounded-[8px] transition-colors ${
+                    roomInfo?.host.isReady && !roomInfo?.guest?.isReady
+                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                      : 'bg-[#1a1a3e] text-white cursor-pointer hover:bg-[#2b2949]'
+                  }`}
+                >
+                  {waitingForGuest &&
+                  roomInfo?.host.isReady &&
+                  !roomInfo?.guest?.isReady
+                    ? '게스트 준비 대기 중...'
+                    : '시작하기'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Go back link */}

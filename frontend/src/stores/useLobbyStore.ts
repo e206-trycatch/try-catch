@@ -9,6 +9,7 @@ interface LobbyState {
   roomInfo: MultiRoomInfo | null;
   status: LobbyStatus;
   errorMessage: string | null;
+  gameStarted: boolean;
 
   setRoomInfo: (info: MultiRoomInfo) => void;
   updateGuestJoined: (guest: GuestInfo) => void;
@@ -16,6 +17,7 @@ interface LobbyState {
   removeGuest: () => void;
   setStatus: (status: LobbyStatus) => void;
   setError: (message: string) => void;
+  setGameStarted: (started: boolean) => void;
   resetLobby: () => void;
 }
 
@@ -23,6 +25,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
   roomInfo: null,
   status: 'idle',
   errorMessage: null,
+  gameStarted: false,
 
   setRoomInfo: (info) =>
     set({
@@ -81,10 +84,13 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
 
   setError: (message) => set({ status: 'error', errorMessage: message }),
 
+  setGameStarted: (started) => set({ gameStarted: started }),
+
   resetLobby: () =>
     set({
       roomInfo: null,
       status: 'idle',
       errorMessage: null,
+      gameStarted: false,
     }),
 }));

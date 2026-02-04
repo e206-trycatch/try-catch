@@ -1,36 +1,49 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import {
   connectStomp,
   disconnectStomp,
   sendSocketMessage,
-  subscribeRoom,
+  subscribeLobby,
 } from '../../../sockets/stomp';
-import type { ServerToClientMessage } from '../../../sockets/types';
+import type {
+  PlayerJoinedData,
+  ReadyChangedData,
+  SocketRespDto,
+} from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
 import { useStore } from '../../../stores/useStore';
 
 export const useLobbySocket = (roomId: number | null) => {
-  const navigate = useNavigate();
   const connectedRef = useRef(false);
 
-  const handleMessage = useCallback(
-    (msg: ServerToClientMessage) => {
-      switch (msg.type) {
-        case 'GUEST_JOINED':
-          useLobbyStore.getState().updateGuestJoined(msg.guest);
-          break;
-        case 'READY_STATUS_CHANGED':
-          useLobbyStore.getState().updateReadyStatus(msg.role, msg.isReady);
-          break;
-        case 'GAME_START':
-          navigate('/story');
-          break;
+  const handleMessage = useCallback((msg: SocketRespDto) => {
+    switch (msg.type) {
+      case 'PLAYER_JOINED': {
+        const data = msg.data as PlayerJoinedData;
+        useLobbyStore.getState().updateGuestJoined({
+          userId: data.userId,
+          nickname: data.nickname,
+          frameworkId: data.frameworkId,
+          frameworkName: data.frameworkName,
+          isReady: data.isReady,
+        });
+        break;
       }
-    },
-    [navigate],
-  );
+      case 'READY_CHANGED': {
+        const data = msg.data as ReadyChangedData;
+        const roomInfo = useLobbyStore.getState().roomInfo;
+        if (!roomInfo) break;
+        const role = data.userId === roomInfo.host.userId ? 'HOST' : 'GUEST';
+        useLobbyStore.getState().updateReadyStatus(role, data.isReady);
+        break;
+      }
+      case 'GAME_START': {
+        useLobbyStore.getState().setGameStarted(true);
+        break;
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!roomId || connectedRef.current) return;
@@ -42,7 +55,7 @@ export const useLobbySocket = (roomId: number | null) => {
       try {
         await connectStomp(token);
         connectedRef.current = true;
-        subscribeRoom(roomId, handleMessage);
+        subscribeLobby(roomId, handleMessage);
       } catch (err) {
         console.error('STOMP 연결 실패:', err);
       }

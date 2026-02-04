@@ -7,6 +7,7 @@ interface PlayerCardProps {
   framework: string;
   isHost: boolean;
   isActive: boolean;
+  isReady?: boolean;
 }
 
 const FRAMEWORK_COLORS: Record<string, string> = {
@@ -22,6 +23,7 @@ const PlayerCard = ({
   framework,
   isHost,
   isActive,
+  isReady,
 }: PlayerCardProps) => {
   const frameworkColor = isActive
     ? (FRAMEWORK_COLORS[framework] ?? '#9e9e9e')
@@ -57,12 +59,12 @@ const PlayerCard = ({
 
       {/* 오른쪽 정보 */}
       <div className="flex flex-col justify-center gap-3 px-5 flex-1">
-        {/* Nickname */}
+        {/* 닉네임 */}
         <span className="text-[18px] font-bold" style={{ color: textColor }}>
           {isHost && <span className="mr-1">👑</span>}[ {nickname} ]
         </span>
 
-        {/* Position badge */}
+        {/* 포지션 배지 */}
         <span
           className="inline-block w-fit px-4 py-1 rounded-[6px] text-[14px] font-bold text-white"
           style={{ backgroundColor: positionBg }}
@@ -70,13 +72,24 @@ const PlayerCard = ({
           {position}
         </span>
 
-        {/* Framework badge */}
+        {/* 프레임워크 배지 */}
         <span
           className="inline-block w-fit px-4 py-1 rounded-[20px] text-[14px] font-bold text-white"
           style={{ backgroundColor: frameworkColor }}
         >
           {framework}
         </span>
+
+        {/* 준비(Ready) 활성화 버튼 */}
+        {isActive && isReady !== undefined && (
+          <span
+            className={`inline-block w-fit px-3 py-1 rounded-[6px] text-[13px] font-bold text-white ${
+              isReady ? 'bg-green-500' : 'bg-gray-400'
+            }`}
+          >
+            {isReady ? 'READY' : 'NOT READY'}
+          </span>
+        )}
       </div>
     </div>
   );

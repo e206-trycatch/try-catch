@@ -99,3 +99,30 @@ export type ServerToClientMessage =
   | StartQuestMessage
   | TimerSyncMessage
   | TimeOutMessage;
+
+// 백엔드 SocketRespDto 래퍼 형식
+export interface SocketRespDto<T = unknown> {
+  type: string;
+  data: T;
+  timestamp: string;
+}
+
+// 백엔드 로비 이벤트 데이터 타입
+export interface PlayerJoinedData {
+  userId: number;
+  nickname: string;
+  profileUrl: string | null;
+  frameworkId: number;
+  frameworkName: string;
+  isReady: boolean;
+}
+
+export interface ReadyChangedData {
+  userId: number;
+  isReady: boolean;
+}
+
+export interface GameStartData {
+  roomId: number;
+  message: string;
+}

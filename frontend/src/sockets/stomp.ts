@@ -3,7 +3,11 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 import { useSocketStore } from '../stores/useSocketStore';
-import type { ClientToServerMessage, ServerToClientMessage } from './types';
+import type {
+  ClientToServerMessage,
+  ServerToClientMessage,
+  SocketRespDto,
+} from './types';
 
 // STOMP 서버에 연결
 export const connectStomp = (token: string | null): Promise<void> => {
@@ -57,11 +61,11 @@ export const disconnectStomp = () => {
   setConnected(false);
 };
 
-// 범용 토픽 구독
-const subscribe = (
+// 범용 토픽 구독 (제네릭)
+const subscribe = <T = ServerToClientMessage>(
   key: string,
   topic: string,
-  handler: (msg: ServerToClientMessage) => void,
+  handler: (msg: T) => void,
 ) => {
   const { client, addSubscription, removeSubscription, connected } =
     useSocketStore.getState();
@@ -71,7 +75,7 @@ const subscribe = (
   removeSubscription(key);
 
   const sub = client.subscribe(topic, (message: IMessage) => {
-    const response: ServerToClientMessage = JSON.parse(message.body);
+    const response: T = JSON.parse(message.body);
     handler(response);
   });
 
@@ -102,3 +106,14 @@ export const sendSocketMessage = (
     body: JSON.stringify(body),
   });
 };
+
+// 로비 topic 구독 (백엔드: /topic/rooms/{roomId})
+export const subscribeLobby = (
+  roomId: number,
+  handler: (msg: SocketRespDto) => void,
+) =>
+  subscribe<SocketRespDto>(
+    `lobby-${roomId}`,
+    `/topic/rooms/${roomId}`,
+    handler,
+  );
