@@ -2,9 +2,13 @@ import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { getMultiQuest } from '@/api/multiQuestFile';
+
+import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
-import { getQuest } from '../../api/questFile';
+import { getQuestFile } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
+import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
 import { connectStomp, subscribeRoom } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
@@ -24,7 +28,7 @@ import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
-import type { SubmissionRequest } from './types/apiTypes';
+import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
 import type { QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 import { buildFilesRequestData } from './utils/codeSubmissionMapper';
@@ -37,6 +41,9 @@ export default function GamePage() {
     null,
   );
 
+  const [gameSession, setGameSession] = useState<GameSessionResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
@@ -44,7 +51,7 @@ export default function GamePage() {
     submissionId,
     startTimer,
     stopTimer,
-    forceExpire,
+    expireTimer,
     initializeForRoom,
   } = useGameStore();
   const { removeSubscription } = useSocketStore();
@@ -53,21 +60,33 @@ export default function GamePage() {
   // 초기 게임 상태 설정
   useEffect(() => {
     if (!roomId) return;
+    const mode = useRoomStore.getState().draft.mode;
 
     const initSetting = async () => {
       try {
         setLoading(true);
         setError(null);
+
         let data = null;
 
-        if (submissionId === null) {
-          data = await getQuest(questId, roomId);
-        } else if (submissionId) {
-          data = await getRetryQuestFile(submissionId, roomId);
+        if (mode === 'MULTI') {
+          if (submissionId === null) {
+            data = await getMultiQuest(questId, roomId);
+          } else if (submissionId) {
+            // Todo: multi로 변경
+            data = await getRetryQuestFile(submissionId, roomId);
+          } else {
+            throw new Error('submissionId가 올바르지 않습니다.');
+          }
         } else {
-          throw new Error('submissionId가 올바르지 않습니다.');
+          if (submissionId === null) {
+            data = await getQuestFile(questId, roomId);
+          } else if (submissionId) {
+            data = await getRetryQuestFile(submissionId, roomId);
+          } else {
+            throw new Error('submissionId가 올바르지 않습니다.');
+          }
         }
-
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
       } catch (e) {
@@ -78,17 +97,27 @@ export default function GamePage() {
         setLoading(false);
       }
 
-      try {
-        const timeData = await getSingleTimer(Number(roomId));
-
-        if (timeData.deadlineAt) {
-          startTimer(timeData.deadlineAt);
-        } else {
-          const newTimeData = await startSingleGameTimer(Number(roomId));
-          startTimer(newTimeData.deadlineAt);
+      if (mode === 'MULTI') {
+        try {
+          const session = await getGameSession(Number(roomId));
+          setGameSession(session);
+          await startMultiGameTimer(Number(roomId));
+        } catch (e) {
+          console.error('멀티 타이머 준비 실패:', e);
         }
-      } catch (e) {
-        console.error('타이머 시작 실패:', e);
+      } else {
+        try {
+          const timeData = await getSingleTimer(Number(roomId));
+
+          if (timeData.startedAt) {
+            startTimer(timeData.deadlineAt);
+          } else {
+            const newTimeData = await startSingleGameTimer(Number(roomId));
+            startTimer(newTimeData.deadlineAt);
+          }
+        } catch (e) {
+          console.error('타이머 시작 실패:', e);
+        }
       }
     };
 
@@ -111,8 +140,11 @@ export default function GamePage() {
       if (token) await connectStomp(token);
 
       subscribeRoom(Number(roomId), (msg) => {
+        if (msg.type === 'TIMER_STARTED') {
+          startTimer(msg.data.deadlineAt);
+        }
         if (msg.type === 'TIME_OUT') {
-          forceExpire();
+          expireTimer();
         }
       });
     };
@@ -122,7 +154,7 @@ export default function GamePage() {
     return () => {
       removeSubscription(`room-${roomId}`);
     };
-  }, [roomId, forceExpire, removeSubscription]);
+  }, [roomId, startTimer, expireTimer, removeSubscription]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
@@ -208,7 +240,7 @@ export default function GamePage() {
       {isExpired && <TimeOverModal />}
       <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
-          <GameInfoBar />
+          <GameInfoBar gameSession={gameSession} />
           <SubmitBtn onClick={submitCode} />
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">

@@ -23,6 +23,7 @@ const StoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFlipping, setIsFlipping] = useState(false);
   const [isTypingDone, setIsTypingDone] = useState(false);
+  const [isTextBoxVisible, setIsTextBoxVisible] = useState(true);
 
   // 타이핑 스킵을 위한 ref
   const slideRef = useRef<HTMLDivElement>(null);
@@ -103,6 +104,11 @@ const StoryPage = () => {
     }
   }, [currentIndex, isFlipping]);
 
+  // 텍스트 박스 토글
+  const toggleTextBox = useCallback(() => {
+    setIsTextBoxVisible((prev) => !prev);
+  }, []);
+
   // 페이드 완료 후 이동
   const handleFlipComplete = useCallback(() => {
     navigate('/quest-description');
@@ -120,12 +126,15 @@ const StoryPage = () => {
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         handlePrev();
+      } else if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleTextBox();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNext, handlePrev, isTypingDone]);
+  }, [handleNext, handlePrev, isTypingDone, toggleTextBox]);
 
   if (isLoading) {
     return (
@@ -156,11 +165,17 @@ const StoryPage = () => {
             imageUrl={story.imageUrl}
             content={story.content}
             isActive={index === currentIndex}
+            isTextBoxVisible={isTextBoxVisible}
             onTypingComplete={handleTypingComplete}
             playSound={playSound}
             stopSound={stopSound}
           />
         ))}
+
+        {/* 텍스트 박스 토글 힌트 */}
+        <div className="absolute bottom-4 right-4 text-white/50 text-lg pointer-events-none">
+          H: 텍스트 {isTextBoxVisible ? '숨기기' : '보이기'}
+        </div>
       </div>
     </PageFlipTransition>
   );

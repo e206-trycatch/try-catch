@@ -109,6 +109,10 @@ public class Room {
         this.startedAt = LocalDateTime.now();
     }
 
+    public void endTimer() {
+        this.startedAt = null;
+    }
+
     public void endGame() {
         this.status = RoomStatus.ENDED;
     }

@@ -14,15 +14,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
-import DinoGame from '../dino-game/components/DinoGame';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
+import DinoGame from '../dino-game/components/DinoGame';
 import ErrorDisplay from './components/ErrorDisplay';
-import {
-  ERROR_CONFIGS,
-  type ResultErrorType,
-} from './types/errorTypes';
+import { ERROR_CONFIGS, type ResultErrorType } from './types/errorTypes';
 import type { SubmissionResult } from './types/resultTypes';
 import { getErrorType } from './utils/errorUtils';
 
@@ -270,9 +267,7 @@ const ResultLoadingPage = () => {
           <div className="flex flex-col items-center gap-6 border border-white/20 bg-[#0a0a2e] px-12 py-10 text-center shadow-2xl">
             <span className="text-4xl">✅</span>
             <div className="flex flex-col gap-2">
-              <p className="text-2xl font-bold text-green-400">
-                채점 완료!
-              </p>
+              <p className="text-2xl font-bold text-green-400">채점 완료!</p>
               <p className="text-gray-400">결과 페이지로 이동합니다</p>
             </div>
             <button

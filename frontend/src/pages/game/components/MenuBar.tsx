@@ -21,7 +21,9 @@ export default function Menubar({ fileMenu, onToggleFileMenu }: Props) {
       </button>
 
       <div className="border-t-1 border-gray-600 pt-[25px] flex flex-col gap-[40px] justify-center items-center">
-        <img src={SaveIcon} alt="저장" />
+        <button className={`cursor-pointer hover:opacity-75`}>
+          <img src={SaveIcon} alt="저장" />
+        </button>
         <img src={ChatIcon} alt="채팅" />
         <img src={AiHintIcon} alt="힌트" />
         <img src={alarmIcon} alt="알림" />
