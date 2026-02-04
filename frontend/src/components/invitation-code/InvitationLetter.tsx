@@ -1,7 +1,8 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import CursorIcon from '../../assets/images/icons/cursor-icon.png';
 import EnvelopeIcon from '../../assets/images/icons/envelope-icon.png';
+import { validateInvitationCode } from '../../utils/validationUtils';
 
 interface LetterProps {
   onSubmit: (code: string) => void;
@@ -12,12 +13,27 @@ interface LetterProps {
 const Letter = forwardRef<HTMLDivElement, LetterProps>(
   ({ onSubmit, isLoading, error }, ref) => {
     const [code, setCode] = useState('');
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     const handleSubmit = () => {
       const trimmed = code.trim();
-      if (!trimmed || isLoading) return;
+      const vError = validateInvitationCode(trimmed);
+      if (vError) {
+        setValidationError(vError);
+        return;
+      }
+      if (isLoading) return;
+      setValidationError(null);
       onSubmit(trimmed);
     };
+
+    // 언마운트시 cleanup effect 추가
+    useEffect(() => {
+      return () => {
+        setCode('');
+        setValidationError(null);
+      };
+    }, []);
 
     return (
       <div
@@ -41,7 +57,11 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
                 <input
                   type="text"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    setValidationError(null);
+                  }}
+                  placeholder="초대 코드 입력"
                   onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   disabled={isLoading}
                   className="flex w-[350px] h-[30px] items-center gap-2.5 shrink-0 px-[27px] py-[19px] rounded-[10px] bg-[#FEFEFE] relative z-10"
@@ -59,8 +79,10 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
                   />
                 </button>
               </div>
-              {error && (
-                <span className="text-red-500 text-[13px]">{error}</span>
+              {(validationError || error) && (
+                <span className="text-red-500 text-[13px]">
+                  {validationError || error}
+                </span>
               )}
             </div>
           </div>

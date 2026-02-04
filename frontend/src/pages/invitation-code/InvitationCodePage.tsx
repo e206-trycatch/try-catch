@@ -5,12 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { joinMultiRoomByCode } from '../../api/roomApi';
 import Envelope from '../../components/invitation-code/InvitationEnvelope';
 import Letter from '../../components/invitation-code/InvitationLetter';
+import { useRoomStore } from '../../stores/useRoomStore';
+import { handleApiError } from '../../utils/errorUtils';
 
 const InvitationPage: React.FC = () => {
   const navigate = useNavigate();
   const flapRef = useRef<HTMLDivElement>(null);
   const letterRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
+  const setRoomId = useRoomStore((s) => s.setRoomId);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,18 +56,35 @@ const InvitationPage: React.FC = () => {
 
       try {
         const roomInfo = await joinMultiRoomByCode(invitationCode);
+        if (!roomInfo?.roomId) {
+          setError(
+            '방 정보를 불러오는 데에 실패하였습니다. 다시 시도해주세요.',
+          );
+          return;
+        }
+        setRoomId(roomInfo.roomId);
         navigate('/multi-room/lobby', {
-          state: { roomId: roomInfo.roomId },
+          state: {
+            roomId: roomInfo.roomId,
+            invitationCode: roomInfo.invitationCode,
+          },
         });
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : '초대 코드가 유효하지 않습니다.',
+          handleApiError(err, {
+            statusMessages: {
+              404: '존재하지 않는 초대 코드입니다.',
+              409: '이미 입장한 방 혹은 정원이 가득 찬 방입니다.',
+              400: '잘못된 초대 코드 형식입니다.',
+            },
+            defaultMessage: '초대 코드 확인 중 오류가 발생하였습니다.',
+          }),
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [navigate],
+    [navigate, setRoomId],
   );
 
   return (
