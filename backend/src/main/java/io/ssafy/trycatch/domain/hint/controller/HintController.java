@@ -6,8 +6,12 @@ import io.ssafy.trycatch.domain.hint.dto.HintChatMessage;
 import io.ssafy.trycatch.domain.hint.dto.request.HintCreateReqDto;
 import io.ssafy.trycatch.domain.hint.dto.response.HintHistoryRespDto;
 import io.ssafy.trycatch.domain.hint.service.HintService;
+import io.ssafy.trycatch.domain.room.entity.Room;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionStartRespDto;
+import io.ssafy.trycatch.domain.user.entity.User;
+import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.ApiRespDto;
+import io.ssafy.trycatch.global.exception.CustomException;
 import io.ssafy.trycatch.websocket.common.SocketEventType;
 import io.ssafy.trycatch.websocket.dto.SocketRespDto;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +23,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+import static io.ssafy.trycatch.global.exception.ErrorCode.USER_NOT_FOUND;
 
 @Slf4j
 @RestController
@@ -28,31 +35,41 @@ public class HintController {
 
     private final HintService hintService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
 
-    /**
-     * 힌트 생성 요청 (AI 서버 호출 + Redis 저장)
-     *
-     * @param requestDto 힌트 요청 정보
-     * @return 힌트 응답
-     */
-    @PostMapping("/rooms/single/{roomId}/hints")
-    public ResponseEntity<HintRespDto> createHint(
+    @PostMapping("/rooms/{roomId}/hints")
+    public ResponseEntity<ApiRespDto<Map<String, Object>>> createHint(
             @PathVariable Long roomId,
             @RequestBody HintCreateReqDto requestDto,
             @AuthenticationPrincipal Long userId) {
-        log.info("힌트 생성 요청 - roomId: {}, userId: {}, problemId: {}, question: {}",
-                roomId, userId, requestDto.getProblemFrameworkId(), requestDto.getUserQuestion());
 
-        HintRespDto response = hintService.requestHint(
-                roomId,
-                userId,
-                requestDto.getProblemFrameworkId(),
-                requestDto.getFramework(),
-                requestDto.getUserQuestion(),
-                requestDto.getSubmission()
+        log.info("힌트 생성 요청 - roomId: {}, userId: {}", roomId, userId);
+
+        // 1. 방 조회 및 힌트 검증 (1번 쿼리)
+        Room room = hintService.validateAndGetRoom(roomId);
+
+        // 2. 사용자 정보 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
+
+        // 3. 질문 저장 및 브로드캐스트
+        hintService.saveQuestion(roomId, userId, requestDto.getUserQuestion());
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/game",
+                SocketRespDto.of(
+                        SocketEventType.HINT_QUESTION,
+                        Map.of(
+                                "userId", userId,
+                                "nickname", user.getNickname(),
+                                "profileUrl", user.getProfileUrl() != null ? user.getProfileUrl() : "",
+                                "question", requestDto.getUserQuestion(),
+                                "remainingHintCount", room.getRemainingHintCount() - 1,  // 조회한 room 사용
+                                "timestamp", System.currentTimeMillis()
+                        )
+                )
         );
 
-        return ResponseEntity.ok(response);
         // 4. 비동기로 AI 힌트 생성
         CompletableFuture.runAsync(() -> {
             try {
@@ -99,6 +116,14 @@ public class HintController {
                 );
             }
         });
+
+        return ResponseEntity.ok(ApiRespDto.success(
+                Map.of(
+                        "status", "accepted",
+                        "message", "힌트 생성 중...",
+                        "remainingHintCount", room.getRemainingHintCount() - 1
+                )
+        ));
     }
 
     /**
@@ -108,15 +133,16 @@ public class HintController {
      * @return 질문과 답변이 섞인 채팅 이력
      */
     @GetMapping("/rooms/{roomId}/hints")
-    public ResponseEntity<ApiRespDto<List<HintChatMessage>>> getHintHistory(
+    public ResponseEntity<ApiRespDto<List<Map<String, Object>>>> getHintHistory(
             @PathVariable Long roomId,
             @AuthenticationPrincipal Long userId) {
         log.info("힌트 이력 조회 - roomId: {}", roomId);
 
-        List<HintChatMessage> history = hintService.getChatHistory(roomId);
+        List<Map<String, Object>> formattedHistory = hintService.getFormattedChatHistory(roomId);
 
-        return ResponseEntity.ok(ApiRespDto.success(history));
+        return ResponseEntity.ok(ApiRespDto.success(formattedHistory));
     }
+
 
     /**
      * AI 서버 헬스 체크

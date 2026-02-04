@@ -41,6 +41,7 @@ public class RedisConfig {
 
         // ObjectMapper 설정 (LocalDateTime 직렬화 지원)
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
