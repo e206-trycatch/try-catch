@@ -35,8 +35,6 @@ services:
       BACKEND_BASE_URL: ${BACKEND_BASE_URL}
       BACKEND_API_TOKEN: ${BACKEND_API_TOKEN}
       TZ: Asia/Seoul
-    ports:
-    - "8000:8000" 
     expose:
       - "8000"
     networks:
