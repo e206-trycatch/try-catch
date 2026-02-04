@@ -178,3 +178,39 @@ export const joinMultiRoomByCode = async (invitationCode: string) => {
   );
   return data.result;
 };
+
+// [멀티] 퀘스트 상세 정보 조회용 타입
+export interface MultiQuestParticipant {
+  userId: number;
+  nickname: string;
+  role: 'HOST' | 'GUEST';
+  frameworkName: string;
+  isReady: boolean;
+}
+
+export interface MultiQuestDetail {
+  roomId: number;
+  quest: {
+    questId: number;
+    questOrder: number;
+    title: string;
+    description: string;
+  };
+  participants: MultiQuestParticipant[];
+}
+
+type MultiQuestDetailResponse = {
+  message: string;
+  result: MultiQuestDetail;
+};
+
+// [멀티] 퀘스트 상세 정보 조회
+export const fetchMultiQuestDetail = async (
+  roomId: number,
+  questId: number,
+): Promise<MultiQuestDetail> => {
+  const { data } = await api.get<MultiQuestDetailResponse>(
+    `/rooms/multi/${roomId}/quest/${questId}`,
+  );
+  return data.result;
+};
