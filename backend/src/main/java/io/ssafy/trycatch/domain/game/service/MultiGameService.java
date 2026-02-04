@@ -13,14 +13,21 @@ import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
+import io.ssafy.trycatch.domain.user.entity.User;
+import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.websocket.common.SocketEventType;
+import io.ssafy.trycatch.websocket.dto.SocketRespDto;
+import io.ssafy.trycatch.websocket.dto.game.CodeSavedNotifyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,9 +43,12 @@ public class MultiGameService {
 
     private final SingleRoomService singleRoomService;
     private final RoomRepository roomRepository;
+    private final UserRepository userRepository;
     private final ProblemFileRepository problemFileRepository;
     private final RoomUserRepository roomUserRepository;
     private final CodeSaveMapper codeSaveMapper;
+
+    private final SimpMessageSendingOperations messagingTemplate;
 
     // 멀티 문제 파일 조회
     public MultiProblemFileListRespDto getMultiProblemFiles(
@@ -138,5 +148,24 @@ public class MultiGameService {
                     file.getCode()
             );
         }
+        sendCodeSaveNotification(roomId, roomUser);
+    }
+
+    private void sendCodeSaveNotification(Long roomId, RoomUser roomUser) {
+
+        User user = userRepository.findById(roomUser.getUserId())
+                .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
+
+        CodeSavedNotifyDto notifyDto = new CodeSavedNotifyDto(
+                user.getId(),
+                user.getNickname(),
+                roomUser.getPosition().name(),
+                LocalDateTime.now()
+        );
+
+        messagingTemplate.convertAndSend(
+                "/topic/rooms/" + roomId,
+                SocketRespDto.of(SocketEventType.CODE_SAVED, notifyDto)
+        );
     }
 }
