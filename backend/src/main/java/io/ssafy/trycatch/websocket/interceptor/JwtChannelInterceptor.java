@@ -46,29 +46,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
             Long userId = jwtTokenProvider.getUserId(token);
             accessor.getSessionAttributes().put("userId", userId);
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            String.valueOf(userId),
-                            null,
-                            null
-                    );
-            accessor.setUser(authentication);
             log.info("WebSocket 연결 성공: userId={}", userId);
-        } else if (StompCommand.SEND.equals(command) || StompCommand.SUBSCRIBE.equals(command)) {
-            // SEND 또는 SUBSCRIBE 시 세션에서 userId를 가져와 User 설정
-            Long userId = (Long) accessor.getSessionAttributes().get("userId");
-            if (userId != null) {
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                String.valueOf(userId),
-                                null,
-                                null
-                        );
-                accessor.setUser(authentication);
-                log.debug("User 설정 완료: command={}, userId={}", command, userId);
-            } else {
-                log.warn("세션에 userId가 없습니다: command={}", command);
-            }
         }
 
         return message;
