@@ -178,16 +178,29 @@ const LobbyPage = () => {
           </div>
 
           {/* Theme info */}
-          <div className="flex items-center gap-3 mt-6 mb-6">
-            <div
-              className="px-4 py-1 bg-[#1a1a3e] flex items-center justify-center"
-              style={{ clipPath: titleClipPath }}
-            >
-              <span className="text-white text-[14px] font-bold">테마명</span>
+          <div className="flex items-center gap-35 mt-6 mb-6">
+            <div className="flex items-center gap-3">
+              <div
+                className="px-4 py-1 bg-[#fefefe] flex items-center justify-center"
+                style={{ clipPath: titleClipPath }}
+              >
+                <span className="text-[#1a1a3e] text-[14px] font-bold">방 제목</span>
+              </div>
+              <span className="text-white text-[18px] font-bold">
+                {roomInfo?.roomName ?? 'try-catch'}
+              </span>
             </div>
-            <span className="text-white text-[18px] font-bold">
-              {roomInfo?.themeName ?? '테마'}
-            </span>
+            <div className="flex items-center gap-3">
+              <div
+                className="px-4 py-1 bg-[#1a1a3e] flex items-center justify-center"
+                style={{ clipPath: titleClipPath }}
+              >
+                <span className="text-white text-[14px] font-bold">테마명</span>
+              </div>
+              <span className="text-white text-[18px] font-bold">
+                {roomInfo?.themeName ?? 'try-catch'}
+              </span>
+            </div>
           </div>
 
           {/* Player cards */}
