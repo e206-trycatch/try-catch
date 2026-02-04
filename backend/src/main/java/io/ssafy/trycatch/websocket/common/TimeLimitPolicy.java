@@ -5,8 +5,8 @@ import io.ssafy.trycatch.domain.room.enums.RoomMode;
 import java.time.Duration;
 
 public enum TimeLimitPolicy {
-    SINGLE(RoomMode.SINGLE, Duration.ofMinutes(1)),
-    MULTI(RoomMode.MULTI, Duration.ofMinutes(1));
+    SINGLE(RoomMode.SINGLE, Duration.ofMinutes(10)),
+    MULTI(RoomMode.MULTI, Duration.ofMinutes(10));
 
     private final RoomMode mode;
     private final Duration limit;
