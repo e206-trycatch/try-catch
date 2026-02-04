@@ -53,6 +53,52 @@ public class HintController {
         );
 
         return ResponseEntity.ok(response);
+        // 4. 비동기로 AI 힌트 생성
+        CompletableFuture.runAsync(() -> {
+            try {
+                HintRespDto response = hintService.requestHint(
+                        roomId, userId,
+                        requestDto.getProblemFrameworkId(),
+                        requestDto.getFramework(),
+                        requestDto.getUserQuestion(),
+                        requestDto.getSubmission()
+                );
+
+                // 차감 후 남은 개수 조회 (1번 더 쿼리 - 비동기라 어쩔 수 없음)
+                int remainingHints = hintService.getRemainingHintCount(roomId);
+
+                messagingTemplate.convertAndSend(
+                        "/topic/room/" + roomId + "/game",
+                        SocketRespDto.of(
+                                SocketEventType.HINT_MESSAGE,
+                                Map.of(
+                                        "userId", userId,
+                                        "success", response.isSuccess(),
+                                        "hint", response.getHint() != null ? response.getHint() : "",
+                                        "guardrailPassed", response.isGuardrailPassed(),
+                                        "rejectionReason", response.getRejectionReason() != null ? response.getRejectionReason() : "",
+                                        "remainingHintCount", remainingHints,
+                                        "timestamp", System.currentTimeMillis()
+                                )
+                        )
+                );
+
+            } catch (Exception e) {
+                log.error("힌트 생성 실패", e);
+
+                messagingTemplate.convertAndSend(
+                        "/topic/room/" + roomId + "/game",
+                        SocketRespDto.of(
+                                SocketEventType.HINT_ERROR,
+                                Map.of(
+                                        "userId", userId,
+                                        "message", "힌트 생성에 실패했습니다.",
+                                        "timestamp", System.currentTimeMillis()
+                                )
+                        )
+                );
+            }
+        });
     }
 
     /**
