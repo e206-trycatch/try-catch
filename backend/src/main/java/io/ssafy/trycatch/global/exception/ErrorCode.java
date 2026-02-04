@@ -37,6 +37,7 @@ public enum ErrorCode {
 //    PROBLEM_NOT_FOUND(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다");
     GAMEOVER(HttpStatus.BAD_REQUEST, "게임이 종료되었습니다. 남은 목숨이 없습니다."),
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 방입니다."),
+    ROOM_NOT_PLAYING(HttpStatus.BAD_REQUEST, "게임이 진행중인 방에서만 코드를 저장할 수 있습니다."),
     SUBMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "제출 내역이 없습니다."),
     UNAUTHORIZED_SUBMISSION_ACCESS(HttpStatus.FORBIDDEN, "해당 제출에 접근할 권한이 없습니다"),
     DUPLICATE_SUBMISSION(HttpStatus.TOO_MANY_REQUESTS, "제출 요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요"),
