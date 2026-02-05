@@ -179,8 +179,14 @@ export default function GamePage() {
     if (!questId) return;
 
     const getQuestStories = async () => {
-      const data = await getQuestStoriesInfo(questId);
-      setBackgroundImg(data.at(-1)?.imageUrl ?? '');
+      try {
+        const data = await getQuestStoriesInfo(questId);
+        const lastImage = data.at(-1)?.imageUrl;
+        setBackgroundImg(lastImage ?? '');
+      } catch (error) {
+        console.error('퀘스트 스토리 배경 이미지 로드 실패:', error);
+        setBackgroundImg('');
+      }
     };
 
     getQuestStories();
