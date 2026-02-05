@@ -163,8 +163,10 @@ public class GptScoringService {
                 - API 경로나 Method 일치 여부는 검증하지 않는다 (다음 단계에서 검증됨)
                 
                 판정:
-                - 위 검증 중 하나라도 FAIL이면 success=false, score=0
+                - 위 검증 중 하나라도 FAIL이면 success=false, score=0이다. 이 경우 코드 품질 평가는 수행하지 않는다.
                 - 모두 PASS이면 success=true, score는 1~100 정수
+                - 새 파일을 만들 수 있다는 가정에서의 베스트 프랙티스를 기준으로 채점하지 말고,
+                  주어진 파일 내 수정만으로 가능한 최선을 100점 기준으로 채점하라.
                 - success=true인 경우 errorLog는 ""(빈 문자열)
                 - errorLog는 컴파일 했을 때, 실제 에러 로그에 뜨는 것을 간략하게 다듬어서 보여준다. 예시 결과처럼 안 뜬 경우에는 예시 결과와 일치하지 않는다고 알려준다. 어느 부분이 틀렸는지 알려주지 않고 답도 알려주지 않는다.
                   어느 부분이 응답 결과와 다른지도 알려주지 않는다.
@@ -284,7 +286,7 @@ public class GptScoringService {
             3-1. API 경로 일치:
                - Frontend의 fetch/axios 경로
                - Backend의 @GetMapping/@PostMapping 경로
-               → 정확히 일치하는가?
+               → 동일 엔드포인트로 해석되는가?
             
             3-2. HTTP Method 일치:
                - Frontend의 method (GET, POST, PUT, DELETE)
@@ -295,11 +297,14 @@ public class GptScoringService {
                - Frontend가 보내는 JSON 필드
                - Backend DTO의 필드
                → 필드명이 일치하는가?
+               Frontend가 JSON body를 명시적으로 보내는 경우에만 필드 일치 여부를 검증한다.
+               (@RequestParam/@PathVariable로 받는 경우는 해당 방식에 맞게 비교한다.)
             
             3-4. Response 형식 기본 일치:
                - Backend 반환 타입의 필드
                - Frontend가 사용하는 필드
                → 주요 필드가 일치하는가?
+               Response는 프론트가 실제로 접근하는 주요 필드 경로가 백 응답 구조에서 존재하는지 확인한다.
             
             절대 규칙:
             - 코드에 근거가 없으면 FAIL
@@ -313,6 +318,13 @@ public class GptScoringService {
             - 2단계 FAIL → success=false, score=0, errorLog: Backend 검증 실패 사유
             - 3단계 FAIL → success=false, score=0, errorLog: API 계약 검증 실패 사유
             - 모두 PASS → success=true, score=1~100 (코드 품질에 따라)
+            - 새 파일을 만들 수 있다는 가정에서의 베스트 프랙티스를 기준으로 채점하지 말고,
+                  주어진 파일 내 수정만으로 가능한 최선을 100점 기준으로 채점하라.
+            - score는 1~100 정수이며, 다음 비중으로 계산한다:
+                Frontend 품질: 40점
+                Backend 품질: 40점
+                API 계약 적합도: 20점
+              각 항목을 평가해 합산하고, 최종 점수는 반올림하여 정수로 출력한다.
             - errorLog는 간략하게 (어느 부분이 틀렸는지, 답은 알려주지 않음)
             
             FAIL 예시:
