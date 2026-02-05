@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
+import { disconnectStomp } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -240,6 +241,7 @@ const ResultLoadingPage = () => {
           if (config.action === 'home') {
             // 홈으로 이동 (invalid_room, unauthorized)
             useGameStore.getState().setMode(null);
+            disconnectStomp();
             navigate('/');
           } else {
             // 재시도 (network, timeout)

@@ -97,6 +97,12 @@ const subscribe = <T = ServerToClientMessage>(
   console.log(
     `[subscribe] Successfully subscribed to ${topic} with key: ${key}`,
   );
+
+  return () => {
+    console.log(`[subscribe] Unsubscribing from ${topic}`);
+    sub.unsubscribe();
+    removeSubscription(key);
+  };
 };
 
 // 게임 topic 구독

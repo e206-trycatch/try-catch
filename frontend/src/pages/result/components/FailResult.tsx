@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { disconnectStomp } from '../../../sockets/stomp';
 import { useGameStore } from '../../../stores/useGameStore';
 import { useResultStore } from '../../../stores/useResultStore';
 import { formatTime } from '../../../utils/utils';
@@ -32,6 +33,7 @@ const FailResult = ({ result }: Props) => {
   const handleGoToMain = () => {
     clearStore();
     useGameStore.getState().setMode(null);
+    disconnectStomp();
     navigate('/');
   };
 

@@ -77,25 +77,6 @@ export default function GamePage() {
   const currentNickname = useStore((state) => state.user?.nickname);
   const [userRole, setUserRole] = useState<CodeRole>(null);
 
-  // // 멀티 모드 - 현재 사용자의 역할 (frontId가 있으면 FRONTEND, backId가 있으면 BACKEND)
-  // const userRole: 'FRONTEND' | 'BACKEND' | null = useMemo(() => {
-  //   if (!gameSession || !currentNickname) return null;
-
-  //   const isHost = gameSession.host.nickname === currentNickname;
-  //   const isGuest = gameSession.guest.nickname === currentNickname;
-
-  //   if (isHost) {
-  //     console.log('isHost', gameSession.host.frontId);
-  //     return gameSession.host.frontId ? 'FRONTEND' : 'BACKEND';
-  //   }
-  //   if (isGuest) {
-  //     console.log('isGuest', gameSession.host.frontId);
-  //     return gameSession.guest.frontId ? 'FRONTEND' : 'BACKEND';
-  //   }
-
-  //   return null;
-  // }, [gameSession, currentNickname]);
-
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
   const findFileIdByPath = (
     node: FileNode,
@@ -158,7 +139,7 @@ export default function GamePage() {
           throw new Error('submissionId가 올바르지 않습니다.');
         }
 
-        console.log(data.myPosition)
+        console.log(data.myPosition);
         setUserRole(data.myPosition ?? null);
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
@@ -183,11 +164,16 @@ export default function GamePage() {
         const timeData = await getSingleTimer(Number(roomId));
 
         if (timeData.startedAt) {
+          // 기존 타이머가 있으면 복원 (새로고침 대응)
           startTimer(timeData.deadlineAt);
         } else if (mode === 'SINGLE') {
-          // 싱글만 여기서 타이머 시작 (멀티는 STOMP useEffect에서 startMultiGameTimer 호출)
+          // 싱글: 타이머 시작
           const newTimeData = await startSingleGameTimer(Number(roomId));
           startTimer(newTimeData.deadlineAt);
+        } else if (mode === 'MULTI') {
+          // 멀티: 타이머가 없으면 준비 완료 신호 전송
+          // 서버가 TIMER_STARTED를 브로드캐스트하면 STOMP 핸들러에서 startTimer 호출됨
+          await startMultiGameTimer(Number(roomId));
         }
       } catch (e) {
         console.error('타이머 조회 실패:', e);
@@ -195,7 +181,7 @@ export default function GamePage() {
     };
 
     initSetting();
-  }, [questId, roomId, submissionId, startTimer]);
+  }, [questId, roomId, submissionId, startTimer, mode]);
 
   // 언마운트 시 타이머 정리
   useEffect(() => {
@@ -265,10 +251,9 @@ export default function GamePage() {
         }
       });
 
-      const mode = useGameStore.getState().mode;
-
+      // 멀티모드 처리 (connectStomp 완료 후이므로 안전하게 구독 가능)
       if (mode === 'MULTI') {
-        // 방 채널 구독 (CODE_SAVED 등)
+        // CODE_SAVED 구독
         const myNickname = useStore.getState().user?.nickname;
         subscribeLobby(Number(roomId), (msg) => {
           if (msg.type === 'CODE_SAVED') {
@@ -324,12 +309,6 @@ export default function GamePage() {
             }
           }
         });
-
-        try {
-          await startMultiGameTimer(Number(roomId));
-        } catch (e) {
-          console.error('멀티 타이머 준비 실패:', e);
-        }
       }
     };
 
@@ -339,7 +318,7 @@ export default function GamePage() {
       removeSubscription(`room-${roomId}`);
       removeSubscription(`lobby-${roomId}`);
     };
-  }, [roomId, startTimer, expireTimer, removeSubscription, navigate]);
+  }, [roomId, mode, startTimer, expireTimer, removeSubscription, navigate]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
@@ -438,10 +417,12 @@ export default function GamePage() {
       },
     };
 
-    console.log('requestBody', requestBody);
-
     setResult(requestBody);
-    navigate(`/result/loading/${roomId}`);
+
+    // sendSocketMessage(
+    // `/app/rooms/${roomId}/submission/start`,
+    // { type: 'SUBMISSION_STARTED', data: null }
+    // );
   };
 
   // 제출 버튼을 눌렀을 때 실행되는 함수
@@ -494,6 +475,18 @@ export default function GamePage() {
       },
     );
   };
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const unsub = subscribeLobby(Number(roomId), (msg) => {
+      if (msg.type === 'SUBMISSION_STARTED') {
+        navigate(`/result/loading/${roomId}`);
+      }
+    });
+
+    return () => unsub?.(); // 구독 정리
+  }, [roomId, navigate]);
 
   const { isExpired } = useTimer();
   const { files } = useFile(questInfo);
@@ -627,6 +620,7 @@ export default function GamePage() {
               onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
               onSave={saveCode}
               onOpenHintModal={openModal}
+              mode={mode}
             />
           </div>
           {/* 파일탐색기 + 코드 편집기 + 터미널 */}
