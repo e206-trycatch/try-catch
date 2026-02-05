@@ -2,6 +2,7 @@ package io.ssafy.trycatch.domain.game.controller;
 
 import io.ssafy.trycatch.domain.game.dto.request.CodeSaveReqDto;
 import io.ssafy.trycatch.domain.game.dto.response.MultiProblemFileListRespDto;
+import io.ssafy.trycatch.domain.game.dto.response.PartnerCodeRespDto;
 import io.ssafy.trycatch.domain.game.service.MultiGameService;
 import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.global.common.ApiRespDto;
@@ -51,4 +52,16 @@ public class MultiGameController {
     }
 
 
+    // 상대방 코드 조회
+    @GetMapping("/{roomId}/{problemFrameworkId}/partner-code")
+    public ResponseEntity<ApiRespDto<PartnerCodeRespDto>> getPartnerCode(
+            @PathVariable Long roomId,
+            @PathVariable Long problemFrameworkId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        PartnerCodeRespDto response = multiGameService.getPartnerCode(roomId, problemFrameworkId, userId);
+
+        return ResponseEntity.ok(
+                ApiRespDto.success("코드 저장 로그에서 상대방 코드를 로드합니다.",response));
+    }
 }

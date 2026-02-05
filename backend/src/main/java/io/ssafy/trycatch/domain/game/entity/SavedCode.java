@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.game.entity;
 
+import io.ssafy.trycatch.domain.room.enums.RoomPosition;
 import io.ssafy.trycatch.domain.submission.entity.SubmissionFile;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
 import jakarta.persistence.*;
@@ -42,7 +43,7 @@ public class SavedCode {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubmissionFile.CodeRole codeRole;
+    private RoomPosition codeRole;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

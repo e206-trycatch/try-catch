@@ -2,12 +2,16 @@ package io.ssafy.trycatch.domain.game.service;
 
 import io.ssafy.trycatch.domain.game.dto.request.CodeSaveReqDto;
 import io.ssafy.trycatch.domain.game.dto.response.MultiProblemFileListRespDto;
+import io.ssafy.trycatch.domain.game.dto.response.PartnerCodeRespDto;
+import io.ssafy.trycatch.domain.game.entity.SavedCode;
 import io.ssafy.trycatch.domain.game.mapper.CodeSaveMapper;
+import io.ssafy.trycatch.domain.game.repository.SavedCodeRepository;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
 import io.ssafy.trycatch.domain.room.entity.ProblemFile;
 import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
 import io.ssafy.trycatch.domain.room.entity.Room;
 import io.ssafy.trycatch.domain.room.entity.RoomUser;
+import io.ssafy.trycatch.domain.room.enums.RoomPosition;
 import io.ssafy.trycatch.domain.room.enums.RoomStatus;
 import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
@@ -39,6 +43,8 @@ public class MultiGameService {
     private final ProblemFileRepository problemFileRepository;
     private final RoomUserRepository roomUserRepository;
     private final CodeSaveMapper codeSaveMapper;
+    private final SavedCodeRepository savedCodeRepository;
+
 
     // 멀티 문제 파일 조회
     public MultiProblemFileListRespDto getMultiProblemFiles(
@@ -63,7 +69,7 @@ public class MultiGameService {
         Long frontendId = room.getFrontendId();
         Long backendId = room.getBackendId();
 
-        // 3. frontendId/backendId 유무로 position 판단 (✅ 수정!)
+        // 3. frontendId/backendId 유무로 position 판단
         String position = singleRoomService.determinePosition(frontendId, backendId);
 
 
@@ -139,4 +145,45 @@ public class MultiGameService {
             );
         }
     }
+
+    // 상대방 코드 불러오기
+    public PartnerCodeRespDto getPartnerCode(Long roomId, Long problemFrameworkId, Long userId) {
+        // 1. 방 존재 여부
+        Room room = roomRepository.findByIdAndIsDeleted(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
+
+        // 2. 방 상태가 PLAYING인지
+        if (room.getStatus() != RoomStatus.PLAYING) {
+            throw new CustomException(ROOM_NOT_PLAYING);
+        }
+
+        // 3. 내 position 조회
+        RoomUser roomUser = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ROOM_USER_NOT_FOUND));
+
+        // 4. 상대방 position 결정
+        RoomPosition myPosition = roomUser.getPosition();
+        RoomPosition partnerPosition = (myPosition == RoomPosition.FRONTEND) ? RoomPosition.BACKEND : RoomPosition.FRONTEND;
+
+        // 5. 상대방 코드 조회
+        List<SavedCode> partnerCodes = savedCodeRepository.findByRoomIdAndProblemFrameworkIdAndCodeRoleAndIsDeleted(
+                roomId, problemFrameworkId, partnerPosition, TrueOrFalse.F
+        );
+
+        // 6. 응답 생성
+        List<PartnerCodeRespDto.FileItem> files = partnerCodes.stream()
+                .map(sc -> PartnerCodeRespDto.FileItem.builder()
+                        .codeRole(sc.getCodeRole().name())
+                        .filePath(sc.getFilePath())
+                        .fileType(sc.getFileType().name())
+                        .code(sc.getCode())
+                        .build())
+                .toList();
+
+        return PartnerCodeRespDto.builder()
+                .partnerPosition(partnerPosition.name())
+                .files(files)
+                .build();
+    }
+
 }
