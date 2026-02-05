@@ -199,7 +199,7 @@ const LobbyPage = () => {
 
     try {
       await leaveMultiRoom(roomId);
-      // disconnectStomp();
+      disconnectStomp();
       resetLobby();
       navigate('/selection/theme');
     } catch (err) {
