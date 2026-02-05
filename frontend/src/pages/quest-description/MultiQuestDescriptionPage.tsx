@@ -176,7 +176,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
       )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questId={multiQuestId}
+          questOrder={multiQuestId}
           themeName={multiQuestTitle}
           questDescription={multiQuestDescription}
           onStart={() => {}}
