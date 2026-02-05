@@ -8,6 +8,11 @@ export type RolePayload = {
   files: FilePayload[];
 };
 
+export type CodeSaveRequest = {
+  problemFrameworkId: number | null;
+  files: FilePayload[];
+};
+
 export type GameStatus = 'PLAYING' | null;
 
 export type SubmissionRequest = {

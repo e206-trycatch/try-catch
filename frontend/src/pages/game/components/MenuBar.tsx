@@ -1,5 +1,5 @@
-import alarmIcon from '../../../assets/images/icons/alarm_icon.svg';
-// import ChatIcon from '../../../assets/images/icons/chat_icon.svg';
+import { useRoomStore } from '@/stores/useRoomStore';
+
 import FileIcon from '../../../assets/images/icons/file_icon.svg';
 import SaveIcon from '../../../assets/images/icons/save_icon.svg';
 import HintButton from './hint/HintButton';
@@ -7,12 +7,16 @@ import HintButton from './hint/HintButton';
 type Props = {
   fileMenu: boolean;
   onToggleFileMenu: () => void;
+  onSave: () => void;
   onOpenHintModal: () => void;
 };
+
+const mode = useRoomStore.getState().draft.mode;
 
 export default function Menubar({
   fileMenu,
   onToggleFileMenu,
+  onSave,
   onOpenHintModal,
 }: Props) {
   return (
@@ -26,11 +30,15 @@ export default function Menubar({
       </button>
 
       <div className="border-t-1 border-gray-600 pt-[25px] flex flex-col gap-[30px] justify-center items-center">
-        <button className={`cursor-pointer hover:opacity-75`}>
-          <img src={SaveIcon} alt="저장" className="w-[30px]" />
-        </button>
-        {/* <img src={ChatIcon} alt="채팅" className="w-[24px]" /> */}
-        <img src={alarmIcon} alt="알림" className="w-[30px]" />
+        {mode === 'MULTI' && (
+          <button
+            type="button"
+            className={`cursor-pointer hover:opacity-75`}
+            onClick={onSave}
+          >
+            <img src={SaveIcon} alt="저장" className="w-[30px]" />
+          </button>
+        )}
         <HintButton onClick={onOpenHintModal} />
       </div>
     </div>

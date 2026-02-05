@@ -12,6 +12,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
+  const isGamePage = location.pathname.startsWith('/game');
 
   // 로그아웃 처리
   const handleLogout = async () => {
@@ -23,7 +24,7 @@ const Header = () => {
     <>
       <GlobalAudioPlayer />
       <header
-        className="w-full flex items-center absolute top-0 left-0 z-10 text-white"
+        className={`w-full flex items-center absolute top-0 left-0 text-white ${isGamePage ? 'z-50' : 'z-10'}`}
         style={{ padding: '24px 80px' }}
       >
         {/* 좌측 로고 영역 */}

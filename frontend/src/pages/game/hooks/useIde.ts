@@ -160,6 +160,10 @@ export function useIde(root: FileNode) {
     return openTabs.find((f) => f.id === activeFileId) ?? null; // 열려있는 탭 들 중에서 활성화된 파일 찾기
   }, [activeFileId, openTabs]); // activeFileId나 openTabs가 바뀔 때마다 실행하기
 
+  const overwriteFileCodes = (updates: Record<string, string>) => {
+    setFileCodes((prev) => ({ ...prev, ...updates }));
+  };
+
   return {
     expanded,
     toggleFolder,
@@ -175,5 +179,6 @@ export function useIde(root: FileNode) {
     currentCode,
     setCurrentCode,
     saveCurrentFile,
+    overwriteFileCodes,
   };
 }
