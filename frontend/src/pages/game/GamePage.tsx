@@ -1,5 +1,5 @@
 import { Resizable } from 're-resizable';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { getMultiQuest } from '@/api/multiQuestFile';
@@ -12,7 +12,13 @@ import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
 import { connectStomp, subscribeRoom } from '../../sockets/stomp';
+import type {
+  HintErrorData,
+  HintMessageData,
+  HintQuestionData,
+} from '../../sockets/types';
 import { useGameStore } from '../../stores/useGameStore';
+import { useHintStore } from '../../stores/useHintStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useStore } from '../../stores/useStore';
@@ -21,6 +27,7 @@ import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
 import GameInfoBar from './components/GameInfoBar';
+import HintModal from './components/hint/HintModal';
 import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
@@ -133,20 +140,47 @@ export default function GamePage() {
     };
   }, [stopTimer]);
 
-  // STOMP 연결 및 TIME_OUT 구독
+  // STOMP 연결 및 게임 이벤트 구독
   useEffect(() => {
     if (!roomId) return;
+
+    const { addQuestion, addHintResponse, addError, reset } =
+      useHintStore.getState();
+    const { setGameState, currentLife } = useGameStore.getState();
+
+    // 방 변경 시 힌트 상태 초기화
+    reset();
 
     const init = async () => {
       const token = useStore.getState().accessToken;
       if (token) await connectStomp(token);
 
       subscribeRoom(Number(roomId), (msg) => {
+        // 타이머 이벤트
         if (msg.type === 'TIMER_STARTED') {
           startTimer(msg.data.deadlineAt);
         }
         if (msg.type === 'TIME_OUT') {
           expireTimer();
+        }
+
+        // 힌트 이벤트
+        if (msg.type === 'HINT_QUESTION') {
+          const data = msg.data as HintQuestionData;
+          addQuestion(data);
+          setGameState(currentLife, data.remainingHintCount);
+        }
+        if (msg.type === 'HINT_MESSAGE') {
+          const data = msg.data as HintMessageData;
+          addHintResponse(data);
+          setGameState(
+            useGameStore.getState().currentLife,
+            data.remainingHintCount,
+          );
+        }
+        if (msg.type === 'HINT_ERROR') {
+          const data = msg.data as HintErrorData;
+          addError(data);
         }
       });
     };
@@ -233,6 +267,43 @@ export default function GamePage() {
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
 
+  // 힌트 모달 상태
+  const { isModalOpen, openModal, closeModal } = useHintStore();
+
+  // 현재 사용 중인 framework 이름 가져오기
+  const currentFramework = useMemo(() => {
+    const { draft, availableFrameworks } = useRoomStore.getState();
+    const { mode, selectedFrameworkId, frontendId, backendId } = draft;
+
+    // frameworkId 결정
+    let frameworkId: number | null = null;
+    if (mode === 'SINGLE') {
+      frameworkId = selectedFrameworkId || frontendId || backendId;
+    } else {
+      // MULTI 모드: host/guest frameworkId 사용
+      frameworkId = draft.hostFrameworkId || draft.guestFrameworkId;
+    }
+
+    if (!frameworkId || !availableFrameworks) return '';
+
+    // availableFrameworks에서 name 찾기
+    const allFrameworks = [
+      ...(availableFrameworks.FRONTEND || []),
+      ...(availableFrameworks.BACKEND || []),
+      ...(availableFrameworks.FULLSTACK || []),
+    ];
+    const found = allFrameworks.find((f) => f.id === frameworkId);
+    if (!found) return '';
+
+    // AI 서버에서 기대하는 형식으로 변환 (SpringBoot -> spring, Django -> django, Vue -> vue)
+    const name = found.name.toLowerCase();
+    if (name.includes('spring')) return 'spring';
+    if (name.includes('django')) return 'django';
+    if (name.includes('vue')) return 'vue';
+    if (name.includes('react')) return 'react';
+    return name;
+  }, []);
+
   const rootNode = useMemo<FileNode>(
     () => ({
       id: 'root',
@@ -247,6 +318,42 @@ export default function GamePage() {
 
   const ide = useIde(rootNode);
 
+  // 힌트 요청 시 현재 코드 스냅샷 생성
+  const getSubmissionData = useCallback(() => {
+    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+
+    if (ide.activeFileId) {
+      allFileCodes[ide.activeFileId] = ide.currentCode;
+    }
+
+    ide.openTabs.forEach((f) => {
+      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
+    });
+
+    return {
+      frontend: {
+        files: buildFilesRequestData({
+          node: rootNode,
+          fileCodes: allFileCodes,
+          role: 'FRONTEND',
+        }),
+      },
+      backend: {
+        files: buildFilesRequestData({
+          node: rootNode,
+          fileCodes: allFileCodes,
+          role: 'BACKEND',
+        }),
+      },
+    };
+  }, [
+    ide.fileCodes,
+    ide.activeFileId,
+    ide.currentCode,
+    ide.openTabs,
+    rootNode,
+  ]);
+
   if (loading) {
     return <div>불러오는 중...</div>;
   }
@@ -258,6 +365,15 @@ export default function GamePage() {
   return (
     <>
       {isExpired && <TimeOverModal />}
+      {isModalOpen && problemFrameworkId && questInfo && (
+        <HintModal
+          roomId={Number(roomId)}
+          problemFrameworkId={problemFrameworkId}
+          framework={currentFramework}
+          getSubmissionData={getSubmissionData}
+          onClose={closeModal}
+        />
+      )}
       <div
         className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px] bg-cover bg-center"
         style={{ backgroundImage: `url(${backgroundImg})` }}
@@ -272,6 +388,7 @@ export default function GamePage() {
             <MenuBar
               fileMenu={openFileMenu}
               onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
+              onOpenHintModal={openModal}
             />
           </div>
           {/* 파일탐색기 + 코드 편집기 + 터미널 */}
