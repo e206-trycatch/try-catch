@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-import {
-  connectStomp,
-  subscribeLobbyQuest,
-} from '../../../sockets/stomp';
+import { connectStomp, subscribeLobbyQuest } from '../../../sockets/stomp';
 import type {
   QuestReadyStatusData,
   SocketRespDto,

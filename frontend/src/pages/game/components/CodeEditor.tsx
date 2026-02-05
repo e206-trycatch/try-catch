@@ -2,19 +2,28 @@ import { Editor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { Bounce, toast, ToastContainer } from 'react-toastify';
 
-import type { FileNode } from '../types/ideTypes';
+import type { CodeRole, FileNode } from '../types/ideTypes';
 
 interface CodeEditorProps {
   activeFile: FileNode | null;
   code: string;
   onChange: (value: string) => void;
+  userRole?: CodeRole;
 }
 
 export default function CodeEditor({
   activeFile,
   code,
   onChange,
+  userRole,
 }: CodeEditorProps) {
+  // true -> 파일 역할과 내 역할이 달라야지 읽기만 가능, 수정 x
+  // false -> 파일 역할과 내 역할이 같다 = 읽기만 가능하지 않고 수정도 가능하다.
+  const isReadOnly =
+    userRole != null &&
+    activeFile?.role != null &&
+    activeFile.role !== userRole;
+
   if (!activeFile) {
     return (
       <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
@@ -53,6 +62,7 @@ export default function CodeEditor({
           minimap: { enabled: false },
           fontSize: 16,
           contextmenu: false,
+          readOnly: isReadOnly,
         }}
         onChange={(f) => onChange(f ?? '')}
         onMount={(editor, monacoInstance) => {

@@ -76,6 +76,23 @@ export default function GamePage() {
   const mode = useRoomStore((state) => state.draft.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
 
+  // 멀티 모드 - 현재 사용자의 역할 (frontId가 있으면 FRONTEND, backId가 있으면 BACKEND)
+  const userRole: 'FRONTEND' | 'BACKEND' | null = useMemo(() => {
+    if (!gameSession || !currentNickname) return null;
+
+    const isHost = gameSession.host.nickname === currentNickname;
+    const isGuest = gameSession.guest.nickname === currentNickname;
+
+    if (isHost) {
+      return gameSession.host.frontId ? 'FRONTEND' : 'BACKEND';
+    }
+    if (isGuest) {
+      return gameSession.guest.frontId ? 'FRONTEND' : 'BACKEND';
+    }
+
+    return null;
+  }, [gameSession, currentNickname]);
+
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
   const findFileIdByPath = (
     node: FileNode,
@@ -637,6 +654,7 @@ export default function GamePage() {
                     activeFile={ide.activeFile}
                     code={ide.currentCode}
                     onChange={ide.setCurrentCode}
+                    userRole={userRole}
                   />
                 </div>
               </div>
