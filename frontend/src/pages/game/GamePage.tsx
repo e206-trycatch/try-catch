@@ -222,6 +222,10 @@ export default function GamePage() {
           const data = msg.data as HintErrorData;
           addError(data);
         }
+
+        if (msg.type === 'SUBMISSION_STARTED') {
+          navigate(`/result/loading/${roomId}`);
+        }
       });
 
       const mode = useRoomStore.getState().draft.mode;
@@ -248,7 +252,12 @@ export default function GamePage() {
                     불러오기
                   </button>
                 </div>,
-                { toastId, autoClose: false },
+                {
+                  toastId,
+                  position: 'top-left',
+                  autoClose: false,
+                  style: { zIndex: 99999, marginTop: '100px' },
+                },
               );
             }
           }
@@ -337,9 +346,8 @@ export default function GamePage() {
     }
   };
 
-  // 제출 버튼을 눌렀을 때 실행되는 함수
-  const submitCode = async () => {
-    // 현재 활성 파일과 openTabs의 코드를 모두 모으기
+  // 실제 제출 로직
+  const submitCode = () => {
     const allFileCodes: Record<string, string> = { ...ide.fileCodes };
 
     if (ide.activeFileId) {
@@ -372,6 +380,57 @@ export default function GamePage() {
 
     setResult(requestBody);
     navigate(`/result/loading/${roomId}`);
+  };
+
+  // 제출 버튼을 눌렀을 때 실행되는 함수
+  const submitCodeHandler = () => {
+    const toastId = `submit-confirm-${Date.now()}`;
+    toast.info(
+      <div className="flex flex-1 gap-5 items-center justify-between">
+        <div>정말 제출하시겠습니까?</div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
+            onClick={() => {
+              toast.dismiss(toastId);
+              submitCode();
+            }}
+          >
+            제출
+          </button>
+          <button
+            type="button"
+            className="bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
+            onClick={() => toast.dismiss(toastId)}
+          >
+            취소
+          </button>
+        </div>
+      </div>,
+      {
+        toastId,
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeButton: false,
+        icon: false,
+        style: {
+          zIndex: 99999,
+          width: '380px',
+          backgroundColor: '#2d0a0a',
+          border: '1px solid #dc2626',
+          color: '#fff',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 500,
+          paddingRight: 20,
+          paddingLeft: 20,
+          marginTop: '120px',
+          marginRight: '60px',
+        },
+      },
+    );
   };
 
   const { isExpired } = useTimer();
@@ -491,7 +550,15 @@ export default function GamePage() {
       >
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar gameSession={gameSession} />
-          <SubmitBtn onClick={submitCode} />
+          {/* 멀티모드에서는 호스트만 제출 가능 */}
+          {(() => {
+            const mode = useRoomStore.getState().draft.mode;
+            const currentNickname = useStore.getState().user?.nickname;
+            const isHost =
+              mode === 'SINGLE' ||
+              gameSession?.host.nickname === currentNickname;
+            return isHost && <SubmitBtn onClick={submitCodeHandler} />;
+          })()}
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
           {/* 메뉴바 */}

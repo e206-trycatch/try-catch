@@ -105,6 +105,12 @@ export interface CodeSavedMessage {
   timestamp: string;
 }
 
+export interface MultiSubmissionMessage {
+  type: 'SUBMISSION_STARTED';
+  data: null;
+  timestamp: string;
+}
+
 // 클라이언트 -> 서버
 export type ClientToServerMessage =
   | JoinRoomMessage
@@ -123,7 +129,8 @@ export type ServerToClientMessage =
   | CodeSavedMessage
   | HintQuestionMessage
   | HintResponseMessage
-  | HintErrorMessage;
+  | HintErrorMessage
+  | MultiSubmissionMessage;
 
 // 백엔드 SocketRespDto 래퍼 형식
 export interface SocketRespDto<T = unknown> {

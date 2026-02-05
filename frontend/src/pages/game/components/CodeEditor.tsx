@@ -29,7 +29,7 @@ export default function CodeEditor({
         autoClose={800}
         hideProgressBar
         transition={Bounce}
-        style={{ marginTop: '12px' }}
+        style={{ marginTop: '12px', zIndex: 99999 }}
         newestOnTop
         toastStyle={{
           backgroundColor: '#2d0a0a',
