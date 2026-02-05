@@ -161,6 +161,8 @@ public class GptScoringService {
                 
                 절대 규칙:
                 - 이 문제는 이미 필요한 빌드 설정과 의존성이 모두 구성되어 있다고 가정한다.
+                - import 문에 오타가 있어 실제로 존재하지 않는 패키지나 클래스가 참조된 경우,
+                    이는 명백한 컴파일 오류로 간주하며 즉시 FAIL 처리한다.
                 - 코드에 근거가 없으면 FAIL
                 - 응답은 JSON만 출력
                 - API 경로나 Method 일치 여부는 검증하지 않는다 (다음 단계에서 검증됨)
@@ -311,6 +313,8 @@ public class GptScoringService {
             
             절대 규칙:
             - 이 문제는 이미 필요한 빌드 설정과 의존성이 모두 구성되어 있다고 가정한다.
+            - import 문에 오타가 있어 실제로 존재하지 않는 패키지나 클래스가 참조된 경우,
+                    이는 명백한 컴파일 오류로 간주하며 즉시 FAIL 처리한다.
             - 코드에 근거가 없으면 FAIL
             - 1, 2, 3단계 중 하나라도 FAIL이면 success=false, score=0
             - 모두 PASS이면 success=true, score=1~100
