@@ -25,13 +25,14 @@ export default function HintInputForm({
   const { isLoading } = useHintStore();
   const { currentHints } = useGameStore();
 
+  const isDisconnected = currentHints === 0;
   const isOverLimit = input.length > MAX_LENGTH;
   const canSubmit =
     input.trim().length > 0 &&
     !isOverLimit &&
     !isLoading &&
     !isSending &&
-    currentHints > 0;
+    !isDisconnected;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -69,37 +70,53 @@ export default function HintInputForm({
         <div className="flex-1 relative">
           <input
             type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            value={isDisconnected ? '' : input}
+            onChange={(e) => !isDisconnected && setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              currentHints > 0
-                ? '질문을 입력하세요...'
-                : '힌트를 모두 사용했습니다'
+              isDisconnected
+                ? '통신이 두절된 것 같다...'
+                : '질문을 입력하세요...'
             }
-            disabled={currentHints === 0 || isLoading || isSending}
-            className="w-full bg-stone-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isDisconnected || isLoading || isSending}
+            className={`w-full bg-stone-800 rounded-lg px-3 py-2 text-sm focus:outline-none ${
+              isDisconnected
+                ? 'border border-red-900/50 text-gray-500 italic placeholder-gray-500 opacity-70 cursor-not-allowed'
+                : 'border border-gray-600 text-gray-200 placeholder-gray-500 focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed'
+            }`}
             maxLength={MAX_LENGTH + 10}
           />
         </div>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
-        >
-          {isSending ? '...' : '전송'}
-        </button>
+
+        {/* 전송 버튼: 힌트 있을 때만 표시 */}
+        {!isDisconnected && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+          >
+            {isSending ? '...' : '전송'}
+          </button>
+        )}
       </div>
+
+      {/* 하단 정보 */}
       <div className="flex justify-between mt-1 px-1">
-        <span className="text-xs text-gray-500">
-          남은 힌트: {currentHints}개
-        </span>
-        <span
-          className={`text-xs ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}
-        >
-          {input.length}/{MAX_LENGTH}
-        </span>
+        {isDisconnected ? (
+          <span className="text-xs text-red-400">연결 끊김</span>
+        ) : (
+          <>
+            <span className="text-xs text-gray-500">
+              남은 힌트: {currentHints}개
+            </span>
+            <span
+              className={`text-xs ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}
+            >
+              {input.length}/{MAX_LENGTH}
+            </span>
+          </>
+        )}
       </div>
     </div>
   );
