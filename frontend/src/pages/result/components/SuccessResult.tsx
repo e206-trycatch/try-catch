@@ -87,7 +87,7 @@ const SuccessResult = ({ result }: Props) => {
         </div>
       </div>
 
-      <p className="text-2xl text-white font-semibold">{score}점</p>
+      <p className="text-2xl text-white font-semibold">코드 점수: {score}점</p>
 
       <p className="text-white">총 소요시간 {formatTime(executionTimeMs)}</p>
 
