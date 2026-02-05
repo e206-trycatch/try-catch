@@ -5,16 +5,18 @@ export default function Node({
   node,
   depth, // 트리 깊이
   expanded,
+  activeFileId,
   onToggleFolder,
   onOpenFile,
 }: {
   node: FileNode;
   depth: number;
   expanded: Set<string>;
+  activeFileId: string | null;
   onToggleFolder: (id: string) => void;
   onOpenFile: (file: FileNode) => void;
 }) {
-  const indent = 10 + depth * 14; // 왼쪽 여백 설정
+  const indent = depth * 14; // 왼쪽 여백 설정
 
   // 1. 폴더인 경우
   if (node.type === 'folder') {
@@ -25,7 +27,7 @@ export default function Node({
       <div>
         {/* 폴더 한 개 렌더링 */}
         <div
-          className="flex items-center gap-1.5 h-7 cursor-pointer select-none w-full"
+          className="flex items-center gap-1.5 h-7 cursor-pointer select-none w-full my-[2px]"
           style={{ paddingLeft: indent }}
           onClick={() => onToggleFolder(node.id)}
         >
@@ -42,6 +44,7 @@ export default function Node({
               node={child}
               depth={depth + 1}
               expanded={expanded}
+              activeFileId={activeFileId}
               onToggleFolder={onToggleFolder}
               onOpenFile={onOpenFile}
             />
@@ -52,10 +55,12 @@ export default function Node({
 
   // 2. 파일인 경우
   else {
+    const isActive = node.id === activeFileId;
+
     return (
       <div
-        className="flex items-center gap-1.5 h-7 cursor-pointer select-none "
-        style={{ paddingLeft: indent }}
+        className={`flex items-center gap-1.5 h-7 cursor-pointer select-none my-[2px] ${isActive ? 'bg-white/10 text-amber-300' : 'hover:bg-white/5'}`}
+        style={{ paddingLeft: indent + 10 }}
         onClick={() => {
           onOpenFile(node);
         }}

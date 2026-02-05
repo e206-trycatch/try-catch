@@ -30,6 +30,7 @@
     background-color: #030030;
     color: #fefefe;
     line-height: 1.5;
+    box-sizing: border-box;
   }
 
   #root {

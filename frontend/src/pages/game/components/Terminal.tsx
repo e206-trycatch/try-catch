@@ -16,7 +16,7 @@ export default function Terminal({ frontendErrorLog, backendErrorLog }: Props) {
     activeTab === 'Frontend' ? frontendErrorLog : backendErrorLog;
 
   return (
-    <div className="flex flex-col w-full h-full bg-stone-900">
+    <div className="flex flex-col w-full h-full bg-stone-900/90">
       <div className="shrink-0 border-b border-gray-700">
         <TerminalTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       </div>

@@ -17,7 +17,9 @@ export default function CodeEditor({
 }: CodeEditorProps) {
   if (!activeFile) {
     return (
-      <div style={{ color: '#888', padding: '20px' }}>파일을 선택해주세요.</div>
+      <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
+        파일을 선택해주세요
+      </div>
     );
   }
   return (
@@ -53,7 +55,17 @@ export default function CodeEditor({
           contextmenu: false,
         }}
         onChange={(f) => onChange(f ?? '')}
-        onMount={(editor) => {
+        onMount={(editor, monacoInstance) => {
+          monacoInstance.editor.defineTheme('transparent-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [],
+            colors: {
+              'editor.background': '#1E1E1EB3',
+            },
+          });
+          monacoInstance.editor.setTheme('transparent-dark');
+
           editor.onKeyDown((e) => {
             const isSave =
               (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS;

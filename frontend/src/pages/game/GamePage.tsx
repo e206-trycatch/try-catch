@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { getMultiQuest } from '@/api/multiQuestFile';
+import { getQuestStoriesInfo } from '@/api/questStories';
 
 import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
@@ -47,6 +48,7 @@ export default function GamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
+  const [backgroundImg, setBackgroundImg] = useState<string | null>(null);
   const {
     submissionId,
     startTimer,
@@ -59,7 +61,7 @@ export default function GamePage() {
 
   // 초기 게임 상태 설정
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !questId) return;
     const mode = useRoomStore.getState().draft.mode;
 
     const initSetting = async () => {
@@ -172,6 +174,24 @@ export default function GamePage() {
     }
   }, [roomId, initializeForRoom]);
 
+  // 배경 이미지
+  useEffect(() => {
+    if (!questId) return;
+
+    const getQuestStories = async () => {
+      try {
+        const data = await getQuestStoriesInfo(questId);
+        const lastImage = data.at(-1)?.imageUrl;
+        setBackgroundImg(lastImage ?? '');
+      } catch (error) {
+        console.error('퀘스트 스토리 배경 이미지 로드 실패:', error);
+        setBackgroundImg('');
+      }
+    };
+
+    getQuestStories();
+  }, [questId]);
+
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
     // 현재 활성 파일과 openTabs의 코드를 모두 모으기
@@ -238,14 +258,17 @@ export default function GamePage() {
   return (
     <>
       {isExpired && <TimeOverModal />}
-      <div className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px]">
+      <div
+        className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px] bg-cover bg-center"
+        style={{ backgroundImage: `url(${backgroundImg})` }}
+      >
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar gameSession={gameSession} />
           <SubmitBtn onClick={submitCode} />
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
           {/* 메뉴바 */}
-          <div className="w-[70px] h-full bg-stone-900 py-5 px-2 border border-gray-700">
+          <div className="w-[65px] h-full bg-stone-900/90 py-5 px-2 border border-gray-700">
             <MenuBar
               fileMenu={openFileMenu}
               onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
@@ -261,7 +284,7 @@ export default function GamePage() {
                   minWidth={50}
                   maxWidth={400}
                   enable={{ right: true }}
-                  className="bg-stone-900 border-r border-gray-700"
+                  className="bg-stone-900/90 border-r border-gray-700"
                   handleComponent={{
                     right: (
                       <div className="w-[4px] h-full hover:bg-amber-300/70 transition-colors cursor-col-resize"></div>
@@ -269,12 +292,13 @@ export default function GamePage() {
                   }}
                 >
                   <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
-                    <div className="p-3 pb-10 min-w-full">
+                    <div className="py-5 px-4 pb-10 min-w-full">
                       <Explorer
                         root={rootNode}
                         expanded={ide.expanded}
                         onToggleFolder={ide.toggleFolder}
                         onOpenFile={ide.openFile}
+                        activeFileId={ide.activeFileId}
                       />
                     </div>
                   </div>
@@ -287,7 +311,9 @@ export default function GamePage() {
                   onSelectTab={ide.selectTab}
                   onCloseTab={ide.closeTab}
                 />
-                <div className="flex-1 min-h-0 bg-[#1E1E1E]">
+                <div
+                  className={`flex-1 min-h-0 ${ide.activeFile ? `bg-[#1E1E1E00]` : `bg-[#1E1E1EE6]`}`}
+                >
                   <CodeEditor
                     activeFile={ide.activeFile}
                     code={ide.currentCode}
@@ -298,7 +324,7 @@ export default function GamePage() {
             </div>
             {/* 터미널 */}
             <Resizable
-              defaultSize={{ width: '100%', height: 230 }}
+              defaultSize={{ width: '100%', height: 200 }}
               enable={{ top: true }}
               className="shrink-0 border border-gray-700"
               minHeight={50}
