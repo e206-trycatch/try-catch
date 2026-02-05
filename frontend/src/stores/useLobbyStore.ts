@@ -31,10 +31,13 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
   gameStarted: false,
 
   setRoomInfo: (info) => {
-    // 백엔드 API 응답의 isReady 값을 신뢰하고 그대로 사용
-    // 폴링과 STOMP 모두 백엔드의 실제 상태를 반영하므로 별도 병합 불필요
+    const prev = get().roomInfo;
+    // guest가 null로 오면 기존 guest 유지 (타이밍 이슈 방지)
     set({
-      roomInfo: info,
+      roomInfo: {
+        ...info,
+        guest: info.guest ?? prev?.guest ?? null,
+      },
       status: 'success',
       errorMessage: null,
     });

@@ -18,8 +18,11 @@ import { useLobbyStore } from '../../../stores/useLobbyStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { useStore } from '../../../stores/useStore';
 
-export const useLobbySocket = (roomId: number | null) => {
-  const connectedRef = useRef(false);
+export const useLobbySocket = (
+  roomId: number | null,
+  me?: { userId: number; nickname: string } | null,
+) => {
+  const joinedRef = useRef(false);
 
   const handleMessage = useCallback((msg: SocketRespDto) => {
     console.log('[STOMP Message]', msg.type, msg.data);
@@ -27,8 +30,18 @@ export const useLobbySocket = (roomId: number | null) => {
     switch (msg.type) {
       case 'PLAYER_JOINED': {
         const data = msg.data as PlayerJoinedData;
+        const store = useLobbyStore.getState();
+        const roomInfo = store.roomInfo;
+        if (!roomInfo) break;
+
         console.log('[PLAYER_JOINED] Guest joined:', data);
-        useLobbyStore.getState().updateGuestJoined({
+        // host가 보낸 or host인 PLAYER_JOINED는 guest 업데이트에 사용하지 않게
+        if (data.userId === roomInfo.host.userId) {
+          console.log('[PLAYED_JOINED] ignored (host join echo):', data);
+          break;
+        }
+
+        store.updateGuestJoined({
           userId: data.userId,
           nickname: data.nickname,
           frameworkId: data.frameworkId,
@@ -75,9 +88,9 @@ export const useLobbySocket = (roomId: number | null) => {
     }
   }, []);
 
+  // 구독 설정 (roomId가 변경될 때만 재실행 - me 변경 시 구독 해제 방지)
   useEffect(() => {
-    if (!roomId || connectedRef.current) return;
-
+    if (!roomId) return;
     const token = useStore.getState().accessToken;
     if (!token) return;
 
@@ -87,32 +100,55 @@ export const useLobbySocket = (roomId: number | null) => {
     );
 
     const connect = async () => {
-      try {
-        await connectStomp(token);
-        connectedRef.current = true;
-        console.log(
-          '[useLobbySocket] STOMP connected, subscribing to topics...',
-        );
-
-        subscribeLobby(roomId, handleMessage);
-        console.log(`[useLobbySocket] Subscribed to /topic/rooms/${roomId}`);
-
-        subscribeLobbyQuest(roomId, handleMessage);
-        console.log(
-          `[useLobbySocket] Subscribed to /topic/rooms/${roomId}/quest`,
-        );
-      } catch (err) {
-        console.error('[useLobbySocket] STOMP connection failed:', err);
-      }
+      await connectStomp(token);
+      subscribeLobby(roomId, handleMessage);
+      subscribeLobbyQuest(roomId, handleMessage);
     };
 
     connect();
 
     return () => {
-      console.log('[useLobbySocket] Cleaning up');
-      connectedRef.current = false;
+      console.log('[useLobbySocket] Cleaning up, unsubscribing from topics');
+      useSocketStore.getState().removeSubscription(`lobby-${roomId}`);
+      useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
     };
   }, [roomId, handleMessage]);
+
+  // JOIN_ROOM 메시지 전송 (me가 로드된 후 한 번만 실행)
+  useEffect(() => {
+    if (!roomId || !me || joinedRef.current) return;
+
+    const { connected } = useSocketStore.getState();
+    if (!connected) {
+      // 연결이 아직 안됐으면 잠시 후 재시도
+      const timer = setTimeout(() => {
+        const { connected: isConnected } = useSocketStore.getState();
+        if (isConnected && !joinedRef.current) {
+          console.log(
+            '[useLobbySocket] Sending JOIN_ROOM for user:',
+            me.nickname,
+          );
+          sendSocketMessage(`/app/rooms/${roomId}/join`, {
+            type: 'JOIN_ROOM',
+            roomId,
+            userId: me.userId,
+            nickname: me.nickname,
+          });
+          joinedRef.current = true;
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+
+    console.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
+    sendSocketMessage(`/app/rooms/${roomId}/join`, {
+      type: 'JOIN_ROOM',
+      roomId,
+      userId: me.userId,
+      nickname: me.nickname,
+    });
+    joinedRef.current = true;
+  }, [roomId, me]);
 
   const sendJoin = useCallback(
     (userId: number, nickname: string) => {

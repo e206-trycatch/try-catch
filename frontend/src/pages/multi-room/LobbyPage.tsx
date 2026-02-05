@@ -8,7 +8,6 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
 import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
-import { disconnectStomp } from '../../sockets/stomp';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
@@ -199,7 +198,7 @@ const LobbyPage = () => {
 
     try {
       await leaveMultiRoom(roomId);
-      disconnectStomp();
+      // disconnectStomp();
       resetLobby();
       navigate('/selection/theme');
     } catch (err) {
