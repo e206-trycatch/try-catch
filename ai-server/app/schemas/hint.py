@@ -10,6 +10,7 @@ class Framework(str, Enum):
     SPRING = "spring"
     VUE = "vue"
     REACT = "react"
+    FULLSTACK = "fullstack"
 
 
 class HintRequest(BaseModel):
