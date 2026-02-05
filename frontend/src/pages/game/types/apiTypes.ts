@@ -93,13 +93,17 @@ export interface Participant {
 }
 
 export interface GameSessionHost extends Participant {
-  frontId: number;
-  frontName: string;
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
 }
 
 export interface GameSessionGuest extends Participant {
-  backId: number;
-  backName: string;
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
 }
 
 export interface GameSessionResponse {

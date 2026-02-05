@@ -13,5 +13,5 @@ export async function getShareCode(
   const { data } = await api.get(
     `/rooms/multi/${roomId}/${problemFrameworkId}/partner-code`,
   );
-  return data;
+  return data.result;
 }

@@ -76,6 +76,23 @@ export default function GamePage() {
   const mode = useRoomStore((state) => state.draft.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
 
+  // 멀티 모드 - 현재 사용자의 역할 (frontId가 있으면 FRONTEND, backId가 있으면 BACKEND)
+  const userRole: 'FRONTEND' | 'BACKEND' | null = useMemo(() => {
+    if (!gameSession || !currentNickname) return null;
+
+    const isHost = gameSession.host.nickname === currentNickname;
+    const isGuest = gameSession.guest.nickname === currentNickname;
+
+    if (isHost) {
+      return gameSession.host.frontId ? 'FRONTEND' : 'BACKEND';
+    }
+    if (isGuest) {
+      return gameSession.guest.frontId ? 'FRONTEND' : 'BACKEND';
+    }
+
+    return null;
+  }, [gameSession, currentNickname]);
+
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
   const findFileIdByPath = (
     node: FileNode,
@@ -241,24 +258,49 @@ export default function GamePage() {
             if (nickname !== myNickname) {
               const toastId = `share-code-${Date.now()}`;
               toast.info(
-                <div className="flex flex-col gap-2">
-                  <span>{nickname}님이 코드를 공유했습니다.</span>
-                  <button
-                    type="button"
-                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                    onClick={() => {
-                      loadShareCodeRef.current?.();
-                      toast.dismiss(toastId);
-                    }}
-                  >
-                    불러오기
-                  </button>
+                <div className="flex flex-1 gap-5 items-center justify-between">
+                  <div>{nickname}님이 코드를 공유했습니다.</div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
+                      onClick={() => {
+                        loadShareCodeRef.current?.();
+                        toast.dismiss(toastId);
+                      }}
+                    >
+                      불러오기
+                    </button>
+                    <button
+                      type="button"
+                      className="bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
+                      onClick={() => toast.dismiss(toastId)}
+                    >
+                      닫기
+                    </button>
+                  </div>
                 </div>,
                 {
                   toastId,
                   position: 'top-left',
                   autoClose: false,
-                  style: { zIndex: 99999, marginTop: '100px' },
+                  hideProgressBar: true,
+                  closeButton: false,
+                  icon: false,
+                  style: {
+                    zIndex: 99999,
+                    width: '380px',
+                    backgroundColor: '#2d0a0a',
+                    border: '1px solid #dc2626',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    paddingRight: 20,
+                    paddingLeft: 20,
+                    marginTop: '100px',
+                    marginLeft: '60px',
+                  },
                 },
               );
             }
@@ -612,6 +654,7 @@ export default function GamePage() {
                     activeFile={ide.activeFile}
                     code={ide.currentCode}
                     onChange={ide.setCurrentCode}
+                    userRole={userRole}
                   />
                 </div>
               </div>
