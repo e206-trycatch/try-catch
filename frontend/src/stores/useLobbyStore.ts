@@ -62,7 +62,9 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
     const { roomInfo } = get();
     if (!roomInfo) return;
 
-    console.log(`[useLobbyStore] updateReadyStatus - ${role}: ${isReady}`);
+    console.log(
+      `[useLobbyStore] updateReadyStatus - ${role}: ${isReady}`,
+    );
 
     if (role === 'HOST') {
       set({

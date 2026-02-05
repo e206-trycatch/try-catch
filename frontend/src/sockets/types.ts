@@ -93,6 +93,18 @@ export interface TimerStartedMessage {
   timestamp: string;
 }
 
+// 코드 공유 완료 메시지
+export interface CodeSavedMessage {
+  type: 'CODE_SAVED';
+  data: {
+    userId: number;
+    nickname: string;
+    position: string;
+    savedAt: string;
+  };
+  timestamp: string;
+}
+
 // 클라이언트 -> 서버
 export type ClientToServerMessage =
   | JoinRoomMessage
@@ -107,7 +119,8 @@ export type ServerToClientMessage =
   | QuestReadyStatusMessage
   | StartQuestMessage
   | TimerStartedMessage
-  | TimeOutMessage;
+  | TimeOutMessage
+  | CodeSavedMessage;
 
 // 백엔드 SocketRespDto 래퍼 형식
 export interface SocketRespDto<T = unknown> {

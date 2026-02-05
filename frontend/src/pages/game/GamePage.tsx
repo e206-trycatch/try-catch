@@ -1,6 +1,7 @@
 import { Resizable } from 're-resizable';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import { getMultiQuest } from '@/api/multiQuestFile';
 import { getQuestStoriesInfo } from '@/api/questStories';
@@ -12,7 +13,12 @@ import { getRetryQuestFile } from '../../api/retryQuestFile';
 import { saveCodeForShare } from '../../api/saveCodeForShare';
 import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
-import { connectStomp, subscribeRoom } from '../../sockets/stomp';
+import {
+  connectStomp,
+  subscribeLobby,
+  subscribeRoom,
+} from '../../sockets/stomp';
+import type { CodeSavedMessage } from '../../sockets/types';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
@@ -152,6 +158,17 @@ export default function GamePage() {
 
       const mode = useRoomStore.getState().draft.mode;
       if (mode === 'MULTI') {
+        // 방 채널 구독 (CODE_SAVED 등)
+        const myNickname = useStore.getState().user?.nickname;
+        subscribeLobby(Number(roomId), (msg) => {
+          if (msg.type === 'CODE_SAVED') {
+            const { nickname } = msg.data as CodeSavedMessage['data'];
+            if (nickname !== myNickname) {
+              toast.info(`${nickname}님이 코드를 공유했습니다.`);
+            }
+          }
+        });
+
         try {
           await startMultiGameTimer(Number(roomId));
         } catch (e) {
@@ -164,6 +181,7 @@ export default function GamePage() {
 
     return () => {
       removeSubscription(`room-${roomId}`);
+      removeSubscription(`lobby-${roomId}`);
     };
   }, [roomId, startTimer, expireTimer, removeSubscription]);
 
@@ -223,10 +241,15 @@ export default function GamePage() {
       }),
     ];
 
-    await saveCodeForShare(Number(roomId), {
-      problemFrameworkId,
-      files,
-    });
+    try {
+      await saveCodeForShare(Number(roomId), {
+        problemFrameworkId,
+        files,
+      });
+      toast.success('팀원에게 코드를 공유했습니다.');
+    } catch {
+      toast.error('코드 공유에 실패했습니다.');
+    }
   };
 
   // 제출 버튼을 눌렀을 때 실행되는 함수

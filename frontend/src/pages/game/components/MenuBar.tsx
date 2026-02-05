@@ -1,3 +1,5 @@
+import { useRoomStore } from '@/stores/useRoomStore';
+
 import AiHintIcon from '../../../assets/images/icons/ai_hint_icon.svg';
 import alarmIcon from '../../../assets/images/icons/alarm_icon.svg';
 import FileIcon from '../../../assets/images/icons/file_icon.svg';
@@ -8,6 +10,8 @@ type Props = {
   onToggleFileMenu: () => void;
   onSave: () => void;
 };
+
+const mode = useRoomStore.getState().draft.mode;
 
 export default function Menubar({ fileMenu, onToggleFileMenu, onSave }: Props) {
   return (
@@ -21,13 +25,15 @@ export default function Menubar({ fileMenu, onToggleFileMenu, onSave }: Props) {
       </button>
 
       <div className="border-t-1 border-gray-600 pt-[25px] flex flex-col gap-[30px] justify-center items-center">
-        <button
-          type="button"
-          className={`cursor-pointer hover:opacity-75`}
-          onClick={onSave}
-        >
-          <img src={SaveIcon} alt="저장" className="w-[30px]" />
-        </button>
+        {mode === 'MULTI' && (
+          <button
+            type="button"
+            className={`cursor-pointer hover:opacity-75`}
+            onClick={onSave}
+          >
+            <img src={SaveIcon} alt="저장" className="w-[30px]" />
+          </button>
+        )}
         <img src={AiHintIcon} alt="힌트" className="w-[30px]" />
         <img src={alarmIcon} alt="알림" className="w-[30px]" />
       </div>
