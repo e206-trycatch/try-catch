@@ -2,6 +2,7 @@ import { gsap } from 'gsap';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import api from '../../api/api';
 import { joinMultiRoomByCode } from '../../api/roomApi';
 import Envelope from '../../components/invitation-code/InvitationEnvelope';
 import Letter from '../../components/invitation-code/InvitationLetter';
@@ -16,6 +17,7 @@ const InvitationPage: React.FC = () => {
   const setRoomId = useRoomStore((s) => s.setRoomId);
   const setThemeId = useRoomStore((s) => s.setThemeId);
   const setThemeName = useRoomStore((s) => s.setThemeName);
+  const setThemeImageUrl = useRoomStore((s) => s.setThemeImageUrl);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,24 @@ const InvitationPage: React.FC = () => {
     });
   }, []);
 
+  const fetchThemeImageUrl = async (
+    themeId: number,
+  ): Promise<string | null> => {
+    try {
+      const { data } = await api.get('/themes');
+      const themes = data.result?.result;
+      if (Array.isArray(themes)) {
+        const theme = themes.find(
+          (t: { themeId: number }) => t.themeId === themeId,
+        );
+        return theme?.themeImageUrl ?? null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSubmitCode = useCallback(
     async (invitationCode: string) => {
       setIsLoading(true);
@@ -67,6 +87,11 @@ const InvitationPage: React.FC = () => {
         setRoomId(roomInfo.roomId);
         setThemeId(roomInfo.themeId);
         setThemeName(roomInfo.themeName);
+
+        // GUEST는 ThemeSelectionPage를 거치지 않으므로 테마 이미지 URL을 별도로 가져옴
+        const imageUrl = await fetchThemeImageUrl(roomInfo.themeId);
+        setThemeImageUrl(imageUrl);
+
         navigate('/multi-room/lobby', {
           state: {
             roomId: roomInfo.roomId,
@@ -88,7 +113,7 @@ const InvitationPage: React.FC = () => {
         setIsLoading(false);
       }
     },
-    [navigate, setRoomId, setThemeId, setThemeName],
+    [navigate, setRoomId, setThemeId, setThemeName, setThemeImageUrl],
   );
 
   return (
