@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-import {
-  connectStomp,
-  disconnectStomp,
-  subscribeLobbyQuest,
-} from '../../../sockets/stomp';
+import { connectStomp, subscribeLobbyQuest } from '../../../sockets/stomp';
 import type {
   QuestReadyStatusData,
   SocketRespDto,
@@ -23,6 +19,7 @@ export const useQuestSocket = (
   callbacks: UseQuestSocketCallbacks,
 ) => {
   const connectedRef = useRef(false);
+  const tokenRef = useRef<string | null>(null);
   const callbacksRef = useRef(callbacks);
 
   useEffect(() => {
@@ -49,10 +46,27 @@ export const useQuestSocket = (
   }, []);
 
   useEffect(() => {
-    if (!roomId || connectedRef.current) return;
+    if (!roomId) return;
 
     const token = useStore.getState().accessToken;
     if (!token) return;
+
+    const { client } = useSocketStore.getState();
+
+    // 토큰이 바뀌면 기존 연결 해제 후 재연결
+    const tokenChanged = tokenRef.current && tokenRef.current !== token;
+    if (tokenChanged && client) {
+      try {
+        client.deactivate();
+      } catch {
+        useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
+        connectedRef.current = false;
+      }
+    }
+
+    if (connectedRef.current) return;
+
+    tokenRef.current = token;
 
     console.log(
       '[useQuestSocket] Initiating STOMP connection for room:',
@@ -73,15 +87,18 @@ export const useQuestSocket = (
         );
       } catch (err) {
         console.error('[useQuestSocket] STOMP connection failed:', err);
+        connectedRef.current = false;
       }
     };
 
     connect();
 
     return () => {
-      console.log('[useQuestSocket] Cleaning up, disconnecting STOMP');
+      console.log(
+        '[useQuestSocket] Cleaning up, unsubscribing from quest topic',
+      );
       connectedRef.current = false;
-      disconnectStomp();
+      useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
     };
   }, [roomId, handleMessage]);
 

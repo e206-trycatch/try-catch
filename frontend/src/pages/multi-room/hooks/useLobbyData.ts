@@ -2,11 +2,14 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { fetchMultiRoomInfo } from '../../../api/roomApi';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
+import { useSocketStore } from '../../../stores/useSocketStore';
 
 const POLL_INTERVAL = 5000;
 
 export const useLobbyData = (roomId: number | null) => {
-  const { status, setRoomInfo, setStatus, setError } = useLobbyStore();
+  const { status, roomInfo, setRoomInfo, setStatus, setError } =
+    useLobbyStore();
+  const connected = useSocketStore((s) => s.connected);
   const statusRef = useRef(status);
 
   useEffect(() => {
@@ -38,13 +41,14 @@ export const useLobbyData = (roomId: number | null) => {
     fetchData();
   }, [fetchData]);
 
-  // polling
+  // polling (소켓이 없거나 게스트가 아직 없을 때만)
   useEffect(() => {
-    if (!roomId) return;
+    const shouldPoll = !connected || !roomInfo?.guest;
+    if (!roomId || !shouldPoll) return;
 
     const intervalId = setInterval(fetchData, POLL_INTERVAL);
     return () => clearInterval(intervalId);
-  }, [roomId, fetchData]);
+  }, [roomId, connected, roomInfo?.guest, fetchData]);
 
   return { refetch: fetchData };
 };

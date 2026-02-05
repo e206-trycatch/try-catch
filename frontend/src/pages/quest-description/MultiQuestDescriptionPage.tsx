@@ -85,20 +85,43 @@ const MultiQuestDescriptionPage: React.FC = () => {
   // - participants를 role 기준으로 업데이트한 후 '나'의 정보를 찾아 myReady를 설정
   const onQuestReadyStatus = useCallback(
     (data: QuestReadyStatusData) => {
+      console.log('[DEBUG] onQuestReadyStatus 호출됨');
+      console.log('[DEBUG] 서버 데이터:', JSON.stringify(data, null, 2));
+      console.log('[DEBUG] 현재 userNickname:', userNickname);
+
       setParticipants((prev) => {
+        console.log(
+          '[DEBUG] 기존 participants:',
+          JSON.stringify(prev, null, 2),
+        );
+
         const updated = prev.map((p) => {
+          // userId 대신 role로 비교하여 host/guest ready 상태 매핑
           if (p.role === 'HOST') {
+            console.log(
+              `[DEBUG] HOST(${p.nickname}) isReady: ${data.host.isReady}`,
+            );
             return { ...p, isReady: data.host.isReady };
           }
           if (p.role === 'GUEST') {
+            console.log(
+              `[DEBUG] GUEST(${p.nickname}) isReady: ${data.guest.isReady}`,
+            );
             return { ...p, isReady: data.guest.isReady };
           }
           return p;
         });
 
+        console.log(
+          '[DEBUG] 업데이트된 participants:',
+          JSON.stringify(updated, null, 2),
+        );
+
         // 업데이트된 participants에서 '나'의 정보를 찾아 myReady 동기화
         const me = updated.find((p) => p.nickname === userNickname);
+        console.log('[DEBUG] 찾은 me:', me);
         if (me) {
+          console.log('[DEBUG] setMyReady:', me.isReady);
           setMyReady(me.isReady);
         }
 
@@ -130,6 +153,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
 
   // 준비 핸들러 (서버 응답(onQuestReadyStatus)으로만 상태 반영)
   const handleReady = () => {
+    // 이미 ready면 다시 클릭 못하기 막기 (토글 방지)
+    if (myReady) return;
     if (multiQuestId != null) {
       sendQuestReady(multiQuestId);
     }
