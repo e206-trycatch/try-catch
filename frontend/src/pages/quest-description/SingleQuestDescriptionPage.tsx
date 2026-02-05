@@ -130,7 +130,7 @@ const SingleQuestDescriptionPage: React.FC = () => {
       )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questId={firstQuest.questId}
+          questOrder={firstQuest.questOrder}
           themeName={firstQuest.title}
           questDescription={firstQuest.description}
           onStart={handleStartGame}

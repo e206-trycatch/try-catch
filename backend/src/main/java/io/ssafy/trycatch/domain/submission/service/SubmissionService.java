@@ -565,10 +565,18 @@ public class SubmissionService {
         ScoreResult score = scoreResults.get(0);
         SubmissionContext.SubmissionData data = context.getSubmissionDataList().get(0);
 
+//        submission.updateResult(
+//                score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
+//                score.getExecutionTime(),
+//                score.getErrorLog(),
+//                score.getScore()
+//        );
         submission.updateResult(
                 score.getSuccess() ? Submission.Status.SUCCESS : Submission.Status.FAIL,
                 score.getExecutionTime(),
-                score.getErrorLog(),
+                score.getFrontendErrorLog(),
+                score.getBackendErrorLog(),
+                score.getErrorLog(),  // 하위 호환용 (합쳐진 에러)
                 score.getScore()
         );
 
@@ -853,14 +861,8 @@ public class SubmissionService {
             List<SubmissionFile> files = submissionFileRepository
                     .findBySubmissionIdAndIsDeleted(sub.getId(), TrueOrFalse.F);
 
-            boolean isFrontend = files.stream()
-                    .anyMatch(f -> f.getCodeRole() == SubmissionFile.CodeRole.FRONTEND);
-
-            if (isFrontend) {
-                frontendErrorLog = sub.getErrorLog();
-            } else {
-                backendErrorLog = sub.getErrorLog();
-            }
+            frontendErrorLog = sub.getFrontendErrorLog();
+            backendErrorLog = sub.getBackendErrorLog();
         }
 
         // 6. 제출 파일들 조회 (SOURCE, CONFIG 등)

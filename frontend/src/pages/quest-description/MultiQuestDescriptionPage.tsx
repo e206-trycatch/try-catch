@@ -62,11 +62,14 @@ const MultiQuestDescriptionPage: React.FC = () => {
         setMultiQuestDescription(detail.quest.description);
         setParticipants(detail.participants);
 
-        // 참가자들 확인
-        const me = detail.participants.find((p) => p.nickname === userNickname);
-        if (me) {
-          setMyReady(me.isReady);
-        }
+        // 퀘스트 단계에서는 모든 참가자의 isReady를 false로 초기화
+        // (로비 단계의 ready 상태가 그대로 넘어오므로 프론트에서 리셋)
+        const resetParticipants = detail.participants.map((p) => ({
+          ...p,
+          isReady: false,
+        }));
+        setParticipants(resetParticipants);
+        setMyReady(false);
       } catch (err) {
         console.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
@@ -79,15 +82,15 @@ const MultiQuestDescriptionPage: React.FC = () => {
   }, [currentRoomId, currentQuestId, userNickname]);
 
   // 웹소켓 callback : QUEST READY STATUS
-  // - participants를 먼저 업데이트한 후 그 배열에서 '나'의 정보를 찾아 myReady를 설정
+  // - participants를 role 기준으로 업데이트한 후 '나'의 정보를 찾아 myReady를 설정
   const onQuestReadyStatus = useCallback(
     (data: QuestReadyStatusData) => {
       setParticipants((prev) => {
         const updated = prev.map((p) => {
-          if (p.userId === data.host.userId) {
+          if (p.role === 'HOST') {
             return { ...p, isReady: data.host.isReady };
           }
-          if (p.userId === data.guest.userId) {
+          if (p.role === 'GUEST') {
             return { ...p, isReady: data.guest.isReady };
           }
           return p;
@@ -125,11 +128,10 @@ const MultiQuestDescriptionPage: React.FC = () => {
     onStartQuest,
   });
 
-  // 준비 핸들러
+  // 준비 핸들러 (서버 응답(onQuestReadyStatus)으로만 상태 반영)
   const handleReady = () => {
     if (multiQuestId != null) {
       sendQuestReady(multiQuestId);
-      setMyReady((prev) => !prev);
     }
   };
 
@@ -174,7 +176,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
       )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questId={multiQuestId}
+          questOrder={multiQuestId}
           themeName={multiQuestTitle}
           questDescription={multiQuestDescription}
           onStart={() => {}}
