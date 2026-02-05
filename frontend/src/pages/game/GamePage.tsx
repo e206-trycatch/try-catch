@@ -73,6 +73,8 @@ export default function GamePage() {
   } = useGameStore();
   const { removeSubscription } = useSocketStore();
   const { setResult } = useSubmissionStore();
+  const mode = useRoomStore((state) => state.draft.mode);
+  const currentNickname = useStore((state) => state.user?.nickname);
 
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
   const findFileIdByPath = (
@@ -551,14 +553,10 @@ export default function GamePage() {
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar gameSession={gameSession} />
           {/* 멀티모드에서는 호스트만 제출 가능 */}
-          {(() => {
-            const mode = useRoomStore.getState().draft.mode;
-            const currentNickname = useStore.getState().user?.nickname;
-            const isHost =
-              mode === 'SINGLE' ||
-              gameSession?.host.nickname === currentNickname;
-            return isHost && <SubmitBtn onClick={submitCodeHandler} />;
-          })()}
+          {(mode === 'SINGLE' ||
+            gameSession?.host.nickname === currentNickname) && (
+            <SubmitBtn onClick={submitCodeHandler} />
+          )}
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
           {/* 메뉴바 */}
