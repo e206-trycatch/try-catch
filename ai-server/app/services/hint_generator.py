@@ -18,7 +18,7 @@ class HintGeneratorService:
 
     async def generate_hint(
         self,
-        framework: Literal["django", "spring", "vue"],
+        framework: Literal["django", "spring", "vue", "react", "fullstack"],
         problem_description: str,
         user_question: str,
         user_code_context: Optional[str] = None
