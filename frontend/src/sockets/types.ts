@@ -107,7 +107,10 @@ export type ServerToClientMessage =
   | QuestReadyStatusMessage
   | StartQuestMessage
   | TimerStartedMessage
-  | TimeOutMessage;
+  | TimeOutMessage
+  | HintQuestionMessage
+  | HintResponseMessage
+  | HintErrorMessage;
 
 // 백엔드 SocketRespDto 래퍼 형식
 export interface SocketRespDto<T = unknown> {
@@ -160,4 +163,53 @@ export interface StartQuestData {
   roomId: number;
   questId: number;
   message: string;
+}
+
+// ========== 힌트 관련 타입 ==========
+
+// HINT_QUESTION 이벤트 데이터
+export interface HintQuestionData {
+  userId: number;
+  nickname: string;
+  profileUrl: string;
+  question: string;
+  remainingHintCount: number;
+  timestamp: number;
+}
+
+// HINT_MESSAGE 이벤트 데이터
+export interface HintMessageData {
+  userId: number;
+  success: boolean;
+  hint: string;
+  guardrailPassed: boolean;
+  rejectionReason: string;
+  remainingHintCount: number;
+  timestamp: number;
+}
+
+// HINT_ERROR 이벤트 데이터
+export interface HintErrorData {
+  userId: number;
+  message: string;
+  timestamp: number;
+}
+
+// 힌트 이벤트 메시지 타입
+export interface HintQuestionMessage {
+  type: 'HINT_QUESTION';
+  data: HintQuestionData;
+  timestamp: string;
+}
+
+export interface HintResponseMessage {
+  type: 'HINT_MESSAGE';
+  data: HintMessageData;
+  timestamp: string;
+}
+
+export interface HintErrorMessage {
+  type: 'HINT_ERROR';
+  data: HintErrorData;
+  timestamp: string;
 }
