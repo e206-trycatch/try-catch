@@ -20,18 +20,31 @@ interface HintCreateResponse {
   remainingHintCount: number;
 }
 
-// 힌트 이력 아이템 (백엔드 응답)
-interface HintHistoryItem {
-  type: 'QUESTION' | 'RESPONSE';
-  userId: number;
-  nickname?: string;
-  profileUrl?: string;
-  content: string;
-  timestamp: number;
-  success?: boolean;
-  guardrailPassed?: boolean;
-  rejectionReason?: string;
+// 힌트 이력 아이템 (백엔드 응답 - WebSocket 형식과 동일)
+interface HintQuestionHistoryItem {
+  type: 'HINT_QUESTION';
+  data: {
+    userId: number;
+    nickname: string;
+    profileUrl: string;
+    question: string;
+    timestamp: number;
+  };
 }
+
+interface HintMessageHistoryItem {
+  type: 'HINT_MESSAGE';
+  data: {
+    userId: number;
+    success: boolean;
+    hint: string;
+    guardrailPassed: boolean;
+    rejectionReason: string;
+    timestamp: number;
+  };
+}
+
+type HintHistoryItem = HintQuestionHistoryItem | HintMessageHistoryItem;
 
 // 힌트 요청 API
 export const requestHint = async (
@@ -50,16 +63,30 @@ export const getHintHistory = async (
   const historyItems: HintHistoryItem[] = response.data.result;
 
   // 백엔드 응답을 HintMessage 형태로 변환
-  return historyItems.map((item, index) => ({
-    id: `history-${item.timestamp}-${index}`,
-    type: item.type === 'QUESTION' ? 'QUESTION' : 'RESPONSE',
-    userId: item.userId,
-    nickname: item.nickname || (item.type === 'RESPONSE' ? 'AI' : 'Unknown'),
-    profileUrl: item.profileUrl || '',
-    content: item.content,
-    timestamp: item.timestamp,
-    success: item.success,
-    guardrailPassed: item.guardrailPassed,
-    rejectionReason: item.rejectionReason,
-  }));
+  return historyItems.map((item, index) => {
+    if (item.type === 'HINT_QUESTION') {
+      return {
+        id: `history-${item.data.timestamp}-${index}`,
+        type: 'QUESTION' as const,
+        userId: item.data.userId,
+        nickname: item.data.nickname || 'Unknown',
+        profileUrl: item.data.profileUrl || '',
+        content: item.data.question || '',
+        timestamp: item.data.timestamp,
+      };
+    } else {
+      return {
+        id: `history-${item.data.timestamp}-${index}`,
+        type: 'RESPONSE' as const,
+        userId: item.data.userId,
+        nickname: 'AI',
+        profileUrl: '',
+        content: item.data.hint || '',
+        timestamp: item.data.timestamp,
+        success: item.data.success,
+        guardrailPassed: item.data.guardrailPassed,
+        rejectionReason: item.data.rejectionReason,
+      };
+    }
+  });
 };

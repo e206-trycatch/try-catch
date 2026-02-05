@@ -8,6 +8,11 @@ export type RolePayload = {
   files: FilePayload[];
 };
 
+export type CodeSaveRequest = {
+  problemFrameworkId: number | null;
+  files: FilePayload[];
+};
+
 export type GameStatus = 'PLAYING' | null;
 
 export type SubmissionRequest = {
@@ -88,13 +93,17 @@ export interface Participant {
 }
 
 export interface GameSessionHost extends Participant {
-  frontId: number;
-  frontName: string;
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
 }
 
 export interface GameSessionGuest extends Participant {
-  backId: number;
-  backName: string;
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
 }
 
 export interface GameSessionResponse {

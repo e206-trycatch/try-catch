@@ -1,17 +1,25 @@
 import { Resizable } from 're-resizable';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import { getMultiQuest } from '@/api/multiQuestFile';
 import { getQuestStoriesInfo } from '@/api/questStories';
+import { getShareCode } from '@/api/shareCode';
 
 import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
 import { getQuestFile } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
+import { saveCodeForShare } from '../../api/saveCodeForShare';
 import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
-import { connectStomp, subscribeRoom } from '../../sockets/stomp';
+import {
+  connectStomp,
+  subscribeLobby,
+  subscribeRoom,
+} from '../../sockets/stomp';
+import type { CodeSavedMessage } from '../../sockets/types';
 import type {
   HintErrorData,
   HintMessageData,
@@ -65,6 +73,64 @@ export default function GamePage() {
   } = useGameStore();
   const { removeSubscription } = useSocketStore();
   const { setResult } = useSubmissionStore();
+  const mode = useRoomStore((state) => state.draft.mode);
+  const currentNickname = useStore((state) => state.user?.nickname);
+
+  // 멀티 모드 - 현재 사용자의 역할 (frontId가 있으면 FRONTEND, backId가 있으면 BACKEND)
+  const userRole: 'FRONTEND' | 'BACKEND' | null = useMemo(() => {
+    if (!gameSession || !currentNickname) return null;
+
+    const isHost = gameSession.host.nickname === currentNickname;
+    const isGuest = gameSession.guest.nickname === currentNickname;
+
+    if (isHost) {
+      return gameSession.host.frontId ? 'FRONTEND' : 'BACKEND';
+    }
+    if (isGuest) {
+      return gameSession.guest.frontId ? 'FRONTEND' : 'BACKEND';
+    }
+
+    return null;
+  }, [gameSession, currentNickname]);
+
+  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
+  const findFileIdByPath = (
+    node: FileNode,
+    filePath: string,
+  ): string | null => {
+    if (node.type === 'file' && node.path === filePath) return node.id;
+
+    for (const child of node.children ?? []) {
+      const found = findFileIdByPath(child, filePath);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 2
+  const loadShareCode = async () => {
+    if (!roomId || problemFrameworkId === null) return;
+
+    try {
+      const { files } = await getShareCode(Number(roomId), problemFrameworkId);
+
+      const updates: Record<string, string> = {};
+      for (const file of files) {
+        const fileId = findFileIdByPath(rootNode, file.filePath);
+        if (fileId) {
+          updates[fileId] = file.code;
+        }
+      }
+
+      ide.overwriteFileCodes(updates);
+      toast.success('팀원의 코드를 불러왔습니다.');
+    } catch {
+      toast.error('코드 불러오기에 실패했습니다.');
+    }
+  };
+
+  const loadShareCodeRef = useRef<() => Promise<void>>(undefined);
+  loadShareCodeRef.current = loadShareCode;
 
   // 초기 게임 상태 설정
   useEffect(() => {
@@ -78,24 +144,17 @@ export default function GamePage() {
 
         let data = null;
 
-        if (mode === 'MULTI') {
-          if (submissionId === null) {
-            data = await getMultiQuest(questId, roomId);
-          } else if (submissionId) {
-            // Todo: multi로 변경
-            data = await getRetryQuestFile(submissionId, roomId);
-          } else {
-            throw new Error('submissionId가 올바르지 않습니다.');
-          }
+        if (submissionId === null) {
+          data =
+            mode === 'MULTI'
+              ? await getMultiQuest(questId, roomId)
+              : await getQuestFile(questId, roomId);
+        } else if (submissionId) {
+          data = await getRetryQuestFile(submissionId, roomId);
         } else {
-          if (submissionId === null) {
-            data = await getQuestFile(questId, roomId);
-          } else if (submissionId) {
-            data = await getRetryQuestFile(submissionId, roomId);
-          } else {
-            throw new Error('submissionId가 올바르지 않습니다.');
-          }
+          throw new Error('submissionId가 올바르지 않습니다.');
         }
+
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
       } catch (e) {
@@ -110,23 +169,23 @@ export default function GamePage() {
         try {
           const session = await getGameSession(Number(roomId));
           setGameSession(session);
-          await startMultiGameTimer(Number(roomId));
         } catch (e) {
-          console.error('멀티 타이머 준비 실패:', e);
+          console.error('멀티 세션 로드 실패:', e);
         }
-      } else {
-        try {
-          const timeData = await getSingleTimer(Number(roomId));
+      }
+      // 타이머 복원
+      try {
+        const timeData = await getSingleTimer(Number(roomId));
 
-          if (timeData.startedAt) {
-            startTimer(timeData.deadlineAt);
-          } else {
-            const newTimeData = await startSingleGameTimer(Number(roomId));
-            startTimer(newTimeData.deadlineAt);
-          }
-        } catch (e) {
-          console.error('타이머 시작 실패:', e);
+        if (timeData.startedAt) {
+          startTimer(timeData.deadlineAt);
+        } else if (mode === 'SINGLE') {
+          // 싱글만 여기서 타이머 시작 (멀티는 STOMP useEffect에서 startMultiGameTimer 호출)
+          const newTimeData = await startSingleGameTimer(Number(roomId));
+          startTimer(newTimeData.deadlineAt);
         }
+      } catch (e) {
+        console.error('타이머 조회 실패:', e);
       }
     };
 
@@ -140,7 +199,7 @@ export default function GamePage() {
     };
   }, [stopTimer]);
 
-  // STOMP 연결 및 게임 이벤트 구독
+  // STOMP 연결 및 게임 이벤트 구독 (멀티모드: 구독 후 ready 전송)
   useEffect(() => {
     if (!roomId) return;
 
@@ -182,15 +241,87 @@ export default function GamePage() {
           const data = msg.data as HintErrorData;
           addError(data);
         }
+
+        if (msg.type === 'SUBMISSION_STARTED') {
+          navigate(`/result/loading/${roomId}`);
+        }
       });
+
+      const mode = useRoomStore.getState().draft.mode;
+
+      if (mode === 'MULTI') {
+        // 방 채널 구독 (CODE_SAVED 등)
+        const myNickname = useStore.getState().user?.nickname;
+        subscribeLobby(Number(roomId), (msg) => {
+          if (msg.type === 'CODE_SAVED') {
+            const { nickname } = msg.data as CodeSavedMessage['data'];
+            if (nickname !== myNickname) {
+              const toastId = `share-code-${Date.now()}`;
+              toast.info(
+                <div className="flex flex-1 gap-5 items-center justify-between">
+                  <div>{nickname}님이 코드를 공유했습니다.</div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
+                      onClick={() => {
+                        loadShareCodeRef.current?.();
+                        toast.dismiss(toastId);
+                      }}
+                    >
+                      불러오기
+                    </button>
+                    <button
+                      type="button"
+                      className="bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
+                      onClick={() => toast.dismiss(toastId)}
+                    >
+                      닫기
+                    </button>
+                  </div>
+                </div>,
+                {
+                  toastId,
+                  position: 'top-left',
+                  autoClose: false,
+                  hideProgressBar: true,
+                  closeButton: false,
+                  icon: false,
+                  style: {
+                    zIndex: 99999,
+                    width: '380px',
+                    backgroundColor: '#2d0a0a',
+                    border: '1px solid #dc2626',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    paddingRight: 20,
+                    paddingLeft: 20,
+                    marginTop: '100px',
+                    marginLeft: '60px',
+                  },
+                },
+              );
+            }
+          }
+        });
+
+        try {
+          await startMultiGameTimer(Number(roomId));
+        } catch (e) {
+          console.error('멀티 타이머 준비 실패:', e);
+        }
+      }
     };
 
     init();
 
     return () => {
       removeSubscription(`room-${roomId}`);
+      removeSubscription(`lobby-${roomId}`);
     };
-  }, [roomId, startTimer, expireTimer, removeSubscription]);
+  }, [roomId, startTimer, expireTimer, removeSubscription, navigate]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
@@ -226,9 +357,41 @@ export default function GamePage() {
     getQuestStories();
   }, [questId]);
 
-  // 제출 버튼을 눌렀을 때 실행되는 함수
-  const submitCode = async () => {
-    // 현재 활성 파일과 openTabs의 코드를 모두 모으기
+  // 코드 저장 버튼을 눌렀을 때 실행되는 함수
+  const saveCode = async () => {
+    if (!roomId) return;
+
+    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+    if (ide.activeFileId) {
+      allFileCodes[ide.activeFileId] = ide.currentCode;
+    }
+
+    const files = [
+      ...buildFilesRequestData({
+        node: rootNode,
+        fileCodes: allFileCodes,
+        role: 'FRONTEND',
+      }),
+      ...buildFilesRequestData({
+        node: rootNode,
+        fileCodes: allFileCodes,
+        role: 'BACKEND',
+      }),
+    ];
+
+    try {
+      await saveCodeForShare(Number(roomId), {
+        problemFrameworkId,
+        files,
+      });
+      toast.success('팀원에게 코드를 공유했습니다.');
+    } catch {
+      toast.error('코드 공유에 실패했습니다.');
+    }
+  };
+
+  // 실제 제출 로직
+  const submitCode = () => {
     const allFileCodes: Record<string, string> = { ...ide.fileCodes };
 
     if (ide.activeFileId) {
@@ -263,6 +426,57 @@ export default function GamePage() {
     navigate(`/result/loading/${roomId}`);
   };
 
+  // 제출 버튼을 눌렀을 때 실행되는 함수
+  const submitCodeHandler = () => {
+    const toastId = `submit-confirm-${Date.now()}`;
+    toast.info(
+      <div className="flex flex-1 gap-5 items-center justify-between">
+        <div>정말 제출하시겠습니까?</div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
+            onClick={() => {
+              toast.dismiss(toastId);
+              submitCode();
+            }}
+          >
+            제출
+          </button>
+          <button
+            type="button"
+            className="bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
+            onClick={() => toast.dismiss(toastId)}
+          >
+            취소
+          </button>
+        </div>
+      </div>,
+      {
+        toastId,
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeButton: false,
+        icon: false,
+        style: {
+          zIndex: 99999,
+          width: '380px',
+          backgroundColor: '#2d0a0a',
+          border: '1px solid #dc2626',
+          color: '#fff',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 500,
+          paddingRight: 20,
+          paddingLeft: 20,
+          marginTop: '120px',
+          marginRight: '60px',
+        },
+      },
+    );
+  };
+
   const { isExpired } = useTimer();
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
@@ -273,7 +487,13 @@ export default function GamePage() {
   // 현재 사용 중인 framework 이름 가져오기
   const currentFramework = useMemo(() => {
     const { draft, availableFrameworks } = useRoomStore.getState();
-    const { mode, selectedFrameworkId, frontendId, backendId } = draft;
+    const { mode, selectedFrameworkId, frontendId, backendId, position } =
+      draft;
+
+    // FULLSTACK 모드인 경우 'fullstack' 반환
+    if (mode === 'SINGLE' && position === 'FULLSTACK') {
+      return 'fullstack';
+    }
 
     // frameworkId 결정
     let frameworkId: number | null = null;
@@ -380,7 +600,11 @@ export default function GamePage() {
       >
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar gameSession={gameSession} />
-          <SubmitBtn onClick={submitCode} />
+          {/* 멀티모드에서는 호스트만 제출 가능 */}
+          {(mode === 'SINGLE' ||
+            gameSession?.host.nickname === currentNickname) && (
+            <SubmitBtn onClick={submitCodeHandler} />
+          )}
         </div>
         <div className=" flex flex-1 w-full h-full min-h-0 overflow-hidden">
           {/* 메뉴바 */}
@@ -388,6 +612,7 @@ export default function GamePage() {
             <MenuBar
               fileMenu={openFileMenu}
               onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
+              onSave={saveCode}
               onOpenHintModal={openModal}
             />
           </div>
@@ -435,6 +660,7 @@ export default function GamePage() {
                     activeFile={ide.activeFile}
                     code={ide.currentCode}
                     onChange={ide.setCurrentCode}
+                    userRole={userRole}
                   />
                 </div>
               </div>

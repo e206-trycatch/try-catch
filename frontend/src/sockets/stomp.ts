@@ -141,6 +141,7 @@ export const sendSocketMessage = (
 };
 
 // 로비 topic 구독 (백엔드: /topic/rooms/{roomId})
+// GamePage에서도 CODE_SAVED 수신용으로 사용
 export const subscribeLobby = (
   roomId: number,
   handler: (msg: SocketRespDto) => void,
