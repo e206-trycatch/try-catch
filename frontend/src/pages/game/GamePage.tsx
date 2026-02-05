@@ -279,7 +279,7 @@ export default function GamePage() {
       removeSubscription(`room-${roomId}`);
       removeSubscription(`lobby-${roomId}`);
     };
-  }, [roomId, startTimer, expireTimer, removeSubscription]);
+  }, [roomId, startTimer, expireTimer, removeSubscription, navigate]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {
