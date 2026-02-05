@@ -39,7 +39,7 @@ const letterVariants = {
 const SuccessResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
-  const { questOrder, executionTimeMs, next } = result;
+  const { questOrder, executionTimeMs, next, score } = result;
 
   const successText = 'SUCCESS!';
 
@@ -86,6 +86,8 @@ const SuccessResult = ({ result }: Props) => {
           ))}
         </div>
       </div>
+
+      <p className="text-2xl text-white font-semibold">{score}점</p>
 
       <p className="text-white">총 소요시간 {formatTime(executionTimeMs)}</p>
 
