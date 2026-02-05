@@ -40,7 +40,7 @@ const QuestDescriptionBox: React.FC<QuestDescriptionBoxProps> = ({
           </div>
         </div>
 
-        {/* Multi-player participants section */}
+        {/* 멀티 참가자 목록 */}
         {isMulti && participants && participants.length > 0 && (
           <div className="flex w-[545px] justify-center items-center gap-6 mt-2">
             {participants.map((p) => (
@@ -65,8 +65,15 @@ const QuestDescriptionBox: React.FC<QuestDescriptionBoxProps> = ({
             ))}
           </div>
         )}
+        {isMulti && (
+          <p className="text-[#FEFEFE]/60 text-[13px] tracking-[-0.5px] mt-1 text-center">
+            아래 READY 버튼을 눌러 준비 완료를 알려주세요.
+            <br />
+            모든 참가자가 준비되면 자동으로 시작됩니다.
+          </p>
+        )}
 
-        {/* Action button: SINGLE = START!, MULTI = READY */}
+        {/* 활성화 버튼 : SINGLE이면 START!, MULTI면 READY */}
         {isMulti && onReady ? (
           <button
             onClick={onReady}
