@@ -103,9 +103,8 @@ export default function GamePage() {
         try {
           const session = await getGameSession(Number(roomId));
           setGameSession(session);
-          await startMultiGameTimer(Number(roomId));
         } catch (e) {
-          console.error('멀티 타이머 준비 실패:', e);
+          console.error('멀티 세션 로드 실패:', e);
         }
       } else {
         try {
@@ -133,7 +132,7 @@ export default function GamePage() {
     };
   }, [stopTimer]);
 
-  // STOMP 연결 및 TIME_OUT 구독
+  // STOMP 연결 및 구독 (멀티모드: 구독 후 ready 전송)
   useEffect(() => {
     if (!roomId) return;
 
@@ -149,6 +148,15 @@ export default function GamePage() {
           expireTimer();
         }
       });
+
+      const mode = useRoomStore.getState().draft.mode;
+      if (mode === 'MULTI') {
+        try {
+          await startMultiGameTimer(Number(roomId));
+        } catch (e) {
+          console.error('멀티 타이머 준비 실패:', e);
+        }
+      }
     };
 
     init();
