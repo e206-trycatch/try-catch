@@ -144,6 +144,8 @@ const LobbyPage = () => {
     roomStore.setMode('MULTI');
     roomStore.setRoomId(roomInfo.roomId);
     roomStore.setCurrentQuestId(firstQuestId);
+    roomStore.setThemeId(roomInfo.themeId);
+    roomStore.setThemeName(roomInfo.themeName);
 
     // 스토리 페이지로 바로 이동
     // StoryPage에서 fetchMultiQuestStories를 호출하여 스토리 데이터를 불러옴
@@ -163,6 +165,8 @@ const LobbyPage = () => {
     roomStore.setMode('MULTI');
     roomStore.setRoomId(roomInfo.roomId);
     roomStore.setCurrentQuestId(startQuestData.questId);
+    roomStore.setThemeId(roomInfo.themeId);
+    roomStore.setThemeName(roomInfo.themeName);
 
     // 스토리 페이지로 바로 이동
     // StoryPage에서 fetchMultiQuestStories를 호출하여 스토리 데이터를 불러옴
