@@ -861,14 +861,8 @@ public class SubmissionService {
             List<SubmissionFile> files = submissionFileRepository
                     .findBySubmissionIdAndIsDeleted(sub.getId(), TrueOrFalse.F);
 
-            boolean isFrontend = files.stream()
-                    .anyMatch(f -> f.getCodeRole() == SubmissionFile.CodeRole.FRONTEND);
-
-            if (isFrontend) {
-                frontendErrorLog = sub.getFrontendErrorLog();
-            } else {
-                backendErrorLog = sub.getBackendErrorLog();
-            }
+            frontendErrorLog = sub.getFrontendErrorLog();
+            backendErrorLog = sub.getBackendErrorLog();
         }
 
         // 6. 제출 파일들 조회 (SOURCE, CONFIG 등)
