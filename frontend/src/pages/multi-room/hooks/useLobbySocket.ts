@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import {
   connectStomp,
-  disconnectStomp,
   sendSocketMessage,
   subscribeLobby,
   subscribeLobbyQuest,
@@ -110,9 +109,8 @@ export const useLobbySocket = (roomId: number | null) => {
     connect();
 
     return () => {
-      console.log('[useLobbySocket] Cleaning up, disconnecting STOMP');
+      console.log('[useLobbySocket] Cleaning up');
       connectedRef.current = false;
-      disconnectStomp();
     };
   }, [roomId, handleMessage]);
 

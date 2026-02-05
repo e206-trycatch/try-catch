@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import {
   connectStomp,
-  disconnectStomp,
   subscribeLobbyQuest,
 } from '../../../sockets/stomp';
 import type {
@@ -79,9 +78,8 @@ export const useQuestSocket = (
     connect();
 
     return () => {
-      console.log('[useQuestSocket] Cleaning up, disconnecting STOMP');
+      console.log('[useQuestSocket] Cleaning up');
       connectedRef.current = false;
-      disconnectStomp();
     };
   }, [roomId, handleMessage]);
 
