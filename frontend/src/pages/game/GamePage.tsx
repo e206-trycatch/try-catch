@@ -1,10 +1,11 @@
 import { Resizable } from 're-resizable';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import { getMultiQuest } from '@/api/multiQuestFile';
 import { getQuestStoriesInfo } from '@/api/questStories';
+import { getShareCode } from '@/api/shareCode';
 
 import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
@@ -66,6 +67,45 @@ export default function GamePage() {
   const { removeSubscription } = useSocketStore();
   const { setResult } = useSubmissionStore();
 
+  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
+  const findFileIdByPath = (
+    node: FileNode,
+    filePath: string,
+  ): string | null => {
+    if (node.type === 'file' && node.path === filePath) return node.id;
+
+    for (const child of node.children ?? []) {
+      const found = findFileIdByPath(child, filePath);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 2
+  const loadShareCode = async () => {
+    if (!roomId || problemFrameworkId === null) return;
+
+    try {
+      const { files } = await getShareCode(Number(roomId), problemFrameworkId);
+
+      const updates: Record<string, string> = {};
+      for (const file of files) {
+        const fileId = findFileIdByPath(rootNode, file.filePath);
+        if (fileId) {
+          updates[fileId] = file.code;
+        }
+      }
+
+      ide.overwriteFileCodes(updates);
+      toast.success('팀원의 코드를 불러왔습니다.');
+    } catch {
+      toast.error('코드 불러오기에 실패했습니다.');
+    }
+  };
+
+  const loadShareCodeRef = useRef<() => Promise<void>>(undefined);
+  loadShareCodeRef.current = loadShareCode;
+
   // 초기 게임 상태 설정
   useEffect(() => {
     if (!roomId || !questId) return;
@@ -78,24 +118,17 @@ export default function GamePage() {
 
         let data = null;
 
-        if (mode === 'MULTI') {
-          if (submissionId === null) {
-            data = await getMultiQuest(questId, roomId);
-          } else if (submissionId) {
-            // Todo: multi로 변경
-            data = await getRetryQuestFile(submissionId, roomId);
-          } else {
-            throw new Error('submissionId가 올바르지 않습니다.');
-          }
+        if (submissionId === null) {
+          data =
+            mode === 'MULTI'
+              ? await getMultiQuest(questId, roomId)
+              : await getMultiQuest(questId, roomId);
+        } else if (submissionId) {
+          data = await getRetryQuestFile(submissionId, roomId);
         } else {
-          if (submissionId === null) {
-            data = await getQuestFile(questId, roomId);
-          } else if (submissionId) {
-            data = await getRetryQuestFile(submissionId, roomId);
-          } else {
-            throw new Error('submissionId가 올바르지 않습니다.');
-          }
+          throw new Error('submissionId가 올바르지 않습니다.');
         }
+
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
       } catch (e) {
@@ -157,6 +190,7 @@ export default function GamePage() {
       });
 
       const mode = useRoomStore.getState().draft.mode;
+
       if (mode === 'MULTI') {
         // 방 채널 구독 (CODE_SAVED 등)
         const myNickname = useStore.getState().user?.nickname;
@@ -164,7 +198,23 @@ export default function GamePage() {
           if (msg.type === 'CODE_SAVED') {
             const { nickname } = msg.data as CodeSavedMessage['data'];
             if (nickname !== myNickname) {
-              toast.info(`${nickname}님이 코드를 공유했습니다.`);
+              const toastId = `share-code-${Date.now()}`;
+              toast.info(
+                <div className="flex flex-col gap-2">
+                  <span>{nickname}님이 코드를 공유했습니다.</span>
+                  <button
+                    type="button"
+                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                    onClick={() => {
+                      loadShareCodeRef.current?.();
+                      toast.dismiss(toastId);
+                    }}
+                  >
+                    불러오기
+                  </button>
+                </div>,
+                { toastId, autoClose: false },
+              );
             }
           }
         });

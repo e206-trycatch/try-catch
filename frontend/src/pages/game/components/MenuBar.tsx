@@ -13,6 +13,8 @@ type Props = {
 
 const mode = useRoomStore.getState().draft.mode;
 
+console.log(mode);
+
 export default function Menubar({ fileMenu, onToggleFileMenu, onSave }: Props) {
   return (
     <div className="flex flex-col gap-[18px] justify-center items-center">
