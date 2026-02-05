@@ -239,6 +239,7 @@ const ResultLoadingPage = () => {
         onClick={() => {
           if (config.action === 'home') {
             // 홈으로 이동 (invalid_room, unauthorized)
+            useGameStore.getState().setMode(null);
             navigate('/');
           } else {
             // 재시도 (network, timeout)

@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import ModeSelectionButton from '../../assets/images/buttons/mode_selection_button.png';
+import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 
 const ModeSelectionPage = () => {
   const navigate = useNavigate();
 
   const { setMode, resetRoomCreation } = useRoomStore();
+  const setGameMode = useGameStore((state) => state.setMode);
 
   useEffect(() => {
     resetRoomCreation();
@@ -15,6 +17,7 @@ const ModeSelectionPage = () => {
 
   const handleModeSelect = (mode: 'SINGLE' | 'MULTI') => {
     setMode(mode);
+    setGameMode(mode);
     navigate('/selection/theme');
   };
 

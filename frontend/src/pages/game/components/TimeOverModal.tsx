@@ -7,6 +7,7 @@ export default function TimeOverModal() {
 
   const handleGoHome = () => {
     useGameStore.getState().stopTimer();
+    useGameStore.getState().setMode(null);
     navigate('/');
   };
 

@@ -1,6 +1,10 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+type GameMode = 'SINGLE' | 'MULTI' | null;
 
 interface GameState {
+  mode: GameMode;
   currentLife: number;
   currentHints: number;
   currentRoomId: number | null;
@@ -9,6 +13,7 @@ interface GameState {
   deadlineAt: string | null;
   remainingSeconds: number;
 
+  setMode: (mode: GameMode) => void;
   setGameState: (life: number, hints: number) => void;
   initializeForRoom: (roomId: number, life: number, hints: number) => void;
   setProblemFrameworkId: (id: number | null) => void;
@@ -21,93 +26,102 @@ interface GameState {
   expireTimer: () => void;
 }
 
-export const useGameStore = create<GameState>((set) => {
-  let intervalId: number | null = null;
+let intervalId: number | null = null;
 
-  return {
-    currentLife: 3,
-    currentHints: 3,
-    currentRoomId: null,
-    problemFrameworkId: null,
-    submissionId: null,
-    deadlineAt: null,
-    remainingSeconds: 0,
+export const useGameStore = create<GameState>()(
+  persist(
+    (set) => ({
+      mode: null,
+      currentLife: 3,
+      currentHints: 3,
+      currentRoomId: null,
+      problemFrameworkId: null,
+      submissionId: null,
+      deadlineAt: null,
+      remainingSeconds: 0,
 
-    setGameState: (life, hints) =>
-      set({
-        currentLife: life,
-        currentHints: hints,
-      }),
+      setMode: (mode) => set({ mode }),
 
-    initializeForRoom: (roomId, life, hints) =>
-      set({
-        currentRoomId: roomId,
-        currentLife: life,
-        currentHints: hints,
-      }),
+      setGameState: (life, hints) =>
+        set({
+          currentLife: life,
+          currentHints: hints,
+        }),
 
-    setProblemFrameworkId: (id) =>
-      set({
-        problemFrameworkId: id,
-      }),
+      initializeForRoom: (roomId, life, hints) =>
+        set({
+          currentRoomId: roomId,
+          currentLife: life,
+          currentHints: hints,
+        }),
 
-    setSubmissionId: (id) =>
-      set({
-        submissionId: id ? String(id) : null,
-      }),
+      setProblemFrameworkId: (id) =>
+        set({
+          problemFrameworkId: id,
+        }),
 
-    resetSubmissionId: () =>
-      set({
-        submissionId: null,
-      }),
+      setSubmissionId: (id) =>
+        set({
+          submissionId: id ? String(id) : null,
+        }),
 
-    setDeadlineAt: (deadline) =>
-      set({
-        deadlineAt: deadline,
-      }),
+      resetSubmissionId: () =>
+        set({
+          submissionId: null,
+        }),
 
-    clearDeadLineAt: () =>
-      set({
-        deadlineAt: null,
-      }),
+      setDeadlineAt: (deadline) =>
+        set({
+          deadlineAt: deadline,
+        }),
 
-    startTimer: (deadlineAt) => {
-      if (intervalId) clearInterval(intervalId);
+      clearDeadLineAt: () =>
+        set({
+          deadlineAt: null,
+        }),
 
-      const calc = () =>
-        Math.max(
-          0,
-          Math.floor((new Date(deadlineAt).getTime() - Date.now()) / 1000),
-        );
+      startTimer: (deadlineAt) => {
+        if (intervalId) clearInterval(intervalId);
 
-      set({ deadlineAt, remainingSeconds: calc() });
+        const calc = () =>
+          Math.max(
+            0,
+            Math.floor((new Date(deadlineAt).getTime() - Date.now()) / 1000),
+          );
 
-      intervalId = window.setInterval(() => {
-        const sec = calc();
-        set({ remainingSeconds: sec });
+        set({ deadlineAt, remainingSeconds: calc() });
 
-        if (sec <= 0 && intervalId) {
-          console.log('time over');
+        intervalId = window.setInterval(() => {
+          const sec = calc();
+          set({ remainingSeconds: sec });
+
+          if (sec <= 0 && intervalId) {
+            console.log('time over');
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        }, 1000);
+      },
+
+      stopTimer: () => {
+        if (intervalId) {
+          console.log('stop!');
           clearInterval(intervalId);
           intervalId = null;
         }
-      }, 1000);
-    },
+      },
 
-    stopTimer: () => {
-      if (intervalId) {
-        console.log('stop!');
-        clearInterval(intervalId);
-        intervalId = null;
-      }
+      expireTimer: () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        set({ remainingSeconds: 0 });
+      },
+    }),
+    {
+      name: 'game-store',
+      partialize: (state) => ({ mode: state.mode }),
     },
-
-    expireTimer: () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      set({ remainingSeconds: 0 });
-    },
-  };
-});
+  ),
+);

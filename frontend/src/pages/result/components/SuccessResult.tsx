@@ -59,6 +59,7 @@ const SuccessResult = ({ result }: Props) => {
       useRoomStore.getState().setCurrentQuestId(next.nextQuestId);
       navigate('/story');
     } else {
+      useGameStore.getState().setMode(null);
       navigate('/');
     }
   };

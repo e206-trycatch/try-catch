@@ -9,6 +9,7 @@ import InviteCodeSection from '../../components/lobby/InviteCodeSection';
 import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
 import { disconnectStomp } from '../../sockets/stomp';
+import { useGameStore } from '../../stores/useGameStore';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
@@ -139,9 +140,11 @@ const LobbyPage = () => {
     isNavigatingToGameRef.current = true;
 
     const roomStore = useRoomStore.getState();
+    const gameStore = useGameStore.getState();
 
     // 멀티모드 설정을 먼저 수행
     roomStore.setMode('MULTI');
+    gameStore.setMode('MULTI');
     roomStore.setRoomId(roomInfo.roomId);
     roomStore.setCurrentQuestId(firstQuestId);
     roomStore.setThemeId(roomInfo.themeId);
@@ -160,9 +163,11 @@ const LobbyPage = () => {
     isNavigatingToGameRef.current = true;
 
     const roomStore = useRoomStore.getState();
+    const gameStore = useGameStore.getState();
 
     // 멀티모드 설정을 먼저 수행
     roomStore.setMode('MULTI');
+    gameStore.setMode('MULTI');
     roomStore.setRoomId(roomInfo.roomId);
     roomStore.setCurrentQuestId(startQuestData.questId);
     roomStore.setThemeId(roomInfo.themeId);
@@ -201,6 +206,7 @@ const LobbyPage = () => {
       await leaveMultiRoom(roomId);
       disconnectStomp();
       resetLobby();
+      useGameStore.getState().setMode(null);
       navigate('/selection/theme');
     } catch (err) {
       console.error('방 나가기 실패:', err);

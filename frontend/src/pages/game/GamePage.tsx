@@ -45,7 +45,7 @@ import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
 import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
-import type { QuestInfo } from './types/ideTypes';
+import type { CodeRole, QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 import { buildFilesRequestData } from './utils/codeSubmissionMapper';
 
@@ -73,25 +73,28 @@ export default function GamePage() {
   } = useGameStore();
   const { removeSubscription } = useSocketStore();
   const { setResult } = useSubmissionStore();
-  const mode = useRoomStore((state) => state.draft.mode);
+  const mode = useGameStore((state) => state.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
+  const [userRole, setUserRole] = useState<CodeRole>(null);
 
-  // 멀티 모드 - 현재 사용자의 역할 (frontId가 있으면 FRONTEND, backId가 있으면 BACKEND)
-  const userRole: 'FRONTEND' | 'BACKEND' | null = useMemo(() => {
-    if (!gameSession || !currentNickname) return null;
+  // // 멀티 모드 - 현재 사용자의 역할 (frontId가 있으면 FRONTEND, backId가 있으면 BACKEND)
+  // const userRole: 'FRONTEND' | 'BACKEND' | null = useMemo(() => {
+  //   if (!gameSession || !currentNickname) return null;
 
-    const isHost = gameSession.host.nickname === currentNickname;
-    const isGuest = gameSession.guest.nickname === currentNickname;
+  //   const isHost = gameSession.host.nickname === currentNickname;
+  //   const isGuest = gameSession.guest.nickname === currentNickname;
 
-    if (isHost) {
-      return gameSession.host.frontId ? 'FRONTEND' : 'BACKEND';
-    }
-    if (isGuest) {
-      return gameSession.guest.frontId ? 'FRONTEND' : 'BACKEND';
-    }
+  //   if (isHost) {
+  //     console.log('isHost', gameSession.host.frontId);
+  //     return gameSession.host.frontId ? 'FRONTEND' : 'BACKEND';
+  //   }
+  //   if (isGuest) {
+  //     console.log('isGuest', gameSession.host.frontId);
+  //     return gameSession.guest.frontId ? 'FRONTEND' : 'BACKEND';
+  //   }
 
-    return null;
-  }, [gameSession, currentNickname]);
+  //   return null;
+  // }, [gameSession, currentNickname]);
 
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
   const findFileIdByPath = (
@@ -135,7 +138,7 @@ export default function GamePage() {
   // 초기 게임 상태 설정
   useEffect(() => {
     if (!roomId || !questId) return;
-    const mode = useRoomStore.getState().draft.mode;
+    const mode = useGameStore.getState().mode;
 
     const initSetting = async () => {
       try {
@@ -155,6 +158,8 @@ export default function GamePage() {
           throw new Error('submissionId가 올바르지 않습니다.');
         }
 
+        console.log(data.myPosition)
+        setUserRole(data.myPosition ?? null);
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
       } catch (e) {
@@ -198,6 +203,19 @@ export default function GamePage() {
       stopTimer();
     };
   }, [stopTimer]);
+
+  // 새로고침 방지 경고
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // STOMP 연결 및 게임 이벤트 구독 (멀티모드: 구독 후 ready 전송)
   useEffect(() => {
@@ -247,7 +265,7 @@ export default function GamePage() {
         }
       });
 
-      const mode = useRoomStore.getState().draft.mode;
+      const mode = useGameStore.getState().mode;
 
       if (mode === 'MULTI') {
         // 방 채널 구독 (CODE_SAVED 등)
@@ -487,7 +505,8 @@ export default function GamePage() {
   // 현재 사용 중인 framework 이름 가져오기
   const currentFramework = useMemo(() => {
     const { draft, availableFrameworks } = useRoomStore.getState();
-    const { mode, selectedFrameworkId, frontendId, backendId } = draft;
+    const { selectedFrameworkId, frontendId, backendId } = draft;
+    const mode = useGameStore.getState().mode;
 
     // frameworkId 결정
     let frameworkId: number | null = null;

@@ -1,4 +1,4 @@
-import { useRoomStore } from '@/stores/useRoomStore';
+import { useGameStore } from '@/stores/useGameStore';
 
 import FileIcon from '../../../assets/images/icons/file_icon.svg';
 import SaveIcon from '../../../assets/images/icons/save_icon.svg';
@@ -11,7 +11,7 @@ type Props = {
   onOpenHintModal: () => void;
 };
 
-const mode = useRoomStore.getState().draft.mode;
+const mode = useGameStore.getState().mode;
 
 export default function Menubar({
   fileMenu,
