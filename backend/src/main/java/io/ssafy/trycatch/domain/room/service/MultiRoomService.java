@@ -588,7 +588,22 @@ public class MultiRoomService {
         List<RoomUser> roomUsers = roomUserRepository
                 .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
 
-        return roomUsers.stream()
+        boolean allReady = roomUsers.stream()
                 .allMatch(ru -> ru.getIsReady() == TrueOrFalse.T);
+
+        if (allReady) {
+            resetAllReadyStatus(roomId);
+            return true;
+        }
+        return false;
+    }
+
+    @Transactional
+    public void resetAllReadyStatus(Long roomId) {
+        List<RoomUser> roomUsers = roomUserRepository
+                .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
+
+        roomUsers.forEach(RoomUser::resetReady);
+
     }
 }
