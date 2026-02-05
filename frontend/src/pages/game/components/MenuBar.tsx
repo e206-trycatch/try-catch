@@ -30,8 +30,8 @@ export default function Menubar({
           <img src={SaveIcon} alt="저장" className="w-[30px]" />
         </button>
         {/* <img src={ChatIcon} alt="채팅" className="w-[24px]" /> */}
-        <HintButton onClick={onOpenHintModal} />
         <img src={alarmIcon} alt="알림" className="w-[30px]" />
+        <HintButton onClick={onOpenHintModal} />
       </div>
     </div>
   );

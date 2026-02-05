@@ -20,10 +20,11 @@ export default function HintButton({ onClick }: Props) {
         </div>
       )}
 
+      {/* 아이콘 버튼 */}
       <button
         type="button"
         onClick={onClick}
-        className="relative cursor-pointer transition-opacity opacity-100 hover:opacity-75"
+        className="cursor-pointer transition-opacity opacity-100 hover:opacity-75"
       >
         <img src={AiHintIcon} alt="AI 힌트" className="w-[30px]" />
       </button>

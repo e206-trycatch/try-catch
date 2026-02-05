@@ -102,20 +102,15 @@ export default function HintInputForm({
       </div>
 
       {/* 하단 정보 */}
-      <div className="flex justify-between mt-1 px-1">
+      <div className="flex justify-end mt-1 px-1">
         {isDisconnected ? (
           <span className="text-xs text-red-400">연결 끊김</span>
         ) : (
-          <>
-            <span className="text-xs text-gray-500">
-              남은 힌트: {currentHints}개
-            </span>
-            <span
-              className={`text-xs ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}
-            >
-              {input.length}/{MAX_LENGTH}
-            </span>
-          </>
+          <span
+            className={`text-xs ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}
+          >
+            {input.length}/{MAX_LENGTH}
+          </span>
         )}
       </div>
     </div>

@@ -2,9 +2,12 @@ import { useEffect } from 'react';
 
 import type { HintCreateRequest } from '../../../../api/hintApi';
 import { getHintHistory } from '../../../../api/hintApi';
+import { useGameStore } from '../../../../stores/useGameStore';
 import { useHintStore } from '../../../../stores/useHintStore';
 import HintInputForm from './HintInputForm';
 import HintMessageList from './HintMessageList';
+
+const MAX_HINTS = 3;
 
 interface Props {
   roomId: number;
@@ -23,6 +26,7 @@ export default function HintModal({
 }: Props) {
   const { isModalOpen, historyLoaded, setMessages, setHistoryLoaded } =
     useHintStore();
+  const { currentHints } = useGameStore();
 
   // 최초 열림 시 이력 로드
   useEffect(() => {
@@ -53,7 +57,24 @@ export default function HintModal({
       <div className="relative w-[400px] h-[500px] bg-stone-900 border border-gray-700 rounded-lg shadow-xl flex flex-col">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-          <h2 className="text-lg font-medium text-gray-200">AI 힌트</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-medium text-gray-200">남은 힌트</h2>
+            {/* 에너지 표시 */}
+            <div className="flex items-center gap-0 text-xl leading-none -mt-1">
+              {Array.from({ length: MAX_HINTS }).map((_, i) => (
+                <span
+                  key={i}
+                  className={
+                    i < currentHints
+                      ? 'text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.8)]'
+                      : 'text-gray-700 opacity-20'
+                  }
+                >
+                  ⚡
+                </span>
+              ))}
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
