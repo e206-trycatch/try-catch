@@ -9,6 +9,7 @@ import { getGameSession } from '../../api/gameSession';
 import { getSingleTimer } from '../../api/getSingleTimer';
 import { getQuestFile } from '../../api/questFile';
 import { getRetryQuestFile } from '../../api/retryQuestFile';
+import { saveCodeForShare } from '../../api/saveCodeForShare';
 import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
 import { connectStomp, subscribeRoom } from '../../sockets/stomp';
@@ -200,6 +201,34 @@ export default function GamePage() {
     getQuestStories();
   }, [questId]);
 
+  // 코드 저장 버튼을 눌렀을 때 실행되는 함수
+  const saveCode = async () => {
+    if (!roomId) return;
+
+    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+    if (ide.activeFileId) {
+      allFileCodes[ide.activeFileId] = ide.currentCode;
+    }
+
+    const files = [
+      ...buildFilesRequestData({
+        node: rootNode,
+        fileCodes: allFileCodes,
+        role: 'FRONTEND',
+      }),
+      ...buildFilesRequestData({
+        node: rootNode,
+        fileCodes: allFileCodes,
+        role: 'BACKEND',
+      }),
+    ];
+
+    await saveCodeForShare(Number(roomId), {
+      problemFrameworkId,
+      files,
+    });
+  };
+
   // 제출 버튼을 눌렀을 때 실행되는 함수
   const submitCode = async () => {
     // 현재 활성 파일과 openTabs의 코드를 모두 모으기
@@ -280,6 +309,7 @@ export default function GamePage() {
             <MenuBar
               fileMenu={openFileMenu}
               onToggleFileMenu={() => setOpenFileMenu((prev) => !prev)}
+              onSave={saveCode}
             />
           </div>
           {/* 파일탐색기 + 코드 편집기 + 터미널 */}
