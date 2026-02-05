@@ -1,21 +1,24 @@
 import { useRoomStore } from '@/stores/useRoomStore';
 
-import AiHintIcon from '../../../assets/images/icons/ai_hint_icon.svg';
-import alarmIcon from '../../../assets/images/icons/alarm_icon.svg';
 import FileIcon from '../../../assets/images/icons/file_icon.svg';
 import SaveIcon from '../../../assets/images/icons/save_icon.svg';
+import HintButton from './hint/HintButton';
 
 type Props = {
   fileMenu: boolean;
   onToggleFileMenu: () => void;
   onSave: () => void;
+  onOpenHintModal: () => void;
 };
 
 const mode = useRoomStore.getState().draft.mode;
 
-console.log(mode);
-
-export default function Menubar({ fileMenu, onToggleFileMenu, onSave }: Props) {
+export default function Menubar({
+  fileMenu,
+  onToggleFileMenu,
+  onSave,
+  onOpenHintModal,
+}: Props) {
   return (
     <div className="flex flex-col gap-[18px] justify-center items-center">
       <button
@@ -36,8 +39,7 @@ export default function Menubar({ fileMenu, onToggleFileMenu, onSave }: Props) {
             <img src={SaveIcon} alt="저장" className="w-[30px]" />
           </button>
         )}
-        <img src={AiHintIcon} alt="힌트" className="w-[30px]" />
-        <img src={alarmIcon} alt="알림" className="w-[30px]" />
+        <HintButton onClick={onOpenHintModal} />
       </div>
     </div>
   );

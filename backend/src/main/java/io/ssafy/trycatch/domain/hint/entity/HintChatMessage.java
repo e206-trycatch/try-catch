@@ -1,4 +1,4 @@
-package io.ssafy.trycatch.domain.hint.dto;
+package io.ssafy.trycatch.domain.hint.entity;
 
 
 import lombok.AllArgsConstructor;

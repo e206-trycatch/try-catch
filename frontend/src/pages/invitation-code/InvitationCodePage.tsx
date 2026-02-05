@@ -14,6 +14,8 @@ const InvitationPage: React.FC = () => {
   const letterRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
   const setRoomId = useRoomStore((s) => s.setRoomId);
+  const setThemeId = useRoomStore((s) => s.setThemeId);
+  const setThemeName = useRoomStore((s) => s.setThemeName);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,8 @@ const InvitationPage: React.FC = () => {
           return;
         }
         setRoomId(roomInfo.roomId);
+        setThemeId(roomInfo.themeId);
+        setThemeName(roomInfo.themeName);
         navigate('/multi-room/lobby', {
           state: {
             roomId: roomInfo.roomId,
@@ -84,7 +88,7 @@ const InvitationPage: React.FC = () => {
         setIsLoading(false);
       }
     },
-    [navigate, setRoomId],
+    [navigate, setRoomId, setThemeId, setThemeName],
   );
 
   return (

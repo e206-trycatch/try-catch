@@ -2,12 +2,9 @@ package io.ssafy.trycatch.domain.hint.controller;
 
 
 import io.ssafy.trycatch.domain.ai.dto.response.HintRespDto;
-import io.ssafy.trycatch.domain.hint.dto.HintChatMessage;
 import io.ssafy.trycatch.domain.hint.dto.request.HintCreateReqDto;
-import io.ssafy.trycatch.domain.hint.dto.response.HintHistoryRespDto;
 import io.ssafy.trycatch.domain.hint.service.HintService;
 import io.ssafy.trycatch.domain.room.entity.Room;
-import io.ssafy.trycatch.domain.submission.dto.response.SubmissionStartRespDto;
 import io.ssafy.trycatch.domain.user.entity.User;
 import io.ssafy.trycatch.domain.user.repository.UserRepository;
 import io.ssafy.trycatch.global.common.ApiRespDto;
