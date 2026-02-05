@@ -40,6 +40,12 @@ public class Submission {
     @Column(name = "error_log", columnDefinition = "TEXT")
     private String errorLog;
 
+    @Column(name = "frontend_error_log", columnDefinition = "TEXT")
+    private String frontendErrorLog;
+
+    @Column(name = "backend_error_log", columnDefinition = "TEXT")
+    private String backendErrorLog;
+
     @Column
     private Integer score;
 
@@ -89,6 +95,17 @@ public class Submission {
         this.errorLog = errorLog;
         this.score = score;
         this.processingStatus = ProcessingStatus.COMPLETED;  // 완료 시 업데이트
+    }
+
+    public void updateResult(Status status, Long executionTime,
+                             String frontendErrorLog, String backendErrorLog, String errorLog, Integer score) {
+        this.status = status;
+        this.executionTime = executionTime;
+        this.frontendErrorLog = frontendErrorLog;
+        this.backendErrorLog = backendErrorLog;
+        this.errorLog = errorLog;  // 하위 호환용
+        this.score = score;
+        this.processingStatus = ProcessingStatus.COMPLETED;
     }
 
     public enum Status {

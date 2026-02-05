@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -110,6 +111,7 @@ public class GptScoringService {
                 : rubric;
 
         String safeSource = (submittedSource == null) ? "" : submittedSource;
+        String errorLogField = roleName.equals("FRONTEND") ? "frontendErrorLog" : "backendErrorLog";
 
         String roleValidation = roleName.equals("FRONTEND")
                 ? String.format("""
@@ -158,22 +160,25 @@ public class GptScoringService {
                 %s
                 
                 절대 규칙:
+                - 이 문제는 이미 필요한 빌드 설정과 의존성이 모두 구성되어 있다고 가정한다.
                 - 코드에 근거가 없으면 FAIL
                 - 응답은 JSON만 출력
                 - API 경로나 Method 일치 여부는 검증하지 않는다 (다음 단계에서 검증됨)
                 
                 판정:
-                - 위 검증 중 하나라도 FAIL이면 success=false, score=0
+                - 위 검증 중 하나라도 FAIL이면 success=false, score=0이다. 이 경우 코드 품질 평가는 수행하지 않는다.
                 - 모두 PASS이면 success=true, score는 1~100 정수
-                - success=true인 경우 errorLog는 ""(빈 문자열)
-                - errorLog는 컴파일 했을 때, 실제 에러 로그에 뜨는 것을 간략하게 다듬어서 보여준다. 예시 결과처럼 안 뜬 경우에는 예시 결과와 일치하지 않는다고 알려준다. 어느 부분이 틀렸는지 알려주지 않고 답도 알려주지 않는다.
+                - 새 파일을 만들 수 있다는 가정에서의 베스트 프랙티스를 기준으로 채점하지 말고,
+                  주어진 파일 내 수정만으로 가능한 최선을 100점 기준으로 채점하라.
+                - success=true인 경우 %s는 ""(빈 문자열)
+                - %s는 컴파일 했을 때, 실제 에러 로그에 뜨는 것을 간략하게 다듬어서 보여준다. 예시 결과처럼 안 뜬 경우에는 예시 결과와 일치하지 않는다고 알려준다. 어느 부분이 틀렸는지 알려주지 않고 답도 알려주지 않는다.
                   어느 부분이 응답 결과와 다른지도 알려주지 않는다.
                 
                 출력 JSON:
                 {
                   "success": false,
                   "score": 0,
-                  "errorLog": "Method 'POST' is not supported. 응답 결과가 예시 응답 결과와 일치하지 않습니다."
+                  "%s": "Method 'POST' is not supported. 응답 결과가 예시 응답 결과와 일치하지 않습니다."
                 }
                 
                 [문제 설명]
@@ -184,7 +189,7 @@ public class GptScoringService {
                 
                 [제출 코드]
                 %s
-                """, roleValidation, safeProblemDoc, safeRubric, safeSource);
+                """, roleValidation, errorLogField, errorLogField, errorLogField, safeProblemDoc, safeRubric, safeSource);
     }
 
     /**
@@ -284,7 +289,7 @@ public class GptScoringService {
             3-1. API 경로 일치:
                - Frontend의 fetch/axios 경로
                - Backend의 @GetMapping/@PostMapping 경로
-               → 정확히 일치하는가?
+               → 동일 엔드포인트로 해석되는가?
             
             3-2. HTTP Method 일치:
                - Frontend의 method (GET, POST, PUT, DELETE)
@@ -295,13 +300,17 @@ public class GptScoringService {
                - Frontend가 보내는 JSON 필드
                - Backend DTO의 필드
                → 필드명이 일치하는가?
+               Frontend가 JSON body를 명시적으로 보내는 경우에만 필드 일치 여부를 검증한다.
+               (@RequestParam/@PathVariable로 받는 경우는 해당 방식에 맞게 비교한다.)
             
             3-4. Response 형식 기본 일치:
                - Backend 반환 타입의 필드
                - Frontend가 사용하는 필드
                → 주요 필드가 일치하는가?
+               Response는 프론트가 실제로 접근하는 주요 필드 경로가 백 응답 구조에서 존재하는지 확인한다.
             
             절대 규칙:
+            - 이 문제는 이미 필요한 빌드 설정과 의존성이 모두 구성되어 있다고 가정한다.
             - 코드에 근거가 없으면 FAIL
             - 1, 2, 3단계 중 하나라도 FAIL이면 success=false, score=0
             - 모두 PASS이면 success=true, score=1~100
@@ -313,6 +322,8 @@ public class GptScoringService {
             - 2단계 FAIL → success=false, score=0, errorLog: Backend 검증 실패 사유
             - 3단계 FAIL → success=false, score=0, errorLog: API 계약 검증 실패 사유
             - 모두 PASS → success=true, score=1~100 (코드 품질에 따라)
+            - 새 파일을 만들 수 있다는 가정에서의 베스트 프랙티스를 기준으로 채점하지 말고,
+                  주어진 파일 내 수정만으로 가능한 최선을 100점 기준으로 채점하라.
             - errorLog는 간략하게 (어느 부분이 틀렸는지, 답은 알려주지 않음)
             
             FAIL 예시:
@@ -323,12 +334,45 @@ public class GptScoringService {
             - Request Body 불일치 → "요청 데이터 형식이 일치하지 않습니다."
             - 응답 결과가 예시와 다름 → "응답 결과가 예시 응답 결과와 일치하지 않습니다."
             
-            출력 JSON:
-            {
-              "success": false,
-              "score": 0,
-              "errorLog": "API 경로가 일치하지 않습니다."
-            }
+            출력 JSON 형식:
+                     {
+                       "success": false,
+                       "score": 0,
+                       "frontendErrorLog": "Frontend 관련 오류 메시지",
+                       "backendErrorLog": "Backend 관련 오류 메시지"
+                     }
+            
+                     예시 1 - Frontend만 오류:
+                     {
+                       "success": false,
+                       "score": 0,
+                       "frontendErrorLog": "Vue 프레임워크를 사용해야 합니다.",
+                       "backendErrorLog": ""
+                     }
+            
+                     예시 2 - Backend만 오류:
+                     {
+                       "success": false,
+                       "score": 0,
+                       "frontendErrorLog": "",
+                       "backendErrorLog": "API 엔드포인트가 정의되지 않았습니다."
+                     }
+            
+                     예시 3 - API 계약 불일치:
+                     {
+                       "success": false,
+                       "score": 0,
+                       "frontendErrorLog": "API 경로가 일치하지 않습니다.",
+                       "backendErrorLog": "API 경로가 일치하지 않습니다."
+                     }
+            
+                     예시 4 - 성공:
+                     {
+                       "success": true,
+                       "score": 85,
+                       "frontendErrorLog": "",
+                       "backendErrorLog": ""
+                     }
             
             [문제 설명]
             %s
@@ -398,7 +442,12 @@ public class GptScoringService {
             ScoreResult raw = objectMapper.readValue(json, ScoreResult.class);
 
             boolean success = Boolean.TRUE.equals(raw.getSuccess());
-            String errorLog = raw.getErrorLog() == null ? "" : raw.getErrorLog().trim();
+
+            String frontendErrorLog = raw.getFrontendErrorLog() == null ? "" : raw.getFrontendErrorLog().trim();
+            String backendErrorLog = raw.getBackendErrorLog() == null ? "" : raw.getBackendErrorLog().trim();
+
+            // 하위 호환용 errorLog 생성 (두 에러 합침)
+            String errorLog = buildCombinedErrorLog(frontendErrorLog, backendErrorLog);
 
             int rawScore = raw.getScore() == null ? 0 : raw.getScore();
 
@@ -425,6 +474,8 @@ public class GptScoringService {
                     .success(success)
                     .score(score)
                     .errorLog(errorLog)
+                    .frontendErrorLog(frontendErrorLog)
+                    .backendErrorLog(backendErrorLog)
                     .executionTime(execTime)
                     .build();
 
@@ -432,6 +483,19 @@ public class GptScoringService {
             log.error("GPT 응답 파싱 실패. content={}", content, e);
             throw new RuntimeException("채점 결과 파싱 실패", e);
         }
+    }
+
+    private String buildCombinedErrorLog(String frontendErrorLog, String backendErrorLog) {
+        List<String> errors = new ArrayList<>();
+
+        if (frontendErrorLog != null && !frontendErrorLog.isEmpty()) {
+            errors.add("[Frontend] " + frontendErrorLog);
+        }
+        if (backendErrorLog != null && !backendErrorLog.isEmpty()) {
+            errors.add("[Backend] " + backendErrorLog);
+        }
+
+        return errors.isEmpty() ? "" : String.join("\n", errors);
     }
 
     private String extractJsonObject(String content) {

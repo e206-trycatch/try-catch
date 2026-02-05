@@ -12,6 +12,8 @@ public class ScoreResult {
     private Boolean success;
     private Integer score;
     private String errorLog;
+    private String frontendErrorLog;
+    private String backendErrorLog;
 
     @JsonProperty("executionTime")
     private Long executionTime;
