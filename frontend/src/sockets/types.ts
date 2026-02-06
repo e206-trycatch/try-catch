@@ -120,6 +120,13 @@ export interface SubmissionCompletedMessage {
   timestamp: string;
 }
 
+// 재도전 시작 메시지
+export interface RetryStartedMessage {
+  type: 'RETRY_STARTED';
+  data: null;
+  timestamp: string;
+}
+
 // 빈 body 메시지 (submit/start 등)
 export type EmptyMessage = Record<string, never>;
 
@@ -144,7 +151,8 @@ export type ServerToClientMessage =
   | HintResponseMessage
   | HintErrorMessage
   | MultiSubmissionMessage
-  | SubmissionCompletedMessage;
+  | SubmissionCompletedMessage
+  | RetryStartedMessage;
 
 // 백엔드 SocketRespDto 래퍼 형식
 export interface SocketRespDto<T = unknown> {
