@@ -29,6 +29,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [multiQuestId, setMultiQuestId] = useState<number | null>(null);
+  const [multiQuestOrder, setMultiQuestOrder] = useState<number>(1);
   const [multiQuestTitle, setMultiQuestTitle] = useState('');
   const [multiQuestDescription, setMultiQuestDescription] = useState('');
   const [participants, setParticipants] = useState<MultiQuestParticipant[]>([]);
@@ -89,6 +90,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
           currentQuestId,
         );
         setMultiQuestId(detail.quest.questId);
+        setMultiQuestOrder(detail.quest.questOrder);
         setMultiQuestTitle(detail.quest.title);
         setMultiQuestDescription(detail.quest.description);
         setParticipants(detail.participants);
@@ -232,7 +234,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
       )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questOrder={multiQuestId}
+          questOrder={multiQuestOrder}
           themeName={multiQuestTitle}
           questDescription={multiQuestDescription}
           onStart={() => {}}
