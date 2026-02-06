@@ -18,6 +18,8 @@ const InvitationPage: React.FC = () => {
   const setThemeId = useRoomStore((s) => s.setThemeId);
   const setThemeName = useRoomStore((s) => s.setThemeName);
   const setThemeImageUrl = useRoomStore((s) => s.setThemeImageUrl);
+  const setHostFrameworkId = useRoomStore((s) => s.setHostFrameworkId);
+  const setGuestFrameworkId = useRoomStore((s) => s.setGuestFrameworkId);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +90,14 @@ const InvitationPage: React.FC = () => {
         setThemeId(roomInfo.themeId);
         setThemeName(roomInfo.themeName);
 
+        // 힌트 요청 시 framework 정보가 필요하므로 저장
+        if (roomInfo.host?.frameworkId) {
+          setHostFrameworkId(roomInfo.host.frameworkId);
+        }
+        if (roomInfo.guest?.frameworkId) {
+          setGuestFrameworkId(roomInfo.guest.frameworkId);
+        }
+
         // GUEST는 ThemeSelectionPage를 거치지 않으므로 테마 이미지 URL을 별도로 가져옴
         const imageUrl = await fetchThemeImageUrl(roomInfo.themeId);
         setThemeImageUrl(imageUrl);
@@ -113,7 +123,7 @@ const InvitationPage: React.FC = () => {
         setIsLoading(false);
       }
     },
-    [navigate, setRoomId, setThemeId, setThemeName, setThemeImageUrl],
+    [navigate, setRoomId, setThemeId, setThemeName, setThemeImageUrl, setHostFrameworkId, setGuestFrameworkId],
   );
 
   return (
