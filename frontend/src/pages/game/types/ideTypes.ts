@@ -1,5 +1,5 @@
 export type NodeType = 'folder' | 'file';
-export type CodeRole = 'FRONTEND' | 'BACKEND' | null;
+export type CodeRole = 'FRONTEND' | 'BACKEND' | 'FULLSTACK' | null;
 export type TimerStatus = 'RUNNING' | 'EXPIRED' | null;
 
 export interface QuestFile {

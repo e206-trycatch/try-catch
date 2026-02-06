@@ -17,10 +17,9 @@ export default function CodeEditor({
   onChange,
   userRole,
 }: CodeEditorProps) {
-  // true -> 파일 역할과 내 역할이 달라야지 읽기만 가능, 수정 x
-  // false -> 파일 역할과 내 역할이 같다 = 읽기만 가능하지 않고 수정도 가능하다.
   const isReadOnly =
     userRole != null &&
+    userRole !== 'FULLSTACK' &&
     activeFile?.role != null &&
     activeFile.role !== userRole;
 
