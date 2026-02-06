@@ -921,10 +921,6 @@ public class SubmissionService {
     }
 
     private void validateSubmissionAccess(Submission submission, Long userId, Long roomId) {
-        if (!submission.getUserId().equals(userId)) { // 본인의 제출이 아닌 경우
-            throw new CustomException(ErrorCode.UNAUTHORIZED_SUBMISSION_ACCESS);
-        }
-
         if (!submission.getRoomId().equals(roomId)) { // 같은 방의 제출이 아닌 경우
             throw new CustomException(ErrorCode.UNAUTHORIZED_SUBMISSION_ACCESS);
         }
