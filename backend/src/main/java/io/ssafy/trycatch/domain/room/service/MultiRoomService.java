@@ -584,6 +584,7 @@ public class MultiRoomService {
         );
     }
 
+    @Transactional
     public boolean checkAllReady(Long roomId) {
         List<RoomUser> roomUsers = roomUserRepository
                 .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
@@ -604,6 +605,6 @@ public class MultiRoomService {
                 .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
 
         roomUsers.forEach(RoomUser::resetReady);
-
+        roomUserRepository.saveAll(roomUsers);
     }
 }

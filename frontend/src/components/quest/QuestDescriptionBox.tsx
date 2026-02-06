@@ -83,7 +83,7 @@ const QuestDescriptionBox: React.FC<QuestDescriptionBoxProps> = ({
                 : 'text-[#FEFEFE] hover:text-white/80'
             }`}
           >
-            {myReady ? 'READY!' : 'READY'}
+            {myReady ? 'WAITING...' : 'READY'}
           </button>
         ) : (
           <button

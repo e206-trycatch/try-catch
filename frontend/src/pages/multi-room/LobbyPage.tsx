@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useGameStore } from '@/stores/useGameStore';
+
 import { fetchQuestList, leaveMultiRoom } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -8,8 +10,6 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
 import PlayerCard from '../../components/lobby/PlayerCard';
 import { pixelClipPath, titleClipPath } from '../../constants/clipPaths';
-import { disconnectStomp } from '../../sockets/stomp';
-import { useGameStore } from '../../stores/useGameStore';
 import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
@@ -204,7 +204,7 @@ const LobbyPage = () => {
 
     try {
       await leaveMultiRoom(roomId);
-      disconnectStomp();
+      // disconnectStomp();
       resetLobby();
       useGameStore.getState().setMode(null);
       navigate('/selection/theme');

@@ -496,8 +496,13 @@ export default function GamePage() {
   // 현재 사용 중인 framework 이름 가져오기
   const currentFramework = useMemo(() => {
     const { draft, availableFrameworks } = useRoomStore.getState();
-    const { selectedFrameworkId, frontendId, backendId } = draft;
+    const { selectedFrameworkId, frontendId, backendId, position } = draft;
     const mode = useGameStore.getState().mode;
+
+    // FULLSTACK 모드인 경우 'fullstack' 반환
+    if (mode === 'SINGLE' && position === 'FULLSTACK') {
+      return 'fullstack';
+    }
 
     // frameworkId 결정
     let frameworkId: number | null = null;
