@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import api from '../../api/api';
 import {
   fetchMultiQuestDetail,
   type MultiQuestParticipant,
@@ -18,7 +19,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
   const themeId = useRoomStore((state) => state.draft.themeId);
   const currentRoomId = useRoomStore((state) => state.currentRoomId);
   const currentQuestId = useRoomStore((state) => state.currentQuestId);
-  const themeImageUrl = useRoomStore((state) => state.themeImageUrl);
+  const storeThemeImageUrl = useRoomStore((state) => state.themeImageUrl);
+  const setThemeImageUrl = useRoomStore((state) => state.setThemeImageUrl);
 
   // 유저 정보(닉네임)
   const userNickname = useStore((state) => state.user?.nickname ?? null);
@@ -31,6 +33,9 @@ const MultiQuestDescriptionPage: React.FC = () => {
   const [multiQuestDescription, setMultiQuestDescription] = useState('');
   const [participants, setParticipants] = useState<MultiQuestParticipant[]>([]);
   const [myReady, setMyReady] = useState(false);
+  const [themeImageUrl, setLocalThemeImageUrl] = useState<string | null>(
+    storeThemeImageUrl,
+  );
   const navigatingRef = useRef(false);
 
   // 테마 아이디 없거나 currentRoomId 없으면 테마 페이지로
@@ -45,6 +50,32 @@ const MultiQuestDescriptionPage: React.FC = () => {
       navigate('/selection/theme');
     }
   }, [themeId, currentRoomId, navigate]);
+
+  // themeImageUrl이 없으면 테마 목록에서 가져오기 (guest용 fallback)
+  useEffect(() => {
+    if (themeImageUrl || !themeId) return;
+
+    const fetchThemeImage = async () => {
+      try {
+        const { data } = await api.get('/themes');
+        const themes = data.result?.result;
+        if (Array.isArray(themes)) {
+          const theme = themes.find(
+            (t: { themeId: number; themeImageUrl?: string }) =>
+              t.themeId === themeId,
+          );
+          if (theme?.themeImageUrl) {
+            setLocalThemeImageUrl(theme.themeImageUrl);
+            setThemeImageUrl(theme.themeImageUrl);
+          }
+        }
+      } catch (err) {
+        console.error('테마 이미지 URL 로드 실패:', err);
+      }
+    };
+
+    fetchThemeImage();
+  }, [themeId, themeImageUrl, setThemeImageUrl]);
 
   // 멀티 모드 API 받아오기
   useEffect(() => {
