@@ -624,6 +624,8 @@ export default function GamePage() {
               onSave={saveCode}
               onOpenHintModal={openModal}
               mode={mode}
+              isSplit={ide.isSplit}
+              onToggleSplit={ide.toggleSplit}
             />
           </div>
           {/* 파일탐색기 + 코드 편집기 + 터미널 */}
@@ -650,29 +652,91 @@ export default function GamePage() {
                         expanded={ide.expanded}
                         onToggleFolder={ide.toggleFolder}
                         onOpenFile={ide.openFile}
-                        activeFileId={ide.activeFileId}
+                        activeFileId={
+                          ide.isSplit && ide.focusedPane === 'secondary'
+                            ? ide.secondaryActiveFileId
+                            : ide.activeFileId
+                        }
                       />
                     </div>
                   </div>
                 </Resizable>
               )}
-              <div className="flex flex-col flex-1 min-w-0 min-h-0 ">
-                <FileTabs
-                  openTabs={ide.openTabs}
-                  activeFileId={ide.activeFileId}
-                  onSelectTab={ide.selectTab}
-                  onCloseTab={ide.closeTab}
-                />
+
+              <div className="flex flex-1 min-w-0 min-h-0">
                 <div
-                  className={`flex-1 min-h-0 ${ide.activeFile ? `bg-[#1E1E1E00]` : `bg-[#1E1E1EE6]`}`}
+                  className={`flex flex-col flex-1 min-w-0 min-h-0 ${
+                    // 스플릿 모드에서 이 패널이 포커스되면 상단 테두리 표시
+                    ide.isSplit && ide.focusedPane === 'primary'
+                      ? 'border-t-2 border-amber-300'
+                      : ''
+                  }`}
+                  // 패널 영역 클릭 시 이 패널을 포커스 상태로 변경
+                  onMouseDown={() => ide.setFocusedPane('primary')}
                 >
-                  <CodeEditor
-                    activeFile={ide.activeFile}
-                    code={ide.currentCode}
-                    onChange={ide.setCurrentCode}
-                    userRole={userRole}
+                  {/* 탭 영역: 열린 파일들을 탭으로 표시 */}
+                  <FileTabs
+                    openTabs={ide.openTabs}
+                    activeFileId={ide.activeFileId}
+                    // 탭 클릭/닫기 시 'primary' 파라미터로 어떤 패널인지 구분
+                    onSelectTab={(fileId) => ide.selectTab(fileId, 'primary')}
+                    onCloseTab={(fileId) => ide.closeTab(fileId, 'primary')}
                   />
+                  {/* 에디터 영역 */}
+                  <div
+                    className={`flex-1 min-h-0 ${
+                      // 파일이 열려있으면 투명 배경, 없으면 반투명 배경
+                      ide.activeFile ? 'bg-[#1E1E1E00]' : 'bg-[#1E1E1EE6]'
+                    }`}
+                  >
+                    <CodeEditor
+                      activeFile={ide.activeFile}
+                      code={ide.currentCode}
+                      onChange={ide.setCurrentCode}
+                      userRole={userRole}
+                    />
+                  </div>
                 </div>
+
+                {ide.isSplit && (
+                  <>
+                    {/* 패널 구분선 */}
+                    <div className="w-[1px] bg-gray-700" />
+                    <div
+                      className={`flex flex-col flex-1 min-w-0 min-h-0 ${
+                        ide.focusedPane === 'secondary'
+                          ? 'border-t-2 border-amber-300'
+                          : ''
+                      }`}
+                      onMouseDown={() => ide.setFocusedPane('secondary')}
+                    >
+                      <FileTabs
+                        openTabs={ide.secondaryOpenTabs}
+                        activeFileId={ide.secondaryActiveFileId}
+                        onSelectTab={(fileId) =>
+                          ide.selectTab(fileId, 'secondary')
+                        }
+                        onCloseTab={(fileId) =>
+                          ide.closeTab(fileId, 'secondary')
+                        }
+                      />
+                      <div
+                        className={`flex-1 min-h-0 ${
+                          ide.secondaryActiveFile
+                            ? 'bg-[#1E1E1E00]'
+                            : 'bg-[#1E1E1EE6]'
+                        }`}
+                      >
+                        <CodeEditor
+                          activeFile={ide.secondaryActiveFile}
+                          code={ide.secondaryCurrentCode}
+                          onChange={ide.setSecondaryCurrentCode}
+                          userRole={userRole}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             {/* 터미널 */}
