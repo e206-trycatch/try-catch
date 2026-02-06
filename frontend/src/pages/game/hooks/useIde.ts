@@ -86,7 +86,12 @@ export function useIde(root: FileNode) {
   const openFile = (file: FileNode) => {
     if (file.type !== 'file') return;
 
-    saveCurrentFile();
+    // 현재 파일의 코드를 저장하고 최신 fileCodes 상태를 로컬 변수로 유지
+    let latestFileCodes = { ...fileCodes };
+    if (activeFileId) {
+      latestFileCodes[activeFileId] = currentCode;
+      setFileCodes(latestFileCodes);
+    }
 
     setOpenTabs((prev) => {
       // prev : 현재 열려있는 탭 목록
@@ -100,28 +105,26 @@ export function useIde(root: FileNode) {
 
     setActiveFileId(file.id); // 클릭한 파일을 현재 작업 중인 파일로 지정하기
 
-    const code = fileCodes[file.id] ?? file.code ?? '';
-
-    if (fileCodes[file.id] === undefined && file.code === undefined) {
-      setCurrentCode('');
-    }
+    // 최신 상태에서 코드 읽기
+    const code = latestFileCodes[file.id] ?? file.code ?? '';
     setCurrentCode(code);
   };
 
   const selectTab = (fileId: string) => {
     if (fileId === activeFileId) return;
 
-    saveCurrentFile();
+    // 현재 파일의 코드를 저장하고 최신 fileCodes 상태를 로컬 변수로 유지
+    let latestFileCodes = { ...fileCodes };
+    if (activeFileId) {
+      latestFileCodes[activeFileId] = currentCode;
+      setFileCodes(latestFileCodes);
+    }
 
     setActiveFileId(fileId);
 
-    const code = fileCodes[fileId];
-
-    if (code === undefined) {
-      setCurrentCode('');
-    } else {
-      setCurrentCode(code);
-    }
+    // 최신 상태에서 코드 읽기
+    const code = latestFileCodes[fileId];
+    setCurrentCode(code ?? '');
   };
 
   const closeTab = (fileId: string) => {

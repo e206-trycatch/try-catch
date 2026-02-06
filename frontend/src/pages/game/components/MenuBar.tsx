@@ -1,20 +1,18 @@
-import { useRoomStore } from '@/stores/useRoomStore';
-
 import FileIcon from '../../../assets/images/icons/file_icon.svg';
 import SaveIcon from '../../../assets/images/icons/save_icon.svg';
 import HintButton from './hint/HintButton';
 
 type Props = {
   fileMenu: boolean;
+  mode: 'SINGLE' | 'MULTI' | null;
   onToggleFileMenu: () => void;
   onSave: () => void;
   onOpenHintModal: () => void;
 };
 
-const mode = useRoomStore.getState().draft.mode;
-
 export default function Menubar({
   fileMenu,
+  mode,
   onToggleFileMenu,
   onSave,
   onOpenHintModal,

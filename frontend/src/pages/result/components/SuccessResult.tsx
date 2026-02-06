@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
+import { disconnectStomp } from '../../../sockets/stomp';
 import { useGameStore } from '../../../stores/useGameStore';
 import { useResultStore } from '../../../stores/useResultStore';
 import { useRoomStore } from '../../../stores/useRoomStore';
@@ -59,6 +60,8 @@ const SuccessResult = ({ result }: Props) => {
       useRoomStore.getState().setCurrentQuestId(next.nextQuestId);
       navigate('/story');
     } else {
+      useGameStore.getState().setMode(null);
+      disconnectStomp();
       navigate('/');
     }
   };

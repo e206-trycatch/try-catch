@@ -111,11 +111,24 @@ export interface MultiSubmissionMessage {
   timestamp: string;
 }
 
+// 채점 완료 메시지
+export interface SubmissionCompletedMessage {
+  type: 'SUBMISSION_COMPLETED';
+  data: {
+    submissionId: number;
+  };
+  timestamp: string;
+}
+
+// 빈 body 메시지 (submit/start 등)
+export type EmptyMessage = Record<string, never>;
+
 // 클라이언트 -> 서버
 export type ClientToServerMessage =
   | JoinRoomMessage
   | ReadyMessage
-  | QuestReadyMessage;
+  | QuestReadyMessage
+  | EmptyMessage;
 
 // 서버 -> 클라이언트
 export type ServerToClientMessage =
@@ -130,7 +143,8 @@ export type ServerToClientMessage =
   | HintQuestionMessage
   | HintResponseMessage
   | HintErrorMessage
-  | MultiSubmissionMessage;
+  | MultiSubmissionMessage
+  | SubmissionCompletedMessage;
 
 // 백엔드 SocketRespDto 래퍼 형식
 export interface SocketRespDto<T = unknown> {

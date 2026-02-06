@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useGameStore } from '@/stores/useGameStore';
+
 import { fetchQuestList, leaveMultiRoom } from '../../api/roomApi';
 import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -138,9 +140,11 @@ const LobbyPage = () => {
     isNavigatingToGameRef.current = true;
 
     const roomStore = useRoomStore.getState();
+    const gameStore = useGameStore.getState();
 
     // 멀티모드 설정을 먼저 수행
     roomStore.setMode('MULTI');
+    gameStore.setMode('MULTI');
     roomStore.setRoomId(roomInfo.roomId);
     roomStore.setCurrentQuestId(firstQuestId);
     roomStore.setThemeId(roomInfo.themeId);
@@ -159,9 +163,11 @@ const LobbyPage = () => {
     isNavigatingToGameRef.current = true;
 
     const roomStore = useRoomStore.getState();
+    const gameStore = useGameStore.getState();
 
     // 멀티모드 설정을 먼저 수행
     roomStore.setMode('MULTI');
+    gameStore.setMode('MULTI');
     roomStore.setRoomId(roomInfo.roomId);
     roomStore.setCurrentQuestId(startQuestData.questId);
     roomStore.setThemeId(roomInfo.themeId);
@@ -200,6 +206,7 @@ const LobbyPage = () => {
       await leaveMultiRoom(roomId);
       // disconnectStomp();
       resetLobby();
+      useGameStore.getState().setMode(null);
       navigate('/selection/theme');
     } catch (err) {
       console.error('방 나가기 실패:', err);

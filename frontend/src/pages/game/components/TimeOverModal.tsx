@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
+import { disconnectStomp } from '../../../sockets/stomp';
 import { useGameStore } from '../../../stores/useGameStore';
 
 export default function TimeOverModal() {
@@ -7,6 +8,8 @@ export default function TimeOverModal() {
 
   const handleGoHome = () => {
     useGameStore.getState().stopTimer();
+    useGameStore.getState().setMode(null);
+    disconnectStomp();
     navigate('/');
   };
 
