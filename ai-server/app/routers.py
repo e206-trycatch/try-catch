@@ -38,7 +38,7 @@ async def generate_hint(request: HintRequest):
         if not guardrail_result.passed:
             rejection_messages = {
                 "is_direct": "정답을 직접 알려드릴 수 없습니다. 스스로 해결할 수 있도록 힌트를 드릴게요.",
-                "is_irrelevant": f"현재 문제({request.framework})와 관련 없는 질문입니다. 선택하신 프레임워크와 문제에 집중해주세요.",
+                "is_irrelevant": "코딩/디버깅과 관련 없는 질문입니다. 코드 관련 질문을 해주세요.",
                 "is_safe": "부적절한 표현이 포함되어 있습니다. 질문을 다시 작성해주세요."
             }
 
