@@ -56,6 +56,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
           frameworkId: guest.frameworkId,
           frameworkName: guest.frameworkName,
           isReady: guest.isReady,
+          position: roomInfo.guest?.position,
         },
       },
     });
