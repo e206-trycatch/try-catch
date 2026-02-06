@@ -29,7 +29,6 @@ import type {
 import { useGameStore } from '../../stores/useGameStore';
 import { useHintStore } from '../../stores/useHintStore';
 import { useRoomStore } from '../../stores/useRoomStore';
-import { useSocketStore } from '../../stores/useSocketStore';
 import { useStore } from '../../stores/useStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import CodeEditor from './components/CodeEditor';
@@ -72,7 +71,6 @@ export default function GamePage() {
     expireTimer,
     initializeForRoom,
   } = useGameStore();
-  const { removeSubscription } = useSocketStore();
   const { setResult } = useSubmissionStore();
   const mode = useGameStore((state) => state.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
@@ -204,6 +202,10 @@ export default function GamePage() {
     };
   }, []);
 
+  // STOMP 구독 해제 함수 저장용 ref
+  const unsubscribeRoomRef = useRef<(() => void) | undefined>(undefined);
+  const unsubscribeLobbyRef = useRef<(() => void) | undefined>(undefined);
+
   // STOMP 연결 및 게임 이벤트 구독 (멀티모드: 구독 후 ready 전송)
   useEffect(() => {
     if (!roomId) return;
@@ -219,7 +221,8 @@ export default function GamePage() {
       const token = useStore.getState().accessToken;
       if (token) await connectStomp(token);
 
-      subscribeRoom(Number(roomId), (msg) => {
+      // 게임 토픽 구독 및 해제 함수 저장
+      unsubscribeRoomRef.current = subscribeRoom(Number(roomId), (msg) => {
         // 타이머 이벤트
         if (msg.type === 'TIMER_STARTED') {
           startTimer(msg.data.deadlineAt);
@@ -254,9 +257,9 @@ export default function GamePage() {
 
       // 멀티모드 처리 (connectStomp 완료 후이므로 안전하게 구독 가능)
       if (mode === 'MULTI') {
-        // CODE_SAVED 구독
+        // CODE_SAVED 구독 및 해제 함수 저장
         const myNickname = useStore.getState().user?.nickname;
-        subscribeLobby(Number(roomId), (msg) => {
+        unsubscribeLobbyRef.current = subscribeLobby(Number(roomId), (msg) => {
           if (msg.type === 'CODE_SAVED') {
             const { nickname } = msg.data as CodeSavedMessage['data'];
             if (nickname !== myNickname) {
@@ -316,10 +319,11 @@ export default function GamePage() {
     init();
 
     return () => {
-      removeSubscription(`room-${roomId}`);
-      removeSubscription(`lobby-${roomId}`);
+      // 저장된 unsub 함수로 구독 해제
+      unsubscribeRoomRef.current?.();
+      unsubscribeLobbyRef.current?.();
     };
-  }, [roomId, mode, startTimer, expireTimer, removeSubscription, navigate]);
+  }, [roomId, mode, startTimer, expireTimer, navigate]);
 
   // 초기 게임 상태 설정 - 목숨/힌트 수
   useEffect(() => {

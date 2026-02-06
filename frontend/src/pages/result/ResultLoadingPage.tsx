@@ -17,6 +17,7 @@ import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
 import { disconnectStomp, subscribeRoom } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
+import { useSocketStore } from '../../stores/useSocketStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import DinoGame from '../dino-game/components/DinoGame';
 import ErrorDisplay from './components/ErrorDisplay';
@@ -172,10 +173,29 @@ const ResultLoadingPage = () => {
       // Case 1: codeResult가 없음 (멀티모드 Guest 또는 새로고침)
       // ───────────────────────────────────────────────────────
       if (!codeResult) {
-        // 멀티모드 Guest: STOMP 구독으로 SUBMISSION_COMPLETED 대기
-        // (별도 useEffect에서 처리)
+        // 멀티모드 Guest: 먼저 현재 상태 확인 후 폴링으로 대기
+        // (STOMP 메시지가 타이밍 문제로 놓쳐질 수 있으므로 폴링을 병행)
         if (mode === 'MULTI') {
-          console.log('[init] 멀티모드 Guest - STOMP 구독으로 대기');
+          console.log('[init] 멀티모드 Guest - 현재 상태 확인');
+          try {
+            // 이미 채점이 완료되었는지 확인
+            const res = await getLatestSubmission(roomId);
+            const result = res.result;
+
+            if (result.status !== 'PENDING') {
+              // 이미 채점 완료 → 바로 결과 처리
+              console.log('[init] 멀티모드 Guest - 이미 채점 완료됨');
+              handleResult(result);
+              return;
+            }
+            // 아직 PENDING → 폴링 시작 (STOMP도 별도 useEffect에서 구독)
+            console.log('[init] 멀티모드 Guest - PENDING 상태, 폴링 시작');
+            pollResult();
+          } catch (err) {
+            console.log('[init] 멀티모드 Guest - 상태 확인 실패, 폴링 시작');
+            // 에러 시에도 폴링 시작 (제출이 아직 안 됐을 수 있음)
+            pollResult();
+          }
           return;
         }
 
@@ -232,15 +252,23 @@ const ResultLoadingPage = () => {
   }, [retryCount, roomId, codeResult, handleResult, pollResult, mode]);
 
   // ─────────────────────────────────────────────────────────────
-  // 멀티모드 Guest: STOMP 구독으로 SUBMISSION_COMPLETED 대기
+  // 멀티모드: 호스트/게스트 모두 STOMP 구독으로 SUBMISSION_COMPLETED 대기
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    // 멀티모드 + codeResult 없음 (Guest)일 때만 STOMP 구독
-    if (mode !== 'MULTI' || codeResult || !roomId) return;
+    const { client, connected } = useSocketStore.getState();
+    console.log('[STOMP useEffect] 실행됨, mode:', mode, 'roomId:', roomId);
+    console.log('[STOMP useEffect] 소켓 상태:', { hasClient: !!client, connected });
 
-    console.log('[STOMP] 멀티모드 Guest - SUBMISSION_COMPLETED 구독 시작');
+    // 멀티모드일 때만 STOMP 구독 (호스트/게스트 모두)
+    if (mode !== 'MULTI' || !roomId) {
+      console.log('[STOMP useEffect] 조건 불충족으로 return');
+      return;
+    }
+
+    console.log('[STOMP] 멀티모드 - SUBMISSION_COMPLETED 구독 시작');
 
     const unsub = subscribeRoom(Number(roomId), async (msg) => {
+      console.log('[STOMP] 메시지 수신:', msg.type);
       if (msg.type === 'SUBMISSION_COMPLETED') {
         console.log('[STOMP] SUBMISSION_COMPLETED 수신');
         try {
@@ -254,8 +282,10 @@ const ResultLoadingPage = () => {
       }
     });
 
+    console.log('[STOMP] 구독 결과:', unsub ? '성공' : '실패 (unsub가 undefined)');
+
     return () => unsub?.();
-  }, [mode, codeResult, roomId, handleResult]);
+  }, [mode, roomId, handleResult]);
 
   // ─────────────────────────────────────────────────────────────
   // 렌더링

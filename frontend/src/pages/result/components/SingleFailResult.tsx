@@ -1,4 +1,4 @@
-// 실패 결과 컴포넌트
+// 싱글모드 실패 결과 컴포넌트
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,14 +7,12 @@ import { useGameStore } from '../../../stores/useGameStore';
 import { useResultStore } from '../../../stores/useResultStore';
 import { formatTime } from '../../../utils/utils';
 import type { FailSubmissionResult } from '../types/resultTypes';
-// TODO: 아이콘 추가 후 import 활성화
-// import skullIcon from '../../../assets/images/icons/skull.png';
 
 interface Props {
   result: FailSubmissionResult;
 }
 
-const FailResult = ({ result }: Props) => {
+const SingleFailResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
   const [showError, setShowError] = useState(false);
@@ -22,7 +20,6 @@ const FailResult = ({ result }: Props) => {
   const { roomId, questId, questOrder, executionTimeMs, roomState, errorLog } =
     result;
   const { remainingLife } = roomState;
-  console.log('result의 remaininLife:', remainingLife);
   const isGameOver = remainingLife === 0;
 
   const handleRetry = () => {
@@ -39,13 +36,11 @@ const FailResult = ({ result }: Props) => {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <p className="text-white text-xl">Quest {questOrder}</p>
+      <p className="text-xl text-white">Quest {questOrder}</p>
 
       <div className="flex items-center gap-4">
-        {/* TODO: 아이콘 추가 후 활성화 */}
-        {/* <img src={skullIcon} alt="fail" className="w-12 h-12" /> */}
         <span className="text-4xl">💀</span>
-        <span className="text-red-500 text-4xl font-bold">
+        <span className="text-4xl font-bold text-red-500">
           {isGameOver ? 'GAME OVER' : 'ERROR!'}
         </span>
       </div>
@@ -68,12 +63,12 @@ const FailResult = ({ result }: Props) => {
       <div className="w-full max-w-md">
         <button
           onClick={() => setShowError(!showError)}
-          className="text-white flex items-center gap-2"
+          className="flex items-center gap-2 text-white"
         >
           실패 원인 에러 확인 {showError ? '∧' : '∨'}
         </button>
         {showError && (
-          <div className="mt-2 p-4 bg-white text-black whitespace-pre-wrap overflow-x-auto">
+          <div className="mt-2 overflow-x-auto whitespace-pre-wrap bg-white p-4 text-black">
             {errorLog}
           </div>
         )}
@@ -84,14 +79,14 @@ const FailResult = ({ result }: Props) => {
         {!isGameOver && (
           <button
             onClick={handleRetry}
-            className="px-6 py-3 border border-white text-white"
+            className="border border-white px-6 py-3 text-white hover:bg-white hover:text-black"
           >
             재도전 &gt;
           </button>
         )}
         <button
           onClick={handleGoToMain}
-          className="px-6 py-3 border border-white text-white"
+          className="border border-white px-6 py-3 text-white hover:bg-white hover:text-black"
         >
           메인 페이지로 &gt;
         </button>
@@ -100,4 +95,4 @@ const FailResult = ({ result }: Props) => {
   );
 };
 
-export default FailResult;
+export default SingleFailResult;
