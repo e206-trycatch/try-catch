@@ -2,9 +2,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import ErrorDisplay from './components/ErrorDisplay';
-import FailResult from './components/FailResult';
+import MultiFailResult from './components/MultiFailResult';
+import SingleFailResult from './components/SingleFailResult';
 import SuccessResult from './components/SuccessResult';
 import { ERROR_CONFIGS, type ResultErrorType } from './types/errorTypes';
 
@@ -12,6 +14,7 @@ const ResultPage = () => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
   const data = useResultStore((state) => state.submissionResult);
+  const mode = useGameStore((state) => state.mode);
   const [errorType, setErrorType] = useState<ResultErrorType>('none');
 
   // 데이터 없으면 로딩 페이지로 리다이렉트 (마운트 시에만 체크)
@@ -42,12 +45,20 @@ const ResultPage = () => {
 
   if (!data) return null;
 
+  // 실패 결과: 모드에 따라 다른 컴포넌트 렌더링
+  const renderFailResult = () => {
+    if (mode === 'MULTI') {
+      return <MultiFailResult result={data} />;
+    }
+    return <SingleFailResult result={data} />;
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="flex min-h-screen flex-col items-center justify-center">
       {data.status === 'SUCCESS' ? (
         <SuccessResult result={data} />
       ) : (
-        <FailResult result={data} />
+        renderFailResult()
       )}
     </div>
   );

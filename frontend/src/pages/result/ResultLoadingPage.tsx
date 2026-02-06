@@ -17,6 +17,7 @@ import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
 import { disconnectStomp, subscribeRoom } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
+import { useSocketStore } from '../../stores/useSocketStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
 import DinoGame from '../dino-game/components/DinoGame';
 import ErrorDisplay from './components/ErrorDisplay';
@@ -47,12 +48,15 @@ const ResultLoadingPage = () => {
   const [isCompleted, setIsCompleted] = useState(false); // 채점 완료 상태 (모달 표시용)
   const hasSubmitted = useRef(false); // 중복 제출 방지 플래그
   const hasHandledResult = useRef(false); // 결과 처리 완료 플래그 (중복 처리 방지)
+  const isPollingCancelled = useRef(false); // 폴링 취소 플래그 (언마운트 시 true)
 
   // codeResult: 제출할 코드 데이터
   // - 정상 흐름: GamePage에서 설정됨
   // - 새로고침 시: null (메모리에서 사라짐)
   const codeResult = useSubmissionStore((state) => state.result);
   const mode = useGameStore((state) => state.mode);
+  // 이전 제출 ID (재도전 시 이전 결과 판별용)
+  const previousSubmissionId = useGameStore((state) => state.submissionId);
 
   // 결과 저장용 함수들
   const setSubmissionResult = useResultStore(
@@ -118,12 +122,37 @@ const ResultLoadingPage = () => {
    */
   const pollResult = useCallback(async (): Promise<void> => {
     for (let attempt = 0; attempt < POLLING_MAX_ATTEMPTS; attempt++) {
+      // 컴포넌트 언마운트 시 폴링 중단
+      if (isPollingCancelled.current) {
+        console.log('[pollResult] 폴링 취소됨 (언마운트)');
+        return;
+      }
+
       try {
         // GET 요청으로 최신 제출 결과 조회
         const res = await getLatestSubmission(roomId!);
         const result = res.result;
 
-        // 채점 완료 확인
+        // 언마운트 체크 (API 응답 후)
+        if (isPollingCancelled.current) {
+          console.log('[pollResult] 폴링 취소됨 (언마운트)');
+          return;
+        }
+
+        // 이전 제출과 같은 ID면 아직 새 제출이 없는 것 → 계속 폴링
+        const currentSubmissionId = useGameStore.getState().submissionId;
+        if (
+          currentSubmissionId &&
+          String(result.submissionId) === currentSubmissionId
+        ) {
+          console.log('[pollResult] 이전 결과와 동일, 계속 폴링');
+          await new Promise((resolve) =>
+            setTimeout(resolve, POLLING_INTERVAL_MS),
+          );
+          continue;
+        }
+
+        // 채점 완료 확인 (새로운 제출)
         if (result.status !== 'PENDING') {
           // 'SUCCESS' 또는 'FAIL' → 결과 처리
           handleResult(result);
@@ -135,6 +164,12 @@ const ResultLoadingPage = () => {
           setTimeout(resolve, POLLING_INTERVAL_MS),
         );
       } catch {
+        // 언마운트 체크
+        if (isPollingCancelled.current) {
+          console.log('[pollResult] 폴링 취소됨 (언마운트)');
+          return;
+        }
+
         // 네트워크 에러 등 → 3초 대기 후 재시도
         await new Promise((resolve) =>
           setTimeout(resolve, POLLING_INTERVAL_MS),
@@ -143,7 +178,9 @@ const ResultLoadingPage = () => {
     }
 
     // 최대 시도 횟수 초과 → 타임아웃 에러
-    setErrorType('timeout');
+    if (!isPollingCancelled.current) {
+      setErrorType('timeout');
+    }
   }, [handleResult, roomId]);
 
   // ─────────────────────────────────────────────────────────────
@@ -157,6 +194,9 @@ const ResultLoadingPage = () => {
    * - codeResult 없음 (새로고침) → GET으로 결과 확인 또는 폴링
    */
   useEffect(() => {
+    // 폴링 취소 플래그 초기화
+    isPollingCancelled.current = false;
+
     const init = async () => {
       console.log('[init] 시작, roomId:', roomId, 'codeResult:', codeResult);
 
@@ -172,10 +212,44 @@ const ResultLoadingPage = () => {
       // Case 1: codeResult가 없음 (멀티모드 Guest 또는 새로고침)
       // ───────────────────────────────────────────────────────
       if (!codeResult) {
-        // 멀티모드 Guest: STOMP 구독으로 SUBMISSION_COMPLETED 대기
-        // (별도 useEffect에서 처리)
+        // 멀티모드 Guest: 먼저 현재 상태 확인 후 폴링으로 대기
+        // (STOMP 메시지가 타이밍 문제로 놓쳐질 수 있으므로 폴링을 병행)
         if (mode === 'MULTI') {
-          console.log('[init] 멀티모드 Guest - STOMP 구독으로 대기');
+          console.log('[init] 멀티모드 Guest - 현재 상태 확인');
+          console.log('[init] 이전 submissionId:', previousSubmissionId);
+          try {
+            // 이미 채점이 완료되었는지 확인
+            const res = await getLatestSubmission(roomId);
+            const result = res.result;
+
+            console.log('[init] 반환된 submissionId:', result.submissionId);
+
+            // 이전 제출과 같은 ID면 아직 새 제출이 없는 것 → 폴링 시작
+            if (
+              previousSubmissionId &&
+              String(result.submissionId) === previousSubmissionId
+            ) {
+              console.log(
+                '[init] 멀티모드 Guest - 이전 결과와 동일, 새 제출 대기 (폴링)',
+              );
+              pollResult();
+              return;
+            }
+
+            if (result.status !== 'PENDING') {
+              // 새로운 채점 완료 → 바로 결과 처리
+              console.log('[init] 멀티모드 Guest - 새 채점 완료됨');
+              handleResult(result);
+              return;
+            }
+            // 아직 PENDING → 폴링 시작 (STOMP도 별도 useEffect에서 구독)
+            console.log('[init] 멀티모드 Guest - PENDING 상태, 폴링 시작');
+            pollResult();
+          } catch {
+            console.log('[init] 멀티모드 Guest - 상태 확인 실패, 폴링 시작');
+            // 에러 시에도 폴링 시작 (제출이 아직 안 됐을 수 있음)
+            pollResult();
+          }
           return;
         }
 
@@ -229,18 +303,43 @@ const ResultLoadingPage = () => {
     };
 
     init();
-  }, [retryCount, roomId, codeResult, handleResult, pollResult, mode]);
+
+    // cleanup: 컴포넌트 언마운트 시 폴링 취소
+    return () => {
+      console.log('[useEffect cleanup] 폴링 취소 플래그 설정');
+      isPollingCancelled.current = true;
+    };
+  }, [
+    retryCount,
+    roomId,
+    codeResult,
+    handleResult,
+    pollResult,
+    mode,
+    previousSubmissionId,
+  ]);
 
   // ─────────────────────────────────────────────────────────────
-  // 멀티모드 Guest: STOMP 구독으로 SUBMISSION_COMPLETED 대기
+  // 멀티모드: 호스트/게스트 모두 STOMP 구독으로 SUBMISSION_COMPLETED 대기
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    // 멀티모드 + codeResult 없음 (Guest)일 때만 STOMP 구독
-    if (mode !== 'MULTI' || codeResult || !roomId) return;
+    const { client, connected } = useSocketStore.getState();
+    console.log('[STOMP useEffect] 실행됨, mode:', mode, 'roomId:', roomId);
+    console.log('[STOMP useEffect] 소켓 상태:', {
+      hasClient: !!client,
+      connected,
+    });
 
-    console.log('[STOMP] 멀티모드 Guest - SUBMISSION_COMPLETED 구독 시작');
+    // 멀티모드일 때만 STOMP 구독 (호스트/게스트 모두)
+    if (mode !== 'MULTI' || !roomId) {
+      console.log('[STOMP useEffect] 조건 불충족으로 return');
+      return;
+    }
+
+    console.log('[STOMP] 멀티모드 - SUBMISSION_COMPLETED 구독 시작');
 
     const unsub = subscribeRoom(Number(roomId), async (msg) => {
+      console.log('[STOMP] 메시지 수신:', msg.type);
       if (msg.type === 'SUBMISSION_COMPLETED') {
         console.log('[STOMP] SUBMISSION_COMPLETED 수신');
         try {
@@ -254,8 +353,13 @@ const ResultLoadingPage = () => {
       }
     });
 
+    console.log(
+      '[STOMP] 구독 결과:',
+      unsub ? '성공' : '실패 (unsub가 undefined)',
+    );
+
     return () => unsub?.();
-  }, [mode, codeResult, roomId, handleResult]);
+  }, [mode, roomId, handleResult]);
 
   // ─────────────────────────────────────────────────────────────
   // 렌더링
