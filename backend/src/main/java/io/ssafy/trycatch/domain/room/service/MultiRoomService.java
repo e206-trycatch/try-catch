@@ -589,6 +589,10 @@ public class MultiRoomService {
         List<RoomUser> roomUsers = roomUserRepository
                 .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
 
+        if (roomUsers.size() < 2) {
+            return false;
+        }
+
         boolean allReady = roomUsers.stream()
                 .allMatch(ru -> ru.getIsReady() == TrueOrFalse.T);
 
