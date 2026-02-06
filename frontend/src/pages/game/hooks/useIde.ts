@@ -87,7 +87,7 @@ export function useIde(root: FileNode) {
     if (file.type !== 'file') return;
 
     // 현재 파일의 코드를 저장하고 최신 fileCodes 상태를 로컬 변수로 유지
-    let latestFileCodes = { ...fileCodes };
+    const latestFileCodes = { ...fileCodes };
     if (activeFileId) {
       latestFileCodes[activeFileId] = currentCode;
       setFileCodes(latestFileCodes);
@@ -114,7 +114,7 @@ export function useIde(root: FileNode) {
     if (fileId === activeFileId) return;
 
     // 현재 파일의 코드를 저장하고 최신 fileCodes 상태를 로컬 변수로 유지
-    let latestFileCodes = { ...fileCodes };
+    const latestFileCodes = { ...fileCodes };
     if (activeFileId) {
       latestFileCodes[activeFileId] = currentCode;
       setFileCodes(latestFileCodes);
