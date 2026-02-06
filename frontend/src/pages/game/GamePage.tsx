@@ -16,6 +16,7 @@ import { startMultiGameTimer } from '../../api/startMultiGameTimer';
 import { startSingleGameTimer } from '../../api/startSingleGameTimer';
 import {
   connectStomp,
+  sendSocketMessage,
   subscribeLobby,
   subscribeRoom,
 } from '../../sockets/stomp';
@@ -419,10 +420,7 @@ export default function GamePage() {
 
     setResult(requestBody);
 
-    // sendSocketMessage(
-    // `/app/rooms/${roomId}/submission/start`,
-    // { type: 'SUBMISSION_STARTED', data: null }
-    // );
+    sendSocketMessage(`/app/room/${roomId}/submit/start`, {});
   };
 
   // 제출 버튼을 눌렀을 때 실행되는 함수

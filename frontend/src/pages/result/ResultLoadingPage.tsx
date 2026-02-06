@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { codeSubmission, getLatestSubmission } from '../../api/codeSubmission';
-import { disconnectStomp } from '../../sockets/stomp';
+import { disconnectStomp, subscribeRoom } from '../../sockets/stomp';
 import { useGameStore } from '../../stores/useGameStore';
 import { useResultStore } from '../../stores/useResultStore';
 import { useSubmissionStore } from '../../stores/useSubmissionStore';
@@ -52,6 +52,7 @@ const ResultLoadingPage = () => {
   // - 정상 흐름: GamePage에서 설정됨
   // - 새로고침 시: null (메모리에서 사라짐)
   const codeResult = useSubmissionStore((state) => state.result);
+  const mode = useGameStore((state) => state.mode);
 
   // 결과 저장용 함수들
   const setSubmissionResult = useResultStore(
@@ -168,12 +169,17 @@ const ResultLoadingPage = () => {
       }
 
       // ───────────────────────────────────────────────────────
-      // Case 1: 새로고침 (codeResult가 없음)
+      // Case 1: codeResult가 없음 (멀티모드 Guest 또는 새로고침)
       // ───────────────────────────────────────────────────────
-      // 새로고침하면 Zustand 메모리 상태가 초기화되어 codeResult가 null이 됨
-      // 하지만 서버에서는 채점이 진행 중이거나 완료되었을 수 있음
-      // → GET으로 현재 상태 확인
       if (!codeResult) {
+        // 멀티모드 Guest: STOMP 구독으로 SUBMISSION_COMPLETED 대기
+        // (별도 useEffect에서 처리)
+        if (mode === 'MULTI') {
+          console.log('[init] 멀티모드 Guest - STOMP 구독으로 대기');
+          return;
+        }
+
+        // 싱글모드 새로고침: GET으로 현재 상태 확인
         try {
           const res = await getLatestSubmission(roomId);
           const result = res.result;
@@ -223,7 +229,33 @@ const ResultLoadingPage = () => {
     };
 
     init();
-  }, [retryCount, roomId, codeResult, handleResult, pollResult]);
+  }, [retryCount, roomId, codeResult, handleResult, pollResult, mode]);
+
+  // ─────────────────────────────────────────────────────────────
+  // 멀티모드 Guest: STOMP 구독으로 SUBMISSION_COMPLETED 대기
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    // 멀티모드 + codeResult 없음 (Guest)일 때만 STOMP 구독
+    if (mode !== 'MULTI' || codeResult || !roomId) return;
+
+    console.log('[STOMP] 멀티모드 Guest - SUBMISSION_COMPLETED 구독 시작');
+
+    const unsub = subscribeRoom(Number(roomId), async (msg) => {
+      if (msg.type === 'SUBMISSION_COMPLETED') {
+        console.log('[STOMP] SUBMISSION_COMPLETED 수신');
+        try {
+          // 채점 완료 → 결과 조회
+          const res = await getLatestSubmission(roomId);
+          handleResult(res.result);
+        } catch (err) {
+          console.error('[STOMP] 결과 조회 실패:', err);
+          setErrorType(getErrorType(err));
+        }
+      }
+    });
+
+    return () => unsub?.();
+  }, [mode, codeResult, roomId, handleResult]);
 
   // ─────────────────────────────────────────────────────────────
   // 렌더링
