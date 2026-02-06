@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import api from '../../api/api';
@@ -33,11 +39,16 @@ const MultiQuestDescriptionPage: React.FC = () => {
   const [multiQuestTitle, setMultiQuestTitle] = useState('');
   const [multiQuestDescription, setMultiQuestDescription] = useState('');
   const [participants, setParticipants] = useState<MultiQuestParticipant[]>([]);
-  const [myReady, setMyReady] = useState(false);
   const [themeImageUrl, setLocalThemeImageUrl] = useState<string | null>(
     storeThemeImageUrl,
   );
   const navigatingRef = useRef(false);
+
+  // myReady는 participants에서 계산 (단일 출처 원칙)
+  const myReady = useMemo(
+    () => participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
+    [participants, userNickname],
+  );
 
   // 테마 아이디 없거나 currentRoomId 없으면 테마 페이지로
   useEffect(() => {
@@ -93,14 +104,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
         setMultiQuestOrder(detail.quest.questOrder);
         setMultiQuestTitle(detail.quest.title);
         setMultiQuestDescription(detail.quest.description);
+        // 서버에서 2명이 아니면 isReady를 false로 보내주므로 그대로 사용
         setParticipants(detail.participants);
-
-        // 서버에서 2명이 아니면 isReady를 false로 보내주므로
-        // 프론트에서는 서버 데이터를 그대로 사용
-        const me = detail.participants.find((p) => p.nickname === userNickname);
-        if (me) {
-          setMyReady(me.isReady);
-        }
       } catch (err) {
         console.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
@@ -113,7 +118,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
   }, [currentRoomId, currentQuestId, userNickname]);
 
   // 웹소켓 callback : QUEST READY STATUS
-  // - participants를 role 기준으로 업데이트한 후 '나'의 정보를 찾아 myReady를 설정
+  // - participants를 role 기준으로 업데이트 (myReady는 useMemo로 자동 계산됨)
   const onQuestReadyStatus = useCallback(
     (data: QuestReadyStatusData) => {
       console.log('[DEBUG] onQuestReadyStatus 호출됨');
@@ -147,14 +152,6 @@ const MultiQuestDescriptionPage: React.FC = () => {
           '[DEBUG] 업데이트된 participants:',
           JSON.stringify(updated, null, 2),
         );
-
-        // 업데이트된 participants에서 '나'의 정보를 찾아 myReady 동기화
-        const me = updated.find((p) => p.nickname === userNickname);
-        console.log('[DEBUG] 찾은 me:', me);
-        if (me) {
-          console.log('[DEBUG] setMyReady:', me.isReady);
-          setMyReady(me.isReady);
-        }
 
         return updated;
       });
