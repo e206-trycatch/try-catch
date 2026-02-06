@@ -35,5 +35,5 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("problemFrameworkId") Long problemFrameworkId,
             @Param("processingStatus") Submission.ProcessingStatus processingStatus);
 
-    List<Submission> findByRoomIAndSubmittedAtOrderByIdAsc(Long roomId, LocalDateTime submittedAt);
+    List<Submission> findByRoomIdAndSubmittedAtOrderByIdAsc(Long roomId, LocalDateTime submittedAt);
 }
