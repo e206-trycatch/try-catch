@@ -128,11 +128,13 @@ export default function GamePage() {
         let data = null;
 
         if (submissionId === null) {
+          // 첫 진입 (재도전 아님)
           data =
             mode === 'MULTI'
               ? await getMultiQuest(questId, roomId)
               : await getQuestFile(questId, roomId);
         } else if (submissionId) {
+          // 재도전: 이전 제출 코드 + 에러 로그 복원
           data = await getRetryQuestFile(submissionId, roomId);
         } else {
           throw new Error('submissionId가 올바르지 않습니다.');

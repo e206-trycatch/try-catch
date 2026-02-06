@@ -23,7 +23,7 @@ const MultiFailResult = ({ result }: Props) => {
   const [showError, setShowError] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState(false);
 
   const { roomId, questId, questOrder, executionTimeMs, roomState, errorLog } =
     result;
@@ -49,27 +49,30 @@ const MultiFailResult = ({ result }: Props) => {
   }, [roomId, currentNickname]);
 
   // RETRY_STARTED 메시지 구독 (게임 오버가 아닐 때만)
-  const { sendRetry } = useRetrySocket({
+  const { sendRetry, isRetrying } = useRetrySocket({
     roomId,
     questId,
     enabled: !isGameOver,
   });
 
   // 호스트가 재도전 버튼 클릭
-  const handleRetry = () => {
+  const handleRetry = async () => {
     if (!isHost || isRetrying) return;
 
-    setIsRetrying(true);
-    sendRetry();
+    setRetryError(false);
 
-    // 호스트도 RETRY_STARTED 메시지를 받으면 이동하지만,
-    // 혹시 메시지를 못 받을 경우를 대비해 타임아웃 후 직접 이동
-    setTimeout(() => {
-      if (isRetrying) {
+    try {
+      await sendRetry();
+      // API가 RETRY_STARTED를 브로드캐스트하므로,
+      // 호스트도 STOMP 메시지를 받아서 이동함
+      // 혹시 메시지를 못 받을 경우를 대비해 타임아웃 후 직접 이동
+      setTimeout(() => {
         clearStore();
         navigate(`/game/${roomId}/${questId}`);
-      }
-    }, 3000);
+      }, 3000);
+    } catch {
+      setRetryError(true);
+    }
   };
 
   // 메인 페이지로 이동 (호스트/게스트 모두 가능)
@@ -135,13 +138,20 @@ const MultiFailResult = ({ result }: Props) => {
           <>
             {isHost ? (
               // 호스트: 재도전 버튼 표시
-              <button
-                onClick={handleRetry}
-                disabled={isRetrying}
-                className="border border-white px-6 py-3 text-white hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isRetrying ? '재도전 준비 중...' : '재도전 >'}
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={handleRetry}
+                  disabled={isRetrying}
+                  className="border border-white px-6 py-3 text-white hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isRetrying ? '재도전 준비 중...' : '재도전 >'}
+                </button>
+                {retryError && (
+                  <p className="text-sm text-red-400">
+                    재도전 요청에 실패했습니다. 다시 시도해주세요.
+                  </p>
+                )}
+              </div>
             ) : (
               // 게스트: 대기 메시지 표시
               <div className="flex flex-col items-center gap-2">

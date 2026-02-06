@@ -8,3 +8,11 @@ export async function getGameSession(
   const { data } = await api.get(`/rooms/multi/${roomId}`);
   return data.result;
 }
+
+/**
+ * 멀티모드 재도전 API
+ * 게임 상태를 초기화하고 RETRY_STARTED를 브로드캐스트
+ */
+export async function retryMultiGame(roomId: number): Promise<void> {
+  await api.post(`/rooms/multi/${roomId}/retry`);
+}
