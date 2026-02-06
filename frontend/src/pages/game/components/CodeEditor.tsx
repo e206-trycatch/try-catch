@@ -24,13 +24,6 @@ export default function CodeEditor({
     activeFile?.role != null &&
     activeFile.role !== userRole;
 
-  if (!activeFile) {
-    return (
-      <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
-        파일을 선택해주세요
-      </div>
-    );
-  }
   return (
     <>
       <ToastContainer
@@ -51,42 +44,48 @@ export default function CodeEditor({
           minHeight: 'auto',
         }}
       />
-      <Editor
-        key={activeFile.id}
-        width="100%"
-        height="100%"
-        language={activeFile.language ?? 'javascript'}
-        value={code}
-        theme="vs-dark"
-        options={{
-          minimap: { enabled: false },
-          fontSize: 16,
-          contextmenu: false,
-          readOnly: isReadOnly,
-        }}
-        onChange={(f) => onChange(f ?? '')}
-        onMount={(editor, monacoInstance) => {
-          monacoInstance.editor.defineTheme('transparent-dark', {
-            base: 'vs-dark',
-            inherit: true,
-            rules: [],
-            colors: {
-              'editor.background': '#1E1E1EB3',
-            },
-          });
-          monacoInstance.editor.setTheme('transparent-dark');
+      {!activeFile ? (
+        <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
+          파일을 선택해주세요
+        </div>
+      ) : (
+        <Editor
+          key={activeFile.id}
+          width="100%"
+          height="100%"
+          language={activeFile.language ?? 'javascript'}
+          value={code}
+          theme="vs-dark"
+          options={{
+            minimap: { enabled: false },
+            fontSize: 16,
+            contextmenu: false,
+            readOnly: isReadOnly,
+          }}
+          onChange={(f) => onChange(f ?? '')}
+          onMount={(editor, monacoInstance) => {
+            monacoInstance.editor.defineTheme('transparent-dark', {
+              base: 'vs-dark',
+              inherit: true,
+              rules: [],
+              colors: {
+                'editor.background': '#1E1E1EB3',
+              },
+            });
+            monacoInstance.editor.setTheme('transparent-dark');
 
-          editor.onKeyDown((e) => {
-            const isSave =
-              (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS;
+            editor.onKeyDown((e) => {
+              const isSave =
+                (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS;
 
-            if (isSave) {
-              e.preventDefault();
-              toast.error('저장 기능을 사용할 수 없습니다.');
-            }
-          });
-        }}
-      />
+              if (isSave) {
+                e.preventDefault();
+                toast.error('저장 기능을 사용할 수 없습니다.');
+              }
+            });
+          }}
+        />
+      )}
     </>
   );
 }
