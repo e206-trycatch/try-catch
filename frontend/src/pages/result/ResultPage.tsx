@@ -47,6 +47,9 @@ const ResultPage = () => {
 
   // 실패 결과: 모드에 따라 다른 컴포넌트 렌더링
   const renderFailResult = () => {
+    // data.status가 'FAIL'일 때만 호출되므로 타입 단언 사용
+    if (data.status !== 'FAIL') return null;
+
     if (mode === 'MULTI') {
       return <MultiFailResult result={data} />;
     }
