@@ -5,16 +5,20 @@ import HintButton from './hint/HintButton';
 type Props = {
   fileMenu: boolean;
   mode: 'SINGLE' | 'MULTI' | null;
+  isSplit: boolean;
   onToggleFileMenu: () => void;
   onSave: () => void;
+  onToggleSplit: () => void;
   onOpenHintModal: () => void;
 };
 
 export default function Menubar({
   fileMenu,
   mode,
+  isSplit,
   onToggleFileMenu,
   onSave,
+  onToggleSplit,
   onOpenHintModal,
 }: Props) {
   return (
@@ -37,6 +41,31 @@ export default function Menubar({
             <img src={SaveIcon} alt="저장" className="w-[30px]" />
           </button>
         )}
+
+        {/* 스플릿 토글 버튼 */}
+        <button
+          type="button"
+          className={`cursor-pointer p-2 rounded-lg ${isSplit ? 'bg-white/20 opacity-100' : 'opacity-50 hover:opacity-75'}`}
+          onClick={onToggleSplit}
+          title={isSplit ? '스플릿 해제' : '화면 분할'}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-white"
+          >
+            {/* 세로 분할 아이콘 */}
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <line x1="12" y1="3" x2="12" y2="21" />
+          </svg>
+        </button>
+
         <HintButton onClick={onOpenHintModal} />
       </div>
     </div>
