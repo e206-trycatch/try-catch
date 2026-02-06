@@ -849,8 +849,8 @@ public class SubmissionService {
 
         // 4. 같은 시간에 제출된 모든 submission 조회 (Frontend + Backend)
         List<Submission> allSubmissions = submissionRepository
-                .findByRoomIdAndUserIdAndSubmittedAtOrderByIdAsc(
-                        roomId, userId, submission.getSubmittedAt()
+                .findByRoomIAndSubmittedAtOrderByIdAsc(
+                        roomId, submission.getSubmittedAt()
                 );
 
         // 5. Frontend/Backend 에러 로그 분리
