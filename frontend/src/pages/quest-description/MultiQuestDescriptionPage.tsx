@@ -95,14 +95,12 @@ const MultiQuestDescriptionPage: React.FC = () => {
         setMultiQuestDescription(detail.quest.description);
         setParticipants(detail.participants);
 
-        // 퀘스트 단계에서는 모든 참가자의 isReady를 false로 초기화
-        // (로비 단계의 ready 상태가 그대로 넘어오므로 프론트에서 리셋)
-        const resetParticipants = detail.participants.map((p) => ({
-          ...p,
-          isReady: false,
-        }));
-        setParticipants(resetParticipants);
-        setMyReady(false);
+        // 서버에서 2명이 아니면 isReady를 false로 보내주므로
+        // 프론트에서는 서버 데이터를 그대로 사용
+        const me = detail.participants.find((p) => p.nickname === userNickname);
+        if (me) {
+          setMyReady(me.isReady);
+        }
       } catch (err) {
         console.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
