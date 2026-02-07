@@ -97,11 +97,13 @@ const DinoGamePage = () => {
   }, [stopLoop]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <h1 className="text-3xl font-bold text-gray-700 mb-6">Dino Game</h1>
+    <div className="flex h-screen flex-col items-center justify-center gap-6">
+      <p className="text-4xl text-gray-400">프로젝트 힘들다..</p>
+      <p className="text-4xl text-gray-400">아.. 디버깅 하기 싫다..</p>
+      <h1 className="text-3xl font-bold text-white">Dino Game</h1>
 
       {/* 점수판 */}
-      <div className="flex gap-8 mb-4 font-mono text-xl text-gray-600">
+      <div className="flex gap-8 mb-2 font-mono text-lg text-gray-400">
         <div>HI {String(gameState.highScore).padStart(5, '0')}</div>
         <div>{String(Math.floor(gameState.score)).padStart(5, '0')}</div>
       </div>
@@ -137,7 +139,7 @@ const DinoGamePage = () => {
       </div>
 
       {/* 조작법 */}
-      <div className="mt-6 text-gray-500 text-sm">
+      <div className="mt-2 text-gray-500 text-sm">
         <p>Space / ↑ : Jump | ↓ : Duck</p>
       </div>
     </div>
