@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @plugin "tailwind-scrollbar";
+@plugin "@tailwindcss/typography";
 
 /* ! 전역 스타일 설정 */
 @font-face {

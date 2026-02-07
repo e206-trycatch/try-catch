@@ -1,6 +1,8 @@
 import { Editor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
+import ReactMarkdown from 'react-markdown';
 import { Bounce, toast, ToastContainer } from 'react-toastify';
+import remarkGfm from 'remark-gfm';
 
 import type { CodeRole, FileNode } from '../types/ideTypes';
 
@@ -46,6 +48,10 @@ export default function CodeEditor({
       {!activeFile ? (
         <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
           파일을 선택해주세요
+        </div>
+      ) : activeFile.language === 'markdown' ? (
+        <div className="w-full h-full overflow-auto bg-[#1E1E1EB3] p-6 prose prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{code}</ReactMarkdown>
         </div>
       ) : (
         <Editor
