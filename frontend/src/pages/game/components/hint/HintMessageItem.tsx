@@ -61,7 +61,7 @@ export default function HintMessageItem({ message }: Props) {
         </div>
         <div className="flex flex-col gap-1 max-w-[70%]">
           <div className="bg-amber-500/20 rounded-lg px-3 py-2">
-            <p className="text-gray-200 text-sm whitespace-pre-wrap">
+            <p className="text-gray-200 text-sm whitespace-pre-wrap break-words">
               {message.content}
             </p>
           </div>
