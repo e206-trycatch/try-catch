@@ -499,6 +499,12 @@ export default function GamePage() {
 
   // 현재 사용 중인 framework 이름 가져오기
   const currentFramework = useMemo(() => {
+    // 1. API 응답에 framework가 있으면 바로 사용 (멀티모드, 재도전)
+    if (questInfo?.framework) {
+      return questInfo.framework;
+    }
+
+    // 2. framework가 없으면 기존 로직으로 폴백 (싱글 첫 진입, 싱글 풀스택)
     const { draft, availableFrameworks } = useRoomStore.getState();
     const { selectedFrameworkId, frontendId, backendId, position } = draft;
     const mode = useGameStore.getState().mode;
@@ -508,34 +514,30 @@ export default function GamePage() {
       return 'fullstack';
     }
 
-    // frameworkId 결정
-    let frameworkId: number | null = null;
+    // 싱글 모드 첫 진입의 경우 availableFrameworks에서 찾기
     if (mode === 'SINGLE') {
-      frameworkId = selectedFrameworkId || frontendId || backendId;
-    } else {
-      // MULTI 모드: host/guest frameworkId 사용
-      frameworkId = draft.hostFrameworkId || draft.guestFrameworkId;
+      const frameworkId = selectedFrameworkId || frontendId || backendId;
+      if (!frameworkId || !availableFrameworks) return '';
+
+      const allFrameworks = [
+        ...(availableFrameworks.FRONTEND || []),
+        ...(availableFrameworks.BACKEND || []),
+        ...(availableFrameworks.FULLSTACK || []),
+      ];
+      const found = allFrameworks.find((f) => f.id === frameworkId);
+      if (!found) return '';
+
+      const name = found.name.toLowerCase();
+      if (name.includes('spring')) return 'spring';
+      if (name.includes('django')) return 'django';
+      if (name.includes('vue')) return 'vue';
+      if (name.includes('react')) return 'react';
+      return name;
     }
 
-    if (!frameworkId || !availableFrameworks) return '';
-
-    // availableFrameworks에서 name 찾기
-    const allFrameworks = [
-      ...(availableFrameworks.FRONTEND || []),
-      ...(availableFrameworks.BACKEND || []),
-      ...(availableFrameworks.FULLSTACK || []),
-    ];
-    const found = allFrameworks.find((f) => f.id === frameworkId);
-    if (!found) return '';
-
-    // AI 서버에서 기대하는 형식으로 변환 (SpringBoot -> spring, Django -> django, Vue -> vue)
-    const name = found.name.toLowerCase();
-    if (name.includes('spring')) return 'spring';
-    if (name.includes('django')) return 'django';
-    if (name.includes('vue')) return 'vue';
-    if (name.includes('react')) return 'react';
-    return name;
-  }, []);
+    // 멀티모드인데 framework가 없는 경우 (이론상 발생하지 않음)
+    return '';
+  }, [questInfo?.framework]);
 
   const rootNode = useMemo<FileNode>(
     () => ({
