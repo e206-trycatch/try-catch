@@ -52,6 +52,7 @@ export default function GameInfoBar({ gameSession }: GameInfoBarProps) {
           <span>참여자</span>
           <div className="flex gap-2 items-center justify-center">
             <span>{gameSession.host.nickname}</span>
+            <span>|</span>
             <span>{gameSession.guest.nickname}</span>
           </div>
         </div>
