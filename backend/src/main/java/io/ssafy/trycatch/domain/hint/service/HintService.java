@@ -55,7 +55,7 @@ public class HintService {
 
 
         // 1. 방 조회 및 힌트 개수 확인
-        Room room = roomRepository.findById(roomId)
+        Room room = roomRepository.findByIdWithLock(roomId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         if (room.getRemainingHintCount() <= 0) {

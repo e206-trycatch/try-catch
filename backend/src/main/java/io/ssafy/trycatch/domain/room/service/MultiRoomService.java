@@ -548,6 +548,8 @@ public class MultiRoomService {
     // ROOM-MULTI-009: 준비 상태 토글
     @Transactional
     public ReadyStatusDto toggleReady(Long roomId, Long userId) {
+        Room room = roomRepository.findByIdWithLock(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         // 1. RoomUser 조회
         RoomUser roomUser = roomUserRepository
                 .findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
@@ -586,6 +588,9 @@ public class MultiRoomService {
 
     @Transactional
     public boolean checkAllReady(Long roomId) {
+        Room room = roomRepository.findByIdWithLock(roomId, TrueOrFalse.F)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
         List<RoomUser> roomUsers = roomUserRepository
                 .findAllByRoomIdAndIsDeleted(roomId, TrueOrFalse.F);
 
