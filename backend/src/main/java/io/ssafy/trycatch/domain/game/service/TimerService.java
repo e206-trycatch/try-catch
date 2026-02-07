@@ -111,6 +111,7 @@ public class TimerService {
         return GameStartRespDto.builder()
                 .roomId(room.getId())
                 .status(room.getStatus())
+                .startedAt(room.getStartedAt())
                 .build();
     }
 
