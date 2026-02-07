@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import api from '../../api/api';
 import { ThemeCardList } from '../../components/theme-selection/ThemeCardList';
@@ -49,7 +50,9 @@ const ThemeSelectionPage = () => {
 
   useEffect(() => {
     if (!mode) {
-      alert('모드 선택이 필요합니다.');
+      toast.warn('모드 선택이 필요합니다.', {
+        containerId: 'global',
+      });
       navigate('/selection/mode');
     }
   }, [mode, navigate]);

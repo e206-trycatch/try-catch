@@ -1,5 +1,7 @@
 // 프로필 조회 섹션 (1차: 조회만, 2차: 수정 기능 추가 예정)
 
+import { toast } from 'react-toastify';
+
 import defaultProfile from '../../assets/images/icons/default_profile.png';
 import type { Profile } from './types/user';
 
@@ -16,7 +18,9 @@ const ActionButton = ({
   variant?: 'default' | 'small' | 'link';
 }) => {
   const handleNotImplemented = () => {
-    alert('추후 기능 구현 예정입니다.');
+    toast.info('추후 기능 구현 예정입니다.', {
+      containerId: 'global',
+    });
   };
 
   const baseStyles = {

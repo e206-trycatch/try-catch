@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { Bounce, ToastContainer } from 'react-toastify';
 import { Route, Routes } from 'react-router-dom';
 
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -64,8 +65,28 @@ function App() {
   }
 
   return (
-    <AnimatePresence>
-      <Routes>
+    <>
+      <ToastContainer
+        containerId="global"
+        position="top-center"
+        autoClose={1500}
+        hideProgressBar
+        transition={Bounce}
+        style={{ marginTop: '12px', zIndex: 99999 }}
+        newestOnTop
+        toastStyle={{
+          backgroundColor: '#1e1b3a',
+          border: '1px solid #555184',
+          color: '#e2e0f0',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 500,
+          padding: '12px 12px',
+          minHeight: 'auto',
+        }}
+      />
+      <AnimatePresence>
+        <Routes>
         <Route element={<MainLayout />}>
           {/* Public - 누구나 접근 가능 */}
           <Route path="/" element={<HomePage />} />
@@ -105,8 +126,9 @@ function App() {
             <Route path="/mypage" element={<MyPage />} />
           </Route>
         </Route>
-      </Routes>
-    </AnimatePresence>
+        </Routes>
+      </AnimatePresence>
+    </>
   );
 }
 

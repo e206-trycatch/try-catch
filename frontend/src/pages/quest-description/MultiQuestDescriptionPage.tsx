@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import api from '../../api/api';
 import {
@@ -53,12 +54,14 @@ const MultiQuestDescriptionPage: React.FC = () => {
   // 테마 아이디 없거나 currentRoomId 없으면 테마 페이지로
   useEffect(() => {
     if (!themeId) {
-      alert('테마를 선택해주세요.');
+      toast.warn('테마를 선택해주세요.', { containerId: 'global' });
       navigate('/selection/theme');
       return;
     }
     if (!currentRoomId) {
-      alert('방 정보를 찾을 수 없습니다.');
+      toast.warn('방 정보를 찾을 수 없습니다.', {
+        containerId: 'global',
+      });
       navigate('/selection/theme');
     }
   }, [themeId, currentRoomId, navigate]);
