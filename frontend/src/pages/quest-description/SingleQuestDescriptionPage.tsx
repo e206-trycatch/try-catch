@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import { fetchQuestList, type QuestDetail } from '../../api/roomApi';
 import QuestDescriptionBox from '../../components/quest/QuestDescriptionBox';
@@ -24,12 +25,14 @@ const SingleQuestDescriptionPage: React.FC = () => {
 
   useEffect(() => {
     if (!themeId) {
-      alert('테마를 선택해주세요.');
+      toast.warn('테마를 선택해주세요.', { containerId: 'global' });
       navigate('/selection/theme');
       return;
     }
     if (!currentRoomId) {
-      alert('방 정보를 찾을 수 없습니다.');
+      toast.warn('방 정보를 찾을 수 없습니다.', {
+        containerId: 'global',
+      });
       navigate('/selection/theme');
     }
   }, [themeId, currentRoomId, navigate]);
@@ -84,7 +87,9 @@ const SingleQuestDescriptionPage: React.FC = () => {
     if (currentRoomId && firstQuest) {
       navigate(`/game/${currentRoomId}/${firstQuest.questId}`);
     } else {
-      alert('방 ID 또는 퀘스트 정보를 찾을 수 없습니다.');
+      toast.error('방 ID 또는 퀘스트 정보를 찾을 수 없습니다.', {
+        containerId: 'global',
+      });
       navigate('/selection/theme');
     }
   };

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import { fetchSingleSetting } from '../../api/roomApi';
 import SingleRoomSettingForm from '../../components/room-setting/SingleRoomSettingForm';
@@ -31,7 +32,7 @@ const SingleRoomSettingPage = () => {
 
     // 토큰 없으면 401 날 가능성이 높으니 로그인
     if (!accessToken) {
-      alert('로그인이 필요합니다.');
+      toast.warn('로그인이 필요합니다.', { containerId: 'global' });
       navigate('/login');
       return;
     }
@@ -46,7 +47,10 @@ const SingleRoomSettingPage = () => {
           data?.result ?? {};
         if (!frameworks) {
           console.error('싱글 설정 응답 형태 확인 필요:', data);
-          alert(data?.message ?? '설정 데이터를 불러오지 못했습니다.');
+          toast.error(
+            data?.message ?? '설정 데이터를 불러오지 못했습니다.',
+            { containerId: 'global' },
+          );
           return;
         }
 
@@ -54,7 +58,9 @@ const SingleRoomSettingPage = () => {
         setAvailableFrameworks(frameworks);
       } catch (e) {
         console.error('싱글 설정 데이터 로드 실패:', e);
-        alert('설정 데이터를 불러오지 못했습니다.');
+        toast.error('설정 데이터를 불러오지 못했습니다.', {
+          containerId: 'global',
+        });
       }
     })();
   }, [
@@ -68,13 +74,17 @@ const SingleRoomSettingPage = () => {
   const handleStartGame = async () => {
     const validation = validateDraft();
     if (!validation.ok) {
-      alert(validation.errors.join('\n'));
+      toast.warn(validation.errors.join('\n'), {
+        containerId: 'global',
+      });
       return;
     }
 
     const payload = buildCreatePayload();
     if (!payload) {
-      alert('방 생성 정보가 올바르지 않습니다.');
+      toast.error('방 생성 정보가 올바르지 않습니다.', {
+        containerId: 'global',
+      });
       return;
     }
 
@@ -85,7 +95,7 @@ const SingleRoomSettingPage = () => {
       setCurrentQuestId(result.questId);
       navigate('/story');
     } else {
-      alert(result.error);
+      toast.error(result.error, { containerId: 'global' });
     }
   };
 

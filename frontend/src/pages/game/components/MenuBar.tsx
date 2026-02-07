@@ -1,5 +1,5 @@
-import FileIcon from '../../../assets/images/icons/file_icon.svg';
-import SaveIcon from '../../../assets/images/icons/save_icon.svg';
+import FileIcon from '../../../assets/images/icons/file_icon.png';
+import SaveIcon from '../../../assets/images/icons/save_icon.png';
 import HintButton from './hint/HintButton';
 
 type Props = {
@@ -50,8 +50,8 @@ export default function Menubar({
           title={isSplit ? '스플릿 해제' : '화면 분할'}
         >
           <svg
-            width="24"
-            height="24"
+            width="27"
+            height="27"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -60,7 +60,6 @@ export default function Menubar({
             strokeLinejoin="round"
             className="text-white"
           >
-            {/* 세로 분할 아이콘 */}
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="12" y1="3" x2="12" y2="21" />
           </svg>

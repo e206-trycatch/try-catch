@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import {
   fetchMultiQuestStories,
@@ -34,7 +35,7 @@ const StoryPage = () => {
   // 스토리 로드
   useEffect(() => {
     if (!currentQuestId || !currentRoomId) {
-      alert('잘못된 접근입니다.');
+      toast.warn('잘못된 접근입니다.', { containerId: 'global' });
       navigate('/selection/theme');
       return;
     }

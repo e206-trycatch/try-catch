@@ -260,7 +260,7 @@ export default function GamePage() {
         const timeData = await getSingleTimer(Number(roomId));
         if (!timeData.startedAt) {
           // 화면 전환 후 3초 대기 → ready 신호 전송
-          await new Promise((r) => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, 2000));
           await startMultiGameTimer(Number(roomId));
         }
 
@@ -277,20 +277,13 @@ export default function GamePage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
+                      className="flex justify-center items-center bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
                       onClick={() => {
                         loadShareCodeRef.current?.();
                         toast.dismiss(toastId);
                       }}
                     >
                       불러오기
-                    </button>
-                    <button
-                      type="button"
-                      className="bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
-                      onClick={() => toast.dismiss(toastId)}
-                    >
-                      닫기
                     </button>
                   </div>
                 </div>,
@@ -443,7 +436,7 @@ export default function GamePage() {
         <div className="flex gap-2">
           <button
             type="button"
-            className="bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
+            className="flex justify-center items-center bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
             onClick={() => {
               toast.dismiss(toastId);
               submitCode();
@@ -453,7 +446,7 @@ export default function GamePage() {
           </button>
           <button
             type="button"
-            className="bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
+            className="flex justify-center items-center bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
             onClick={() => toast.dismiss(toastId)}
           >
             취소
@@ -463,7 +456,7 @@ export default function GamePage() {
       {
         toastId,
         position: 'top-right',
-        autoClose: 3000,
+        autoClose: 3500,
         hideProgressBar: true,
         closeButton: false,
         icon: false,

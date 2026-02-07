@@ -1,6 +1,7 @@
 // ThemeCardList.tsx
 // activeId 상태, 카드 확장 레이아웃
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 import { type Theme } from '../../mocks/mockData';
 import { ThemeCard } from './ThemeCard';
@@ -23,7 +24,9 @@ export const ThemeCardList = ({
 
   const handleCardClick = (theme: Theme) => {
     if (!theme.isAvailable) {
-      alert('준비중인 테마입니다. 곧 만나요! 🚀');
+      toast.info('준비중인 테마입니다. 곧 만나요!', {
+        containerId: 'global',
+      });
       return;
     }
 
@@ -34,7 +37,9 @@ export const ThemeCardList = ({
   const handleStartClick = (e: React.MouseEvent, theme: Theme) => {
     e.stopPropagation();
     if (!theme.isAvailable) {
-      alert('준비중인 테마입니다. 곧 만나요! 🚀');
+      toast.info('준비중인 테마입니다. 곧 만나요!', {
+        containerId: 'global',
+      });
       return;
     }
     onStartGame(theme);
