@@ -74,9 +74,6 @@ public class HintService {
             return noHintResponse;
         }
 
-        // 2. 힌트 개수 차감 (트랜잭션 내에서)
-        room.useHint();
-        roomRepository.save(room);
 
         // 1. 사용자 제출 코드를 Redis에 임시 저장 (AI 서버가 조회할 수 있도록)
         saveUserCodeToRedis(userId, problemFrameworkId, submission);
@@ -102,6 +99,10 @@ public class HintService {
 
             // 3. Redis에 힌트 저장
             saveResponse(roomId, userId, response, now);
+
+            // 2. 힌트 개수 차감 (트랜잭션 내에서)
+            room.useHint();
+            roomRepository.save(room);
 
             if (response.isSuccess()) {
                 log.info("힌트 생성 및 저장 성공 - roomId: {}, userId: {}, problemId: {}",
