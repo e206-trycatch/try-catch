@@ -7,12 +7,10 @@ import io.ssafy.trycatch.domain.game.entity.SavedCode;
 import io.ssafy.trycatch.domain.game.mapper.CodeSaveMapper;
 import io.ssafy.trycatch.domain.game.repository.SavedCodeRepository;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
-import io.ssafy.trycatch.domain.room.entity.ProblemFile;
-import io.ssafy.trycatch.domain.room.entity.ProblemFramework;
-import io.ssafy.trycatch.domain.room.entity.Room;
-import io.ssafy.trycatch.domain.room.entity.RoomUser;
+import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.RoomPosition;
 import io.ssafy.trycatch.domain.room.enums.RoomStatus;
+import io.ssafy.trycatch.domain.room.repository.FrameworkRepository;
 import io.ssafy.trycatch.domain.room.repository.ProblemFileRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomRepository;
 import io.ssafy.trycatch.domain.room.repository.RoomUserRepository;
@@ -52,6 +50,7 @@ public class MultiGameService {
     private final RoomUserRepository roomUserRepository;
     private final CodeSaveMapper codeSaveMapper;
     private final SavedCodeRepository savedCodeRepository;
+    private final FrameworkRepository frameworkRepository;
 
 
     private final SimpMessageSendingOperations messagingTemplate;
@@ -113,14 +112,39 @@ public class MultiGameService {
         RoomUser roomUser = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
 
+        // 9. 유저 포지션에 맞는 프레임워크 ID 가져오기
+        Long userFrameworkId = roomUser.getPosition() == RoomPosition.FRONTEND
+                ? room.getFrontendId()
+                : room.getBackendId();
+
+        // 10. Framework 엔티티 조회
+        Framework framework = frameworkRepository.findById(userFrameworkId)
+                .orElseThrow(() -> new CustomException(FRAMEWORK_NOT_FOUND));
+
         return MultiProblemFileListRespDto.builder()
                 .problemFrameworkId(problemFramework.getId())
                 .myPosition(roomUser.getPosition().name())
+                .framework(convertFrameworkName(framework.getName()))
                 .frontendErrorLog(problemFramework.getFrontendErrorLog())
                 .backendErrorLog(problemFramework.getBackendErrorLog())
                 .files(fileDtos)
                 .build();
 
+    }
+
+    private String convertFrameworkName(String frameworkName) {
+        switch (frameworkName) {
+            case "React":
+                return "react";
+            case "Vue.js":
+                return "vue";
+            case "Spring Boot":
+                return "spring";
+            case "Django":
+                return "django";
+            default:
+                return frameworkName.toLowerCase();
+        }
     }
 
     // 멀티 - 문제 임시 저장

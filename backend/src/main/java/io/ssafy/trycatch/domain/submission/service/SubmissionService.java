@@ -6,6 +6,7 @@ import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
 import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.FileType;
 import io.ssafy.trycatch.domain.room.enums.FrameworkCategory;
+import io.ssafy.trycatch.domain.room.enums.RoomPosition;
 import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.domain.room.service.SingleRoomService;
 import io.ssafy.trycatch.domain.submission.dto.request.SubmissionReqDto;
@@ -910,14 +911,51 @@ public class SubmissionService {
         RoomUser roomUser = roomUserRepository.findByRoomIdAndUserIdAndIsDeleted(roomId, userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(USER_NOT_IN_ROOM));
 
-        // 9. 응답 생성
+        Long userFrameworkId = null;
+        Framework framework = null;
+
+        if (roomUser.getPosition() == RoomPosition.FRONTEND) {
+            userFrameworkId = room.getFrontendId();
+            framework = frameworkRepository.findById(userFrameworkId)
+                    .orElseThrow(() -> new CustomException(FRAMEWORK_NOT_FOUND));
+
+        } else if (roomUser.getPosition() == RoomPosition.BACKEND) {
+            userFrameworkId = room.getBackendId();
+            framework = frameworkRepository.findById(userFrameworkId)
+                    .orElseThrow(() -> new CustomException(FRAMEWORK_NOT_FOUND));
+
+        } else {
+            // FULLSTACK
+            framework = null;
+        }
+
         return MultiProblemFileListRespDto.builder()
                 .problemFrameworkId(problemFrameworkId)
                 .myPosition(roomUser.getPosition().name())
+                .framework(
+                        framework != null
+                                ? convertFrameworkName(framework.getName())
+                                : null
+                )
                 .frontendErrorLog(frontendErrorLog)
                 .backendErrorLog(backendErrorLog)
                 .files(allFiles)
                 .build();
+    }
+
+    private String convertFrameworkName(String frameworkName) {
+        switch (frameworkName) {
+            case "React":
+                return "react";
+            case "Vue.js":
+                return "vue";
+            case "Spring Boot":
+                return "spring";
+            case "Django":
+                return "django";
+            default:
+                return frameworkName.toLowerCase();
+        }
     }
 
     private void validateSubmissionAccess(Submission submission, Long userId, Long roomId) {
