@@ -132,7 +132,7 @@ const InvitationPage: React.FC = () => {
         {/* Shadow */}
         <div
           ref={shadowRef}
-          className="absolute w-[370px] h-[1px] bg-transparent rounded-[30%] shadow-[93px 187px 19px 9px #CCCBD5]"
+          className="absolute w-[370px] h-[1px] bg-transparent rounded-[30%] opacity-0"
         />
 
         <Envelope>
