@@ -12,6 +12,7 @@ export interface QuestFile {
 
 export interface QuestInfo {
   problemFrameworkId: number;
+  framework?: string; // AI 힌트용 프레임워크 이름 ("vue", "spring" 등), FULLSTACK은 null
   frontendErrorLog: string;
   backendErrorLog: string;
   myPosition?: CodeRole;
