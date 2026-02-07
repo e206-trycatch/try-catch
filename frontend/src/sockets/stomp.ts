@@ -105,18 +105,13 @@ const subscribe = <T = ServerToClientMessage>(
   };
 };
 
-// 구독 키 카운터 (고유 키 생성용)
-let subscriptionCounter = 0;
-
 // 게임 topic 구독
-// 각 호출마다 고유한 키를 생성하여 서로 다른 컴포넌트의 구독이 간섭하지 않도록 함
 export const subscribeRoom = (
   roomId: number,
   handler: (msg: ServerToClientMessage) => void,
 ) => {
   console.log('[subscribeRoom] 호출됨, roomId:', roomId);
-  const uniqueKey = `room-${roomId}-${++subscriptionCounter}`;
-  return subscribe(uniqueKey, `/topic/room/${roomId}/game`, handler);
+  return subscribe(`room-${roomId}`, `/topic/room/${roomId}/game`, handler);
 };
 
 // 서버로 메시지 전송하기
