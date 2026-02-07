@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useHintStore } from '../../../../stores/useHintStore';
+import { HINT_INFO_MESSAGES } from './hintInfoMessages';
 import HintMessageItem from './HintMessageItem';
 import TypingIndicator from './TypingIndicator';
 
@@ -17,10 +18,22 @@ export default function HintMessageList() {
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-500">
-        <div className="text-center">
-          <p className="text-lg mb-2">AI 힌트</p>
-          <p className="text-sm">질문을 입력하면 AI가 힌트를 제공합니다.</p>
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm rounded-lg bg-stone-800/60 border border-stone-700/50 p-5">
+          <p className="text-amber-400 font-semibold text-sm mb-3">
+            AI 힌트 도우미
+          </p>
+          <ul className="space-y-2">
+            {HINT_INFO_MESSAGES.map((msg) => (
+              <li
+                key={msg}
+                className="flex items-start gap-2 text-xs text-gray-400"
+              >
+                <span className="text-amber-500 shrink-0 leading-none">•</span>
+                <span>{msg}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     );

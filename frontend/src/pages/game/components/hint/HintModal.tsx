@@ -4,6 +4,7 @@ import type { HintCreateRequest } from '../../../../api/hintApi';
 import { getHintHistory } from '../../../../api/hintApi';
 import { useGameStore } from '../../../../stores/useGameStore';
 import { useHintStore } from '../../../../stores/useHintStore';
+import HintInfoTooltip from './HintInfoTooltip';
 import HintInputForm from './HintInputForm';
 import HintMessageList from './HintMessageList';
 
@@ -75,11 +76,13 @@ export default function HintModal({
               ))}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 transition-colors"
-          >
+          <div className="flex items-center gap-2">
+            <HintInfoTooltip />
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-200 transition-colors"
+            >
             <svg
               className="w-5 h-5"
               fill="none"
@@ -92,8 +95,9 @@ export default function HintModal({
                 strokeWidth={2}
                 d="M6 18L18 6M6 6l12 12"
               />
-            </svg>
-          </button>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* 메시지 목록 */}
