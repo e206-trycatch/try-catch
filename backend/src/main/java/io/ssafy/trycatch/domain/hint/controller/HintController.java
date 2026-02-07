@@ -40,7 +40,7 @@ public class HintController {
             @RequestBody HintCreateReqDto requestDto,
             @AuthenticationPrincipal Long userId) {
 
-        log.info("힌트 생성 요청 - roomId: {}, userId: {}", roomId, userId);
+        log.info("힌트 생성 요청 - roomId: {}, userId: {}, framework: {}", roomId, userId, requestDto.getFramework());
 
         // 1. 방 조회 및 힌트 검증 (1번 쿼리)
         Room room = hintService.validateAndGetRoom(roomId);
