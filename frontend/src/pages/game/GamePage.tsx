@@ -166,10 +166,10 @@ export default function GamePage() {
 
         if (timeData.startedAt) {
           // 기존 타이머가 있으면 복원 (새로고침 대응)
-          timerRestoredRef.current = true;
           startTimer(timeData.deadlineAt);
         } else if (mode === 'SINGLE') {
-          // 싱글: 타이머 시작
+          // 싱글: 화면 전환 후 3초 대기 → 타이머 시작
+          await new Promise((r) => setTimeout(r, 3000));
           const newTimeData = await startSingleGameTimer(Number(roomId));
           startTimer(newTimeData.deadlineAt);
         }
@@ -200,9 +200,6 @@ export default function GamePage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
-
-  // 타이머가 이미 복원되었는지 추적 (새로고침 시 startMultiGameTimer 중복 호출 방지)
-  const timerRestoredRef = useRef(false);
 
   // STOMP 구독 해제 함수 저장용 ref
   const unsubscribeRoomRef = useRef<(() => void) | undefined>(undefined);
@@ -259,8 +256,11 @@ export default function GamePage() {
 
       // 멀티모드 처리 (STOMP 구독 완료 후 ready 신호 전송)
       if (mode === 'MULTI') {
-        // 새로고침으로 타이머가 이미 복원된 경우 ready 신호 재전송 방지
-        if (!timerRestoredRef.current) {
+        // 타이머가 이미 시작된 경우(새로고침) ready 신호 재전송 방지
+        const timeData = await getSingleTimer(Number(roomId));
+        if (!timeData.startedAt) {
+          // 화면 전환 후 3초 대기 → ready 신호 전송
+          await new Promise((r) => setTimeout(r, 3000));
           await startMultiGameTimer(Number(roomId));
         }
 
