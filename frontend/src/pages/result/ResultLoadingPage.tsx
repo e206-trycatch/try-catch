@@ -351,6 +351,25 @@ const ResultLoadingPage = () => {
           setErrorType(getErrorType(err));
         }
       }
+
+      // 호스트가 재도전 → 게스트도 게임 페이지로 이동 (납치)
+      if (msg.type === 'RETRY_STARTED') {
+        console.log('[STOMP] RETRY_STARTED 수신');
+        const result = useResultStore.getState().submissionResult;
+
+        if (!result) {
+          // 엣지 케이스: 아직 채점 완료 전 (거의 불가능하지만 방어)
+          // 결과 페이지로 가면 거기서 납치됨
+          console.warn(
+            '[STOMP] RETRY_STARTED 수신했으나 submissionResult 없음',
+          );
+          return;
+        }
+
+        // useRetrySocket과 동일하게 처리
+        useResultStore.getState().clear();
+        navigate(`/game/${roomId}/${result.questId}`);
+      }
     });
 
     console.log(
@@ -359,7 +378,7 @@ const ResultLoadingPage = () => {
     );
 
     return () => unsub?.();
-  }, [mode, roomId, handleResult]);
+  }, [mode, roomId, handleResult, navigate]);
 
   // ─────────────────────────────────────────────────────────────
   // 렌더링
