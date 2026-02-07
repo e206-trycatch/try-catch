@@ -20,6 +20,8 @@ public class MultiProblemFileListRespDto {      // 멀티 - 문제 파일 목록
     // 유저의 포지션 name (싱글에서 이것 하나만 추가됨)
     private String myPosition;
 
+    private String framework;
+
     // 프론트엔드 에러 로그
     private String frontendErrorLog;
 
