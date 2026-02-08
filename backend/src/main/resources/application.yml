@@ -71,7 +71,7 @@ app:
 
 ai:
   server:
-    base-url: http://trycatch-ai:8000
+    base-url: ${AI_SERVER_URL}
 
 management:
   endpoints:
