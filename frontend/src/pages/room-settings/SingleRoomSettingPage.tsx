@@ -47,10 +47,9 @@ const SingleRoomSettingPage = () => {
           data?.result ?? {};
         if (!frameworks) {
           console.error('싱글 설정 응답 형태 확인 필요:', data);
-          toast.error(
-            data?.message ?? '설정 데이터를 불러오지 못했습니다.',
-            { containerId: 'global' },
-          );
+          toast.error(data?.message ?? '설정 데이터를 불러오지 못했습니다.', {
+            containerId: 'global',
+          });
           return;
         }
 

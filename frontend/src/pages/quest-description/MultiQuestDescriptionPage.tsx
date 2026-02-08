@@ -47,7 +47,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
 
   // myReady는 participants에서 계산 (단일 출처 원칙)
   const myReady = useMemo(
-    () => participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
+    () =>
+      participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
     [participants, userNickname],
   );
 

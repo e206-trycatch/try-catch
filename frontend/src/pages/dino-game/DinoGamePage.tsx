@@ -98,7 +98,9 @@ const DinoGamePage = () => {
 
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-6">
-      <p className="text-4xl text-gray-400">아 ㅋㅋ 디버깅 보다 이게 더 재밌는듯 ㅋㅋ</p>
+      <p className="text-4xl text-gray-400">
+        아 ㅋㅋ 디버깅 보다 이게 더 재밌는듯 ㅋㅋ
+      </p>
       <h1 className="text-3xl font-bold text-white">Dino Game</h1>
 
       {/* 점수판 */}
