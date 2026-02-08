@@ -1,9 +1,10 @@
 services:
   prometheus:
-    image: prom/prometheus
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prometheus
     container_name: trycatch-prometheus
     volumes:
-      - ./backend/prometheus-prod.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
