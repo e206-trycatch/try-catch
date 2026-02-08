@@ -52,6 +52,11 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
     // (소켓 PLAYER_JOINED 이벤트에 position 필드가 포함되지 않음)
     const draftGuestPosition = useRoomStore.getState().draft.guestPosition;
 
+    const validPosition =
+      roomInfo.guest?.position ??
+      (draftGuestPosition === 'FULLSTACK' ? undefined : draftGuestPosition) ??
+      undefined;
+
     set({
       roomInfo: {
         ...roomInfo,
@@ -61,7 +66,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
           frameworkId: guest.frameworkId,
           frameworkName: guest.frameworkName,
           isReady: guest.isReady,
-          position: roomInfo.guest?.position ?? draftGuestPosition ?? undefined,
+          position: validPosition,
         },
       },
     });
