@@ -5,4 +5,4 @@ scrape_configs:
   - job_name: 'springboot'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['spring-boot:8081']
+      - targets: ['trycatch-backend:8081']
