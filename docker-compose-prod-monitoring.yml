@@ -3,11 +3,11 @@ services:
     image: prom/prometheus
     container_name: trycatch-prometheus
     volumes:
-      - ./prometheus-prod.yml:/prometheus-config.yml:ro
+      - ./backend/prometheus-prod.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
     ports:
       - "8083:9090"
     networks:
