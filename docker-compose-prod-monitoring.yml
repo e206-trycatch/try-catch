@@ -3,7 +3,7 @@ services:
     image: prom/prometheus
     container_name: trycatch-prometheus
     volumes:
-      - ./prometheus-prod.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus-prod.yml:/prometheus-config.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
