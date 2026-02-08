@@ -123,7 +123,15 @@ const InvitationPage: React.FC = () => {
         setIsLoading(false);
       }
     },
-    [navigate, setRoomId, setThemeId, setThemeName, setThemeImageUrl, setHostFrameworkId, setGuestFrameworkId],
+    [
+      navigate,
+      setRoomId,
+      setThemeId,
+      setThemeName,
+      setThemeImageUrl,
+      setHostFrameworkId,
+      setGuestFrameworkId,
+    ],
   );
 
   return (
