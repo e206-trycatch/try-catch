@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/*/files/**").permitAll()
                         .requestMatchers("/api/ws/**").permitAll() // 웹소켓 요청 url 추가
                         .requestMatchers("/api/v1/health").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
