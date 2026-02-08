@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { MultiRoomInfo } from '../api/roomApi';
 import type { GuestInfo, StartQuestData } from '../sockets/types';
+import { useRoomStore } from './useRoomStore';
 
 type LobbyStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -47,6 +48,10 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
     const { roomInfo } = get();
     if (!roomInfo) return;
 
+    // 방 생성 시 호스트가 설정한 게스트 포지션 사용
+    // (소켓 PLAYER_JOINED 이벤트에 position 필드가 포함되지 않음)
+    const draftGuestPosition = useRoomStore.getState().draft.guestPosition;
+
     set({
       roomInfo: {
         ...roomInfo,
@@ -56,7 +61,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
           frameworkId: guest.frameworkId,
           frameworkName: guest.frameworkName,
           isReady: guest.isReady,
-          position: roomInfo.guest?.position,
+          position: roomInfo.guest?.position ?? draftGuestPosition ?? undefined,
         },
       },
     });
