@@ -1,6 +1,8 @@
 // ! src/stores/useRoomStore.ts
 // * Facade pattern
 // - 기존 API 유지하면서 내부는 분리된 stores 사용
+import { useMemo } from 'react';
+
 import type { QuestDetail } from '../api/roomApi';
 import {
   buildCreatePayload,
@@ -116,154 +118,220 @@ const pickFirstFrameworkId = (
   return list[0].id;
 };
 
+// Actions (한 번만 생성, 재사용)
+const actions = {
+  get setQuestList() {
+    return useQuestCacheStore.getState().setQuestList;
+  },
+  get clearQuestList() {
+    return useQuestCacheStore.getState().clearQuestList;
+  },
+  get setThemeName() {
+    return useRoomMetaStore.getState().setThemeName;
+  },
+  get setThemeImageUrl() {
+    return useRoomMetaStore.getState().setThemeImageUrl;
+  },
+  setAvailableFrameworks: (
+    data: NonNullable<
+      ReturnType<typeof useRoomMetaStore.getState>['availableFrameworks']
+    >,
+  ) => {
+    const draftState = useRoomDraftStore.getState();
+    const currentPosition = draftState.draft.position;
+
+    if (currentPosition) {
+      const firstId =
+        currentPosition === 'FRONTEND'
+          ? pickFirstFrameworkId(data.FRONTEND)
+          : pickFirstFrameworkId(data.BACKEND);
+
+      const nextSelected = draftState.draft.selectedFrameworkId ?? firstId;
+
+      if (currentPosition === 'FRONTEND') {
+        useRoomDraftStore.setState((s) => ({
+          draft: {
+            ...s.draft,
+            selectedFrameworkId: nextSelected,
+            frontendId: nextSelected,
+            backendId: null,
+          },
+        }));
+      } else if (currentPosition === 'BACKEND') {
+        useRoomDraftStore.setState((s) => ({
+          draft: {
+            ...s.draft,
+            selectedFrameworkId: nextSelected,
+            backendId: nextSelected,
+            frontendId: null,
+          },
+        }));
+      }
+    }
+
+    useRoomMetaStore.getState().setAvailableFrameworks(data);
+  },
+  get clearAvailableFrameworks() {
+    return useRoomMetaStore.getState().clearAvailableFrameworks;
+  },
+  get setRoomId() {
+    return useRoomDraftStore.getState().setRoomId;
+  },
+  get setCurrentQuestId() {
+    return useRoomDraftStore.getState().setCurrentQuestId;
+  },
+  get setMode() {
+    return useRoomDraftStore.getState().setMode;
+  },
+  get setThemeId() {
+    return useRoomDraftStore.getState().setThemeId;
+  },
+  get setRoomName() {
+    return useRoomDraftStore.getState().setRoomName;
+  },
+  setPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['position']
+    >,
+  ) => {
+    const metaState = useRoomMetaStore.getState();
+    useRoomDraftStore
+      .getState()
+      .setPosition(position, metaState.availableFrameworks);
+  },
+  get setSelectedFrameworkId() {
+    return useRoomDraftStore.getState().setSelectedFrameworkId;
+  },
+  get setFullstackFrameworks() {
+    return useRoomDraftStore.getState().setFullstackFrameworks;
+  },
+  get setFrameworkIds() {
+    return useRoomDraftStore.getState().setFrameworkIds;
+  },
+  get setLife() {
+    return useRoomDraftStore.getState().setLife;
+  },
+  get setHints() {
+    return useRoomDraftStore.getState().setHints;
+  },
+  setHostPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['hostPosition']
+    >,
+  ) => {
+    const metaState = useRoomMetaStore.getState();
+    useRoomDraftStore
+      .getState()
+      .setHostPosition(position, metaState.availableFrameworks);
+  },
+  get setHostFrameworkId() {
+    return useRoomDraftStore.getState().setHostFrameworkId;
+  },
+  setGuestPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['guestPosition']
+    >,
+  ) => {
+    const metaState = useRoomMetaStore.getState();
+    useRoomDraftStore
+      .getState()
+      .setGuestPosition(position, metaState.availableFrameworks);
+  },
+  get setGuestFrameworkId() {
+    return useRoomDraftStore.getState().setGuestFrameworkId;
+  },
+  validateDraft: () => {
+    return validateDraft(useRoomDraftStore.getState().draft);
+  },
+  buildCreatePayload: () => {
+    return buildCreatePayload(useRoomDraftStore.getState().draft);
+  },
+  buildMultiRoomPayload: () => {
+    return buildMultiRoomPayload(useRoomDraftStore.getState().draft);
+  },
+  resetRoomCreation: () => {
+    useRoomDraftStore.getState().resetDraft();
+    useRoomMetaStore.getState().resetMeta();
+    useQuestCacheStore.getState().clearQuestList();
+  },
+};
+
 /**
  * Facade Store - 기존 useRoomStore API 완전 유지
  * 내부적으로는 분리된 stores 사용
  */
-const createFacadeStore = () => {
-  // getState implementation
-  const getState = (): RoomCreationState => {
-    const draftStore = useRoomDraftStore.getState();
-    const metaStore = useRoomMetaStore.getState();
-    const questStore = useQuestCacheStore.getState();
+const getState = (): RoomCreationState => {
+  const draftStore = useRoomDraftStore.getState();
+  const metaStore = useRoomMetaStore.getState();
+  const questStore = useQuestCacheStore.getState();
 
-    return {
-      // Getters
-      draft: draftStore.draft,
-      currentRoomId: draftStore.currentRoomId,
-      currentQuestId: draftStore.currentQuestId,
+  return {
+    // Getters
+    draft: draftStore.draft,
+    currentRoomId: draftStore.currentRoomId,
+    currentQuestId: draftStore.currentQuestId,
 
-      questList: questStore.questList,
-      questListThemeId: questStore.questListThemeId,
+    questList: questStore.questList,
+    questListThemeId: questStore.questListThemeId,
 
-      themeName: metaStore.themeName,
-      themeImageUrl: metaStore.themeImageUrl,
-      availableFrameworks: metaStore.availableFrameworks,
+    themeName: metaStore.themeName,
+    themeImageUrl: metaStore.themeImageUrl,
+    availableFrameworks: metaStore.availableFrameworks,
 
-      // Quest actions
-      setQuestList: questStore.setQuestList,
-      clearQuestList: questStore.clearQuestList,
-
-      // Meta actions
-      setThemeName: metaStore.setThemeName,
-      setThemeImageUrl: metaStore.setThemeImageUrl,
-      setAvailableFrameworks: (data) => {
-        const draftState = useRoomDraftStore.getState();
-        const currentPosition = draftState.draft.position;
-
-        // 기존 로직: position이 이미 선택되어 있으면 첫 framework 자동 선택
-        if (currentPosition) {
-          const firstId =
-            currentPosition === 'FRONTEND'
-              ? pickFirstFrameworkId(data.FRONTEND)
-              : pickFirstFrameworkId(data.BACKEND);
-
-          const nextSelected = draftState.draft.selectedFrameworkId ?? firstId;
-
-          if (currentPosition === 'FRONTEND') {
-            useRoomDraftStore.setState((s) => ({
-              draft: {
-                ...s.draft,
-                selectedFrameworkId: nextSelected,
-                frontendId: nextSelected,
-                backendId: null,
-              },
-            }));
-          } else if (currentPosition === 'BACKEND') {
-            useRoomDraftStore.setState((s) => ({
-              draft: {
-                ...s.draft,
-                selectedFrameworkId: nextSelected,
-                backendId: nextSelected,
-                frontendId: null,
-              },
-            }));
-          }
-        }
-
-        metaStore.setAvailableFrameworks(data);
-      },
-      clearAvailableFrameworks: metaStore.clearAvailableFrameworks,
-      setRoomId: draftStore.setRoomId,
-      setCurrentQuestId: draftStore.setCurrentQuestId,
-
-      // Draft actions
-      setMode: draftStore.setMode,
-      setThemeId: draftStore.setThemeId,
-      setRoomName: draftStore.setRoomName,
-
-      setPosition: (position) => {
-        const metaState = useRoomMetaStore.getState();
-        draftStore.setPosition(position, metaState.availableFrameworks);
-      },
-      setSelectedFrameworkId: draftStore.setSelectedFrameworkId,
-
-      setFullstackFrameworks: draftStore.setFullstackFrameworks,
-      setFrameworkIds: draftStore.setFrameworkIds,
-
-      setLife: draftStore.setLife,
-      setHints: draftStore.setHints,
-
-      setHostPosition: (position) => {
-        const metaState = useRoomMetaStore.getState();
-        draftStore.setHostPosition(position, metaState.availableFrameworks);
-      },
-      setHostFrameworkId: draftStore.setHostFrameworkId,
-      setGuestPosition: (position) => {
-        const metaState = useRoomMetaStore.getState();
-        draftStore.setGuestPosition(position, metaState.availableFrameworks);
-      },
-      setGuestFrameworkId: draftStore.setGuestFrameworkId,
-
-      // Validation & payload builders
-      validateDraft: () => validateDraft(draftStore.draft),
-      buildCreatePayload: () => buildCreatePayload(draftStore.draft),
-      buildMultiRoomPayload: () => buildMultiRoomPayload(draftStore.draft),
-
-      // Reset
-      resetRoomCreation: () => {
-        draftStore.resetDraft();
-        metaStore.resetMeta();
-        questStore.clearQuestList();
-      },
-    };
+    // Actions (재사용)
+    ...actions,
   };
-
-  // Hook implementation (selector 방식) - 'use'로 시작해야 React Hook 규칙 준수
-  const useHook = <T = RoomCreationState>(
-    selector?: (state: RoomCreationState) => T,
-  ): T => {
-    const draftState = useRoomDraftStore((s) => s);
-    const metaState = useRoomMetaStore((s) => s);
-    const questState = useQuestCacheStore((s) => s);
-
-    const fullState = getState();
-
-    // Apply reactivity by using individual store states
-    const reactiveState: RoomCreationState = {
-      ...fullState,
-      draft: draftState.draft,
-      currentRoomId: draftState.currentRoomId,
-      currentQuestId: draftState.currentQuestId,
-      questList: questState.questList,
-      questListThemeId: questState.questListThemeId,
-      themeName: metaState.themeName,
-      themeImageUrl: metaState.themeImageUrl,
-      availableFrameworks: metaState.availableFrameworks,
-    };
-
-    if (selector) {
-      return selector(reactiveState);
-    }
-
-    return reactiveState as T;
-  };
-
-  // Attach getState and other methods to the hook
-  useHook.getState = getState;
-  useHook.subscribe = useRoomDraftStore.subscribe;
-
-  return useHook;
 };
 
-export const useRoomStore = createFacadeStore();
+// Hook wrapper (selector pattern) - selector를 통한 부분 구독만 지원
+function useRoomStoreHook<T>(selector: (state: RoomCreationState) => T): T;
+function useRoomStoreHook(): RoomCreationState;
+function useRoomStoreHook<T = RoomCreationState>(
+  selector?: (state: RoomCreationState) => T,
+): T {
+  // Subscribe to individual stores for reactivity (state만)
+  const draft = useRoomDraftStore((s) => s.draft);
+  const currentRoomId = useRoomDraftStore((s) => s.currentRoomId);
+  const currentQuestId = useRoomDraftStore((s) => s.currentQuestId);
+
+  const questList = useQuestCacheStore((s) => s.questList);
+  const questListThemeId = useQuestCacheStore((s) => s.questListThemeId);
+
+  const themeName = useRoomMetaStore((s) => s.themeName);
+  const themeImageUrl = useRoomMetaStore((s) => s.themeImageUrl);
+  const availableFrameworks = useRoomMetaStore((s) => s.availableFrameworks);
+
+  // Construct state with memoization (actions는 동일한 참조 유지)
+  const state: RoomCreationState = useMemo(
+    () => ({
+      draft,
+      currentRoomId,
+      currentQuestId,
+      questList,
+      questListThemeId,
+      themeName,
+      themeImageUrl,
+      availableFrameworks,
+      // Actions는 동일한 참조 유지
+      ...actions,
+    }),
+    [
+      draft,
+      currentRoomId,
+      currentQuestId,
+      questList,
+      questListThemeId,
+      themeName,
+      themeImageUrl,
+      availableFrameworks,
+    ],
+  );
+
+  return selector ? selector(state) : (state as T);
+}
+
+// Attach static methods
+useRoomStoreHook.getState = getState;
+useRoomStoreHook.subscribe = useRoomDraftStore.subscribe;
+
+export const useRoomStore = useRoomStoreHook;
