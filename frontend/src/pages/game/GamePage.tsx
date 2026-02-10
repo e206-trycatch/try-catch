@@ -3,34 +3,34 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import { getGameSession } from '@/api/gameSession';
+import { getSingleTimer } from '@/api/getSingleTimer';
 import { getMultiQuest } from '@/api/multiQuestFile';
+import { getQuestFile } from '@/api/questFile';
 import { getQuestStoriesInfo } from '@/api/questStories';
+import { getRetryQuestFile } from '@/api/retryQuestFile';
+import { saveCodeForShare } from '@/api/saveCodeForShare';
 import { getShareCode } from '@/api/shareCode';
-
-import { getGameSession } from '../../api/gameSession';
-import { getSingleTimer } from '../../api/getSingleTimer';
-import { getQuestFile } from '../../api/questFile';
-import { getRetryQuestFile } from '../../api/retryQuestFile';
-import { saveCodeForShare } from '../../api/saveCodeForShare';
-import { startMultiGameTimer } from '../../api/startMultiGameTimer';
-import { startSingleGameTimer } from '../../api/startSingleGameTimer';
+import { startMultiGameTimer } from '@/api/startMultiGameTimer';
+import { startSingleGameTimer } from '@/api/startSingleGameTimer';
 import {
   connectStomp,
   sendSocketMessage,
   subscribeLobby,
   subscribeRoom,
-} from '../../sockets/stomp';
-import type { CodeSavedMessage } from '../../sockets/types';
+} from '@/sockets/stomp';
+import type { CodeSavedMessage } from '@/sockets/types';
 import type {
   HintErrorData,
   HintMessageData,
   HintQuestionData,
-} from '../../sockets/types';
-import { useGameStore } from '../../stores/useGameStore';
-import { useHintStore } from '../../stores/useHintStore';
-import { useRoomStore } from '../../stores/useRoomStore';
-import { useStore } from '../../stores/useStore';
-import { useSubmissionStore } from '../../stores/useSubmissionStore';
+} from '@/sockets/types';
+import { useGameStore } from '@/stores/useGameStore';
+import { useHintStore } from '@/stores/useHintStore';
+import { useRoomStore } from '@/stores/useRoomStore';
+import { useStore } from '@/stores/useStore';
+import { useSubmissionStore } from '@/stores/useSubmissionStore';
+
 import CodeEditor from './components/CodeEditor';
 import Explorer from './components/Explorer';
 import FileTabs from './components/FileTabs';
@@ -47,7 +47,14 @@ import useTimer from './hooks/useTimer';
 import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
 import type { CodeRole, QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
-import { buildFilesRequestData } from './utils/codeSubmissionMapper';
+import { findFileIdByPath } from './utils/fileTreeUtils';
+import {
+  buildSubmissionPayload,
+  snapshotFileCodes,
+} from './utils/submissionUtils';
+import ShareCodeToast from './components/toast/ShareCodeToast';
+import { gameToastStyle } from './components/toast/toastStyles';
+import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
 
 export default function GamePage() {
   const navigate = useNavigate();
@@ -76,21 +83,7 @@ export default function GamePage() {
   const currentNickname = useStore((state) => state.user?.nickname);
   const [userRole, setUserRole] = useState<CodeRole>(null);
 
-  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
-  const findFileIdByPath = (
-    node: FileNode,
-    filePath: string,
-  ): string | null => {
-    if (node.type === 'file' && node.path === filePath) return node.id;
-
-    for (const child of node.children ?? []) {
-      const found = findFileIdByPath(child, filePath);
-      if (found) return found;
-    }
-    return null;
-  };
-
-  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 2
+  // 멀티 모드 - 코드 덮어씌우기를 위한 함수
   const loadShareCode = async () => {
     if (!roomId || problemFrameworkId === null) return;
 
@@ -272,21 +265,11 @@ export default function GamePage() {
             if (nickname !== myNickname) {
               const toastId = `share-code-${Date.now()}`;
               toast.info(
-                <div className="flex flex-1 gap-5 items-center justify-between">
-                  <div>{nickname}님이 코드를 공유했습니다.</div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="flex justify-center items-center bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
-                      onClick={() => {
-                        loadShareCodeRef.current?.();
-                        toast.dismiss(toastId);
-                      }}
-                    >
-                      불러오기
-                    </button>
-                  </div>
-                </div>,
+                <ShareCodeToast
+                  nickname={nickname}
+                  toastId={toastId}
+                  onLoad={() => loadShareCodeRef.current?.()}
+                />,
                 {
                   toastId,
                   position: 'top-left',
@@ -295,16 +278,7 @@ export default function GamePage() {
                   closeButton: false,
                   icon: false,
                   style: {
-                    zIndex: 99999,
-                    width: '380px',
-                    backgroundColor: '#2d0a0a',
-                    border: '1px solid #dc2626',
-                    color: '#fff',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    paddingRight: 20,
-                    paddingLeft: 20,
+                    ...gameToastStyle,
                     marginTop: '100px',
                     marginLeft: '60px',
                   },
@@ -363,23 +337,18 @@ export default function GamePage() {
   const saveCode = async () => {
     if (!roomId) return;
 
-    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
-    if (ide.activeFileId) {
-      allFileCodes[ide.activeFileId] = ide.currentCode;
-    }
+    const allFileCodes = snapshotFileCodes(
+      ide.fileCodes,
+      ide.activeFileId,
+      ide.currentCode,
+    );
 
-    const files = [
-      ...buildFilesRequestData({
-        node: rootNode,
-        fileCodes: allFileCodes,
-        role: 'FRONTEND',
-      }),
-      ...buildFilesRequestData({
-        node: rootNode,
-        fileCodes: allFileCodes,
-        role: 'BACKEND',
-      }),
-    ];
+    const { frontend, backend } = buildSubmissionPayload(
+      rootNode,
+      allFileCodes,
+    );
+
+    const files = [...frontend.files, ...backend.files];
 
     try {
       await saveCodeForShare(Number(roomId), {
@@ -394,32 +363,22 @@ export default function GamePage() {
 
   // 실제 제출 로직
   const submitCode = () => {
-    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+    const allFileCodes = snapshotFileCodes(
+      ide.fileCodes,
+      ide.activeFileId,
+      ide.currentCode,
+      ide.openTabs,
+    );
 
-    if (ide.activeFileId) {
-      allFileCodes[ide.activeFileId] = ide.currentCode;
-    }
-
-    ide.openTabs.forEach((f) => {
-      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
-    });
+    const { frontend, backend } = buildSubmissionPayload(
+      rootNode,
+      allFileCodes,
+    );
 
     const requestBody: SubmissionRequest = {
-      problemFrameworkId: problemFrameworkId,
-      frontend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'FRONTEND',
-        }),
-      },
-      backend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'BACKEND',
-        }),
-      },
+      problemFrameworkId,
+      frontend,
+      backend,
     };
 
     setResult(requestBody);
@@ -431,28 +390,7 @@ export default function GamePage() {
   const submitCodeHandler = () => {
     const toastId = `submit-confirm-${Date.now()}`;
     toast.info(
-      <div className="flex flex-1 gap-5 items-center justify-between">
-        <div>정말 제출하시겠습니까?</div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="flex justify-center items-center bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
-            onClick={() => {
-              toast.dismiss(toastId);
-              submitCode();
-            }}
-          >
-            제출
-          </button>
-          <button
-            type="button"
-            className="flex justify-center items-center bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
-            onClick={() => toast.dismiss(toastId)}
-          >
-            취소
-          </button>
-        </div>
-      </div>,
+      <SubmitConfirmToast toastId={toastId} onConfirm={submitCode} />,
       {
         toastId,
         position: 'top-right',
@@ -461,16 +399,7 @@ export default function GamePage() {
         closeButton: false,
         icon: false,
         style: {
-          zIndex: 99999,
-          width: '380px',
-          backgroundColor: '#2d0a0a',
-          border: '1px solid #dc2626',
-          color: '#fff',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: 500,
-          paddingRight: 20,
-          paddingLeft: 20,
+          ...gameToastStyle,
           marginTop: '120px',
           marginRight: '60px',
         },
@@ -555,32 +484,14 @@ export default function GamePage() {
 
   // 힌트 요청 시 현재 코드 스냅샷 생성
   const getSubmissionData = useCallback(() => {
-    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+    const allFileCodes = snapshotFileCodes(
+      ide.fileCodes,
+      ide.activeFileId,
+      ide.currentCode,
+      ide.openTabs,
+    );
 
-    if (ide.activeFileId) {
-      allFileCodes[ide.activeFileId] = ide.currentCode;
-    }
-
-    ide.openTabs.forEach((f) => {
-      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
-    });
-
-    return {
-      frontend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'FRONTEND',
-        }),
-      },
-      backend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'BACKEND',
-        }),
-      },
-    };
+    return buildSubmissionPayload(rootNode, allFileCodes);
   }, [
     ide.fileCodes,
     ide.activeFileId,
@@ -659,7 +570,7 @@ export default function GamePage() {
                         onToggleFolder={ide.toggleFolder}
                         onOpenFile={ide.openFile}
                         activeFileId={
-                          ide.isSplit && ide.focusedPane === 'secondary'
+                          ide.isSplit && ide.focusedPanel === 'secondary'
                             ? ide.secondaryActiveFileId
                             : ide.activeFileId
                         }
@@ -673,12 +584,12 @@ export default function GamePage() {
                 <div
                   className={`flex flex-col flex-1 min-w-0 min-h-0 ${
                     // 스플릿 모드에서 이 패널이 포커스되면 상단 테두리 표시
-                    ide.isSplit && ide.focusedPane === 'primary'
+                    ide.isSplit && ide.focusedPanel === 'primary'
                       ? 'border-t-2 border-amber-300'
                       : ''
                   }`}
                   // 패널 영역 클릭 시 이 패널을 포커스 상태로 변경
-                  onMouseDown={() => ide.setFocusedPane('primary')}
+                  onMouseDown={() => ide.setFocusedPanel('primary')}
                 >
                   {/* 탭 영역: 열린 파일들을 탭으로 표시 */}
                   <FileTabs
@@ -710,11 +621,11 @@ export default function GamePage() {
                     <div className="w-[1px] bg-gray-700" />
                     <div
                       className={`flex flex-col flex-1 min-w-0 min-h-0 ${
-                        ide.focusedPane === 'secondary'
+                        ide.focusedPanel === 'secondary'
                           ? 'border-t-2 border-amber-300'
                           : ''
                       }`}
-                      onMouseDown={() => ide.setFocusedPane('secondary')}
+                      onMouseDown={() => ide.setFocusedPanel('secondary')}
                     >
                       <FileTabs
                         openTabs={ide.secondaryOpenTabs}

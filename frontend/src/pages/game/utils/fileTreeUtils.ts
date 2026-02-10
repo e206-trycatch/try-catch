@@ -1,7 +1,5 @@
 import type { FileNode, QuestFile } from '../types/ideTypes';
 
-// Record<K, V>는 {[key: K]: V> 형태의 객체 타입을 의미한다.
-// cf) Map은 실제 키-값 저장소이다.
 const extensionMap: Record<string, string> = {
   js: 'javascript',
   jsx: 'javascript',
@@ -22,16 +20,11 @@ const extensionMap: Record<string, string> = {
 const getFileLanguage = (filePath: string): string => {
   const fileName = filePath.split('/').filter(Boolean).at(-1) ?? '';
 
-  // ! : Non-null assertion operator
-  // 해당 값이 undefined가 아님을 단언하여 타입을 확정시켜준다.
-  // !가 없으면 string | undefined가 되어 에러가 발생한다..
-  // ts 입장에서는 밑줄을 긋는다.
   const extension = fileName.includes('.') ? fileName.split('.').at(-1)! : '';
   return extensionMap[extension] ?? 'plainText';
 };
 
-// 폴더/파일 계층 구조의 트리를 생성한다.
-// 최상위 루트 노드(자식들 포함한 채)를 반환한다.
+// 폴더/파일 계층 구조의 트리를 생성
 export function buildFileTree(questFile: QuestFile[]): FileNode {
   // 최상위 로트 노드
   const root: FileNode = {
@@ -44,12 +37,9 @@ export function buildFileTree(questFile: QuestFile[]): FileNode {
   };
 
   // 폴더 중복 방지
-  // new Map() : 키-값 저장소 객체 (이때, Map은 생성자라서 new로 인스턴스를 만들어야 한다.)
-  // <string, FileNode> = <경로 문자열, 그 경로에 해당하는 폴더 노드>
   const folderCache = new Map<string, FileNode>();
-  folderCache.set('/', root); // root 폴더 등록
+  folderCache.set('/', root);
 
-  // 파일 객체들이 들어 있는 initialCode 배열 순회
   for (const file of questFile) {
     // 경로를 분해한 결과
     // filter(Boolean) : falsy 값 제거
@@ -71,8 +61,7 @@ export function buildFileTree(questFile: QuestFile[]): FileNode {
       // 이미 생성된 폴더인지 확인하기
       let folderNode = folderCache.get(currentFolderPath);
 
-      // 값이 없다면 = 아직 생성되지 않은 폴더
-      // 새로 생성을 해야한다.
+      // 값이 없다면 새로 생성하기
       if (!folderNode) {
         folderNode = {
           id: `folder:${currentFolderPath}`,
@@ -108,4 +97,18 @@ export function buildFileTree(questFile: QuestFile[]): FileNode {
     currentFolderNode.children!.push(fileNode);
   }
   return root;
+}
+
+// 트리에서 filePath로 파일 id를 찾는 dfs 탐색
+export function findFileIdByPath(
+  node: FileNode,
+  filePath: string,
+): string | null {
+  if (node.type === 'file' && node.path === filePath) return node.id;
+
+  for (const child of node.children ?? []) {
+    const found = findFileIdByPath(child, filePath);
+    if (found) return found;
+  }
+  return null;
 }
