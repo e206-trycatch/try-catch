@@ -140,33 +140,20 @@ const actions = {
     const draftState = useRoomDraftStore.getState();
     const currentPosition = draftState.draft.position;
 
-    if (currentPosition) {
-      const firstId =
-        currentPosition === 'FRONTEND'
-          ? pickFirstFrameworkId(data.FRONTEND)
-          : pickFirstFrameworkId(data.BACKEND);
-
+    if (currentPosition && currentPosition !== 'FULLSTACK') {
+      const firstId = pickFirstFrameworkId(
+        data[currentPosition === 'FRONTEND' ? 'FRONTEND' : 'BACKEND'],
+      );
       const nextSelected = draftState.draft.selectedFrameworkId ?? firstId;
 
-      if (currentPosition === 'FRONTEND') {
-        useRoomDraftStore.setState((s) => ({
-          draft: {
-            ...s.draft,
-            selectedFrameworkId: nextSelected,
-            frontendId: nextSelected,
-            backendId: null,
-          },
-        }));
-      } else if (currentPosition === 'BACKEND') {
-        useRoomDraftStore.setState((s) => ({
-          draft: {
-            ...s.draft,
-            selectedFrameworkId: nextSelected,
-            backendId: nextSelected,
-            frontendId: null,
-          },
-        }));
-      }
+      useRoomDraftStore.setState((s) => ({
+        draft: {
+          ...s.draft,
+          selectedFrameworkId: nextSelected,
+          frontendId: currentPosition === 'FRONTEND' ? nextSelected : null,
+          backendId: currentPosition === 'BACKEND' ? nextSelected : null,
+        },
+      }));
     }
 
     useRoomMetaStore.getState().setAvailableFrameworks(data);
