@@ -15,6 +15,7 @@ import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useStore } from '../../stores/useStore';
 import { getFramework, getPosition } from '../../utils/participantUtils';
+import { logger } from '../../utils/logger';
 import { useLobbyData } from './hooks/useLobbyData';
 import { useLobbySocket } from './hooks/useLobbySocket';
 
@@ -96,7 +97,7 @@ const LobbyPage = () => {
         const roomStore = useRoomStore.getState();
         roomStore.setQuestList(roomInfo.themeId, quests);
       } catch (err) {
-        console.error('퀘스트 목록 로드 실패:', err);
+        logger.error('퀘스트 목록 로드 실패:', err);
       }
     };
 
@@ -125,7 +126,7 @@ const LobbyPage = () => {
   // 프론트: GAME_STARTED 수신 → 모든 참가자 자동으로 /story 이동
   const navigatingRef = useRef(false);
   useEffect(() => {
-    console.log('[LobbyPage] Navigation check:', {
+    logger.log('[LobbyPage] Navigation check:', {
       gameStarted,
       roomInfo: !!roomInfo,
       firstQuestId,
@@ -135,7 +136,7 @@ const LobbyPage = () => {
     if (!gameStarted || !roomInfo || !firstQuestId || navigatingRef.current)
       return;
 
-    console.log('[LobbyPage] Starting navigation to /story');
+    logger.log('[LobbyPage] Starting navigation to /story');
     navigatingRef.current = true;
     isNavigatingToGameRef.current = true;
 
@@ -209,7 +210,7 @@ const LobbyPage = () => {
       useGameStore.getState().setMode(null);
       navigate('/selection/theme');
     } catch (err) {
-      console.error('방 나가기 실패:', err);
+      logger.error('방 나가기 실패:', err);
       isLeavingRef.current = false;
     }
   };

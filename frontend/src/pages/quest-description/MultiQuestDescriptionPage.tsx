@@ -17,6 +17,7 @@ import QuestDescriptionBox from '../../components/quest/QuestDescriptionBox';
 import type { QuestReadyStatusData, StartQuestData } from '../../sockets/types';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
+import { logger } from '../../utils/logger';
 import { useQuestSocket } from './hooks/useQuestSocket';
 
 const MultiQuestDescriptionPage: React.FC = () => {
@@ -97,7 +98,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
         // 서버에서 2명이 아니면 isReady를 false로 보내주므로 그대로 사용
         setParticipants(detail.participants);
       } catch (err) {
-        console.error('멀티 퀘스트 정보 로드 실패:', err);
+        logger.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
@@ -111,12 +112,12 @@ const MultiQuestDescriptionPage: React.FC = () => {
   // - participants를 role 기준으로 업데이트 (myReady는 useMemo로 자동 계산됨)
   const onQuestReadyStatus = useCallback(
     (data: QuestReadyStatusData) => {
-      console.log('[DEBUG] onQuestReadyStatus 호출됨');
-      console.log('[DEBUG] 서버 데이터:', JSON.stringify(data, null, 2));
-      console.log('[DEBUG] 현재 userNickname:', userNickname);
+      logger.log('[DEBUG] onQuestReadyStatus 호출됨');
+      logger.log('[DEBUG] 서버 데이터:', JSON.stringify(data, null, 2));
+      logger.log('[DEBUG] 현재 userNickname:', userNickname);
 
       setParticipants((prev) => {
-        console.log(
+        logger.log(
           '[DEBUG] 기존 participants:',
           JSON.stringify(prev, null, 2),
         );
@@ -124,13 +125,13 @@ const MultiQuestDescriptionPage: React.FC = () => {
         const updated = prev.map((p) => {
           // userId 대신 role로 비교하여 host/guest ready 상태 매핑
           if (p.role === 'HOST') {
-            console.log(
+            logger.log(
               `[DEBUG] HOST(${p.nickname}) isReady: ${data.host.isReady}`,
             );
             return { ...p, isReady: data.host.isReady };
           }
           if (p.role === 'GUEST') {
-            console.log(
+            logger.log(
               `[DEBUG] GUEST(${p.nickname}) isReady: ${data.guest.isReady}`,
             );
             return { ...p, isReady: data.guest.isReady };
@@ -138,7 +139,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
           return p;
         });
 
-        console.log(
+        logger.log(
           '[DEBUG] 업데이트된 participants:',
           JSON.stringify(updated, null, 2),
         );
@@ -155,7 +156,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
       if (navigatingRef.current) return;
       navigatingRef.current = true;
 
-      console.log(
+      logger.log(
         '[MultiQuestDescriptionPage] START_QUEST received, navigating to game...',
       );
       navigate(`/game/${data.roomId}/${data.questId}`);
