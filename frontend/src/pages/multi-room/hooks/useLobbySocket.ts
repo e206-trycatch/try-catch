@@ -6,14 +6,7 @@ import {
   subscribeLobby,
   subscribeLobbyQuest,
 } from '../../../sockets/stomp';
-import type {
-  GameStartedData,
-  PlayerJoinedData,
-  QuestReadyStatusData,
-  ReadyStatusDto,
-  SocketRespDto,
-  StartQuestData,
-} from '../../../sockets/types';
+import type { LobbySocketEvent } from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { useStore } from '../../../stores/useStore';
@@ -24,65 +17,65 @@ export const useLobbySocket = (
 ) => {
   const joinedRef = useRef(false);
 
-  const handleMessage = useCallback((msg: SocketRespDto) => {
+  const handleMessage = useCallback((msg: LobbySocketEvent) => {
+    console.log('[useQuestSocket] Message received:', msg.type, msg.data);
     console.log('[STOMP Message]', msg.type, msg.data);
 
     switch (msg.type) {
       case 'PLAYER_JOINED': {
-        const data = msg.data as PlayerJoinedData;
+        // msg.data는 자동으로 PlayerJoinedData
         const store = useLobbyStore.getState();
         const roomInfo = store.roomInfo;
         if (!roomInfo) break;
 
-        console.log('[PLAYER_JOINED] Guest joined:', data);
-        // host가 보낸 or host인 PLAYER_JOINED는 guest 업데이트에 사용하지 않게
-        if (data.userId === roomInfo.host.userId) {
-          console.log('[PLAYED_JOINED] ignored (host join echo):', data);
+        console.log('[PLAYER_JOINED] Guest joined:', msg.data);
+        if (msg.data.userId === roomInfo.host.userId) {
+          console.log('[PLAYED_JOINED] ignored (host join echo):', msg.data);
           break;
         }
 
         store.updateGuestJoined({
-          userId: data.userId,
-          nickname: data.nickname,
-          frameworkId: data.frameworkId,
-          frameworkName: data.frameworkName,
-          isReady: data.isReady,
+          userId: msg.data.userId,
+          nickname: msg.data.nickname,
+          frameworkId: msg.data.frameworkId,
+          frameworkName: msg.data.frameworkName,
+          isReady: msg.data.isReady,
         });
         break;
       }
       case 'READY_CHANGED': {
-        const data = msg.data as ReadyStatusDto;
-        console.log('[READY_CHANGED] User ready status changed:', data);
+        // msg.data는 자동으로 ReadyStatusDto
+        console.log('[READY_CHANGED] User ready status changed:', msg.data);
         const store = useLobbyStore.getState();
         const { roomInfo } = store;
         if (!roomInfo) break;
 
-        // userId로 HOST인지 GUEST인지 판단
-        const role = roomInfo.host.userId === data.userId ? 'HOST' : 'GUEST';
+        const role =
+          roomInfo.host.userId === msg.data.userId ? 'HOST' : 'GUEST';
         console.log(
-          `[READY_CHANGED] Updating ${role} to isReady=${data.isReady}`,
+          `[READY_CHANGED] Updating ${role} to isReady=${msg.data.isReady}`,
         );
-        store.updateReadyStatus(role, data.isReady);
+        store.updateReadyStatus(role, msg.data.isReady);
         break;
       }
       case 'GAME_STARTED': {
-        const data = msg.data as GameStartedData;
-        console.log('[GAME_STARTED] Game starting for room:', data.roomId);
-        useLobbyStore.getState().setGameStarted(data.roomId);
+        // msg.data는 자동으로 GameStartedData
+        console.log('[GAME_STARTED] Game starting for room:', msg.data.roomId);
+        useLobbyStore.getState().setGameStarted(msg.data.roomId);
         break;
       }
       case 'QUEST_READY_STATUS': {
-        const data = msg.data as QuestReadyStatusData;
-        console.log('[QUEST_READY_STATUS] Quest ready status:', data);
+        // msg.data는 자동으로 QuestReadyStatusData
+        console.log('[QUEST_READY_STATUS] Quest ready status:', msg.data);
         const store = useLobbyStore.getState();
-        store.updateReadyStatus('HOST', data.host.isReady);
-        store.updateReadyStatus('GUEST', data.guest.isReady);
+        store.updateReadyStatus('HOST', msg.data.host.isReady);
+        store.updateReadyStatus('GUEST', msg.data.guest.isReady);
         break;
       }
       case 'START_QUEST': {
-        const data = msg.data as StartQuestData;
-        console.log('[START_QUEST] Quest starting:', data);
-        useLobbyStore.getState().setStartQuestData(data);
+        // msg.data는 자동으로 StartQuestData
+        console.log('[START_QUEST] Quest starting:', msg.data);
+        useLobbyStore.getState().setStartQuestData(msg.data);
         break;
       }
     }
@@ -101,8 +94,8 @@ export const useLobbySocket = (
 
     const connect = async () => {
       await connectStomp(token);
-      subscribeLobby(roomId, handleMessage);
-      subscribeLobbyQuest(roomId, handleMessage);
+      subscribeLobby<LobbySocketEvent>(roomId, handleMessage);
+      subscribeLobbyQuest<LobbySocketEvent>(roomId, handleMessage);
     };
 
     connect();

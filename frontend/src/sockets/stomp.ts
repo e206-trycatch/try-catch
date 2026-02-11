@@ -149,24 +149,18 @@ export const sendSocketMessage = (
   }
 };
 
-// 로비 topic 구독 (백엔드: /topic/rooms/{roomId})
-// GamePage에서도 CODE_SAVED 수신용으로 사용
-export const subscribeLobby = (
+// 로비 퀘스트 topic 구독
+export const subscribeLobby = <T = SocketRespDto>(
   roomId: number,
-  handler: (msg: SocketRespDto) => void,
-) =>
-  subscribe<SocketRespDto>(
-    `lobby-${roomId}`,
-    `/topic/rooms/${roomId}`,
-    handler,
-  );
+  handler: (msg: T) => void,
+) => subscribe<T>(`lobby-${roomId}`, `/topic/rooms/${roomId}`, handler);
 
-// 로비 퀘스트 topic 구독 (백엔드: /topic/rooms/{roomId}/quest)
-export const subscribeLobbyQuest = (
+// 로비 퀘스트 topic 구독
+export const subscribeLobbyQuest = <T = SocketRespDto>(
   roomId: number,
-  handler: (msg: SocketRespDto) => void,
+  handler: (msg: T) => void,
 ) =>
-  subscribe<SocketRespDto>(
+  subscribe<T>(
     `lobby-quest-${roomId}`,
     `/topic/rooms/${roomId}/quest`,
     handler,

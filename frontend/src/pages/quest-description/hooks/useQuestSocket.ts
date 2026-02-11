@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { connectStomp, subscribeLobbyQuest } from '../../../sockets/stomp';
 import type {
   QuestReadyStatusData,
-  SocketRespDto,
+  QuestSocketEvent,
   StartQuestData,
 } from '../../../sockets/types';
 import { useSocketStore } from '../../../stores/useSocketStore';
@@ -20,26 +20,24 @@ export const useQuestSocket = (
 ) => {
   const connectedRef = useRef(false);
   const tokenRef = useRef<string | null>(null);
-  const callbacksRef = useRef(callbacks);
+  const callbacksRef = useRef<UseQuestSocketCallbacks>(callbacks);
 
   useEffect(() => {
     callbacksRef.current = callbacks;
   }, [callbacks]);
 
-  const handleMessage = useCallback((msg: SocketRespDto) => {
+  const handleMessage = useCallback((msg: QuestSocketEvent) => {
     console.log('[useQuestSocket] Message received:', msg.type, msg.data);
 
     switch (msg.type) {
       case 'QUEST_READY_STATUS': {
-        const data = msg.data as QuestReadyStatusData;
-        console.log('[useQuestSocket] Quest ready status:', data);
-        callbacksRef.current.onQuestReadyStatus(data);
+        console.log('[useQuestSocket] Quest ready status:', msg.data);
+        callbacksRef.current.onQuestReadyStatus(msg.data);
         break;
       }
       case 'START_QUEST': {
-        const data = msg.data as StartQuestData;
-        console.log('[useQuestSocket] Start quest:', data);
-        callbacksRef.current.onStartQuest(data);
+        console.log('[useQuestSocket] Start quest:', msg.data);
+        callbacksRef.current.onStartQuest(msg.data);
         break;
       }
     }
@@ -81,7 +79,7 @@ export const useQuestSocket = (
           '[useQuestSocket] STOMP connected, subscribing to quest topic...',
         );
 
-        subscribeLobbyQuest(roomId, handleMessage);
+        subscribeLobbyQuest<QuestSocketEvent>(roomId, handleMessage);
         console.log(
           `[useQuestSocket] Subscribed to /topic/rooms/${roomId}/quest`,
         );
