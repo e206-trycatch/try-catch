@@ -12,6 +12,10 @@ spring:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_ROOT_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 30    # 여기가 핵심! (현재 10으로 잡혀있음)
+      minimum-idle: 10
+      connection-timeout: 30000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -89,3 +93,7 @@ server:
   # 프록시가 전달하는 X-Forwarded-* 헤더(원본 호스트, 프로토콜, IP 등)를 Spring이 인식하도록 함
   # 이 설정이 없으면 Spring은 요청의 Origin을 잘못 인식하여 CORS 에러가 발생할 수 있음
   forward-headers-strategy: framework
+scoring:
+  mock-enabled: true
+  mock-delay-ms: 30000
+
