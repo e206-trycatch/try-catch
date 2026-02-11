@@ -8,6 +8,9 @@ import type {
 } from '../../../sockets/types';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { useStore } from '../../../stores/useStore';
+import { createLogger } from '../../../utils/logger';
+
+const log = createLogger('[useQuestSocket]');
 
 interface UseQuestSocketCallbacks {
   onQuestReadyStatus: (data: QuestReadyStatusData) => void;
@@ -27,16 +30,16 @@ export const useQuestSocket = (
   }, [callbacks]);
 
   const handleMessage = useCallback((msg: QuestSocketEvent) => {
-    console.log('[useQuestSocket] Message received:', msg.type, msg.data);
+    log.log('[useQuestSocket] Message received:', msg.type, msg.data);
 
     switch (msg.type) {
       case 'QUEST_READY_STATUS': {
-        console.log('[useQuestSocket] Quest ready status:', msg.data);
+        log.log('[useQuestSocket] Quest ready status:', msg.data);
         callbacksRef.current.onQuestReadyStatus(msg.data);
         break;
       }
       case 'START_QUEST': {
-        console.log('[useQuestSocket] Start quest:', msg.data);
+        log.log('[useQuestSocket] Start quest:', msg.data);
         callbacksRef.current.onStartQuest(msg.data);
         break;
       }
@@ -66,25 +69,20 @@ export const useQuestSocket = (
 
     tokenRef.current = token;
 
-    console.log(
-      '[useQuestSocket] Initiating STOMP connection for room:',
-      roomId,
-    );
+    log.log('[useQuestSocket] Initiating STOMP connection for room:', roomId);
 
     const connect = async () => {
       try {
         await connectStomp(token);
         connectedRef.current = true;
-        console.log(
+        log.log(
           '[useQuestSocket] STOMP connected, subscribing to quest topic...',
         );
 
         subscribeLobbyQuest<QuestSocketEvent>(roomId, handleMessage);
-        console.log(
-          `[useQuestSocket] Subscribed to /topic/rooms/${roomId}/quest`,
-        );
+        log.log(`[useQuestSocket] Subscribed to /topic/rooms/${roomId}/quest`);
       } catch (err) {
-        console.error('[useQuestSocket] STOMP connection failed:', err);
+        log.error('[useQuestSocket] STOMP connection failed:', err);
         connectedRef.current = false;
       }
     };
@@ -92,9 +90,7 @@ export const useQuestSocket = (
     connect();
 
     return () => {
-      console.log(
-        '[useQuestSocket] Cleaning up, unsubscribing from quest topic',
-      );
+      log.log('[useQuestSocket] Cleaning up, unsubscribing from quest topic');
       connectedRef.current = false;
       useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
     };
@@ -105,7 +101,7 @@ export const useQuestSocket = (
       if (!roomId) return;
       const { client, connected } = useSocketStore.getState();
 
-      console.log('[useQuestSocket] sendQuestReady:', {
+      log.log('[useQuestSocket] sendQuestReady:', {
         roomId,
         questId,
         hasClient: !!client,
@@ -113,7 +109,7 @@ export const useQuestSocket = (
       });
 
       if (!client || !connected) {
-        console.error('[useQuestSocket] Cannot send - not connected');
+        log.error('[useQuestSocket] Cannot send - not connected');
         return;
       }
 
@@ -122,9 +118,9 @@ export const useQuestSocket = (
           destination: `/app/rooms/${roomId}/quest/ready`,
           body: JSON.stringify({ questId }),
         });
-        console.log('[useQuestSocket] Quest ready sent for questId:', questId);
+        log.log('[useQuestSocket] Quest ready sent for questId:', questId);
       } catch (err) {
-        console.error('[useQuestSocket] Publish failed:', err);
+        log.error('[useQuestSocket] Publish failed:', err);
       }
     },
     [roomId],
