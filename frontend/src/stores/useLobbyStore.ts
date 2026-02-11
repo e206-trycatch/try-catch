@@ -3,7 +3,6 @@ import { create } from 'zustand';
 import type { MultiRoomInfo } from '../api/roomApi';
 import type { GuestInfo, StartQuestData } from '../sockets/types';
 import { createLogger } from '../utils/logger';
-import { useRoomStore } from './useRoomStore';
 
 const log = createLogger('[useLobbyStore]');
 
@@ -17,7 +16,10 @@ interface LobbyState {
   gameStarted: boolean;
 
   setRoomInfo: (info: MultiRoomInfo) => void;
-  updateGuestJoined: (guest: GuestInfo) => void;
+  updateGuestJoined: (
+    guest: GuestInfo,
+    guestPosition?: 'FRONTEND' | 'BACKEND' | 'FULLSTACK',
+  ) => void;
   updateReadyStatus: (role: 'HOST' | 'GUEST', isReady: boolean) => void;
   removeGuest: () => void;
   setStatus: (status: LobbyStatus) => void;
@@ -47,17 +49,13 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
     });
   },
 
-  updateGuestJoined: (guest) => {
+  updateGuestJoined: (guest, guestPosition) => {
     const { roomInfo } = get();
     if (!roomInfo) return;
 
-    // 방 생성 시 호스트가 설정한 게스트 포지션 사용
-    // (소켓 PLAYER_JOINED 이벤트에 position 필드가 포함되지 않음)
-    const draftGuestPosition = useRoomStore.getState().draft.guestPosition;
-
     const validPosition =
       roomInfo.guest?.position ??
-      (draftGuestPosition === 'FULLSTACK' ? undefined : draftGuestPosition) ??
+      (guestPosition === 'FULLSTACK' ? undefined : guestPosition) ??
       undefined;
 
     set({

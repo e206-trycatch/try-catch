@@ -12,6 +12,7 @@ import {
 } from '../../../sockets/stomp';
 import type { LobbySocketEvent } from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
+import { useRoomStore } from '../../../stores/useRoomStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { createLogger } from '../../../utils/logger';
 
@@ -45,13 +46,19 @@ export const useLobbySocket = (
           break;
         }
 
-        store.updateGuestJoined({
-          userId: msg.data.userId,
-          nickname: msg.data.nickname,
-          frameworkId: msg.data.frameworkId,
-          frameworkName: msg.data.frameworkName,
-          isReady: msg.data.isReady,
-        });
+        const guestPosition =
+          useRoomStore.getState().draft.guestPosition ?? undefined;
+
+        store.updateGuestJoined(
+          {
+            userId: msg.data.userId,
+            nickname: msg.data.nickname,
+            frameworkId: msg.data.frameworkId,
+            frameworkName: msg.data.frameworkName,
+            isReady: msg.data.isReady,
+          },
+          guestPosition,
+        );
         break;
       }
       case 'READY_CHANGED': {
