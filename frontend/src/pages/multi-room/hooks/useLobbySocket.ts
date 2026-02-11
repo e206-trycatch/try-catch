@@ -10,7 +10,9 @@ import type { LobbySocketEvent } from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { useStore } from '../../../stores/useStore';
-import { logger } from '../../../utils/logger';
+import { createLogger } from '../../../utils/logger';
+
+const log = createLogger('[useLobbySocket]');
 
 export const useLobbySocket = (
   roomId: number | null,
@@ -19,8 +21,8 @@ export const useLobbySocket = (
   const joinedRef = useRef(false);
 
   const handleMessage = useCallback((msg: LobbySocketEvent) => {
-    logger.log('[useQuestSocket] Message received:', msg.type, msg.data);
-    logger.log('[STOMP Message]', msg.type, msg.data);
+    log.log('[useQuestSocket] Message received:', msg.type, msg.data);
+    log.log('[STOMP Message]', msg.type, msg.data);
 
     switch (msg.type) {
       case 'PLAYER_JOINED': {
@@ -29,9 +31,9 @@ export const useLobbySocket = (
         const roomInfo = store.roomInfo;
         if (!roomInfo) break;
 
-        logger.log('[PLAYER_JOINED] Guest joined:', msg.data);
+        log.log('[PLAYER_JOINED] Guest joined:', msg.data);
         if (msg.data.userId === roomInfo.host.userId) {
-          logger.log('[PLAYED_JOINED] ignored (host join echo):', msg.data);
+          log.log('[PLAYED_JOINED] ignored (host join echo):', msg.data);
           break;
         }
 
@@ -46,14 +48,14 @@ export const useLobbySocket = (
       }
       case 'READY_CHANGED': {
         // msg.data는 자동으로 ReadyStatusDto
-        logger.log('[READY_CHANGED] User ready status changed:', msg.data);
+        log.log('[READY_CHANGED] User ready status changed:', msg.data);
         const store = useLobbyStore.getState();
         const { roomInfo } = store;
         if (!roomInfo) break;
 
         const role =
           roomInfo.host.userId === msg.data.userId ? 'HOST' : 'GUEST';
-        logger.log(
+        log.log(
           `[READY_CHANGED] Updating ${role} to isReady=${msg.data.isReady}`,
         );
         store.updateReadyStatus(role, msg.data.isReady);
@@ -61,13 +63,13 @@ export const useLobbySocket = (
       }
       case 'GAME_STARTED': {
         // msg.data는 자동으로 GameStartedData
-        logger.log('[GAME_STARTED] Game starting for room:', msg.data.roomId);
+        log.log('[GAME_STARTED] Game starting for room:', msg.data.roomId);
         useLobbyStore.getState().setGameStarted(msg.data.roomId);
         break;
       }
       case 'QUEST_READY_STATUS': {
         // msg.data는 자동으로 QuestReadyStatusData
-        logger.log('[QUEST_READY_STATUS] Quest ready status:', msg.data);
+        log.log('[QUEST_READY_STATUS] Quest ready status:', msg.data);
         const store = useLobbyStore.getState();
         store.updateReadyStatus('HOST', msg.data.host.isReady);
         store.updateReadyStatus('GUEST', msg.data.guest.isReady);
@@ -75,7 +77,7 @@ export const useLobbySocket = (
       }
       case 'START_QUEST': {
         // msg.data는 자동으로 StartQuestData
-        logger.log('[START_QUEST] Quest starting:', msg.data);
+        log.log('[START_QUEST] Quest starting:', msg.data);
         useLobbyStore.getState().setStartQuestData(msg.data);
         break;
       }
@@ -88,10 +90,7 @@ export const useLobbySocket = (
     const token = useStore.getState().accessToken;
     if (!token) return;
 
-    logger.log(
-      '[useLobbySocket] Initiating STOMP connection for room:',
-      roomId,
-    );
+    log.log('[useLobbySocket] Initiating STOMP connection for room:', roomId);
 
     const connect = async () => {
       await connectStomp(token);
@@ -102,7 +101,7 @@ export const useLobbySocket = (
     connect();
 
     return () => {
-      logger.log('[useLobbySocket] Cleaning up, unsubscribing from topics');
+      log.log('[useLobbySocket] Cleaning up, unsubscribing from topics');
       useSocketStore.getState().removeSubscription(`lobby-${roomId}`);
       useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
     };
@@ -118,10 +117,7 @@ export const useLobbySocket = (
       const timer = setTimeout(() => {
         const { connected: isConnected } = useSocketStore.getState();
         if (isConnected && !joinedRef.current) {
-          logger.log(
-            '[useLobbySocket] Sending JOIN_ROOM for user:',
-            me.nickname,
-          );
+          log.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
           sendSocketMessage(`/app/rooms/${roomId}/join`, {
             type: 'JOIN_ROOM',
             roomId,
@@ -134,7 +130,7 @@ export const useLobbySocket = (
       return () => clearTimeout(timer);
     }
 
-    logger.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
+    log.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
     sendSocketMessage(`/app/rooms/${roomId}/join`, {
       type: 'JOIN_ROOM',
       roomId,
@@ -148,7 +144,7 @@ export const useLobbySocket = (
     (userId: number, nickname: string) => {
       if (!roomId) return;
 
-      logger.log('[sendJoin] Preparing to send join message:', {
+      log.log('[sendJoin] Preparing to send join message:', {
         roomId,
         userId,
         nickname,
@@ -161,7 +157,7 @@ export const useLobbySocket = (
         nickname,
       });
 
-      logger.log('[sendJoin] Join message sent successfully');
+      log.log('[sendJoin] Join message sent successfully');
     },
     [roomId],
   );
@@ -171,7 +167,7 @@ export const useLobbySocket = (
 
     const { client, connected } = useSocketStore.getState();
 
-    logger.log('[sendReady] Client state check:', {
+    log.log('[sendReady] Client state check:', {
       roomId,
       hasClient: !!client,
       connected,
@@ -180,17 +176,17 @@ export const useLobbySocket = (
     });
 
     if (!client) {
-      logger.error('[sendReady] No client available!');
+      log.error('[sendReady] No client available!');
       return;
     }
 
     if (!connected) {
-      logger.error('[sendReady] Not connected!');
+      log.error('[sendReady] Not connected!');
       return;
     }
 
     if (!client.active) {
-      logger.error('[sendReady] Client not active!');
+      log.error('[sendReady] Client not active!');
       return;
     }
 
@@ -198,16 +194,16 @@ export const useLobbySocket = (
       const message = {};
       const destination = `/app/rooms/${roomId}/ready`;
 
-      logger.log('[sendReady] Publishing:', { destination, message });
+      log.log('[sendReady] Publishing:', { destination, message });
 
       client.publish({
         destination,
         body: JSON.stringify(message),
       });
 
-      logger.log('[sendReady] Publish call completed');
+      log.log('[sendReady] Publish call completed');
     } catch (err) {
-      logger.error('[sendReady] Publish error:', err);
+      log.error('[sendReady] Publish error:', err);
     }
   }, [roomId]);
 
