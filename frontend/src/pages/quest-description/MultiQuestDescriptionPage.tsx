@@ -22,6 +22,14 @@ import { useQuestSocket } from './hooks/useQuestSocket';
 
 const log = createLogger('[MultiQuestDescriptionPage');
 
+interface MultiQuestState {
+  questId: number;
+  questOrder: number;
+  title: string;
+  description: string;
+  participants: MultiQuestParticipant[];
+}
+
 const MultiQuestDescriptionPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -38,13 +46,6 @@ const MultiQuestDescriptionPage: React.FC = () => {
   // state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  interface MultiQuestState {
-    questId: number;
-    questOrder: number;
-    title: string;
-    description: string;
-    participants: MultiQuestParticipant[];
-  }
   const [questData, setQuestData] = useState<MultiQuestState | null>(null);
   const [themeImageUrl, setLocalThemeImageUrl] = useState<string | null>(
     storeThemeImageUrl,
@@ -53,7 +54,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
 
   const myReady = useMemo(
     () =>
-      questData?.participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
+      questData?.participants.find((p) => p.nickname === userNickname)
+        ?.isReady ?? false,
     [questData?.participants, userNickname],
   );
 
@@ -101,7 +103,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
           title: detail.quest.title,
           description: detail.quest.description,
           participants: detail.participants,
-        })
+        });
       } catch (err) {
         log.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
