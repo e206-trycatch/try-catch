@@ -19,7 +19,7 @@ const MultiRoomSettingForm = () => {
   } = useRoomStore();
 
   // Position options (only FRONTEND and BACKEND for multi-mode)
-  const positionOptions = useMemo(
+  const positionOptions = useMemo<{ label: string; value: Position }[]>(
     () => [
       { label: 'Frontend', value: 'FRONTEND' },
       { label: 'Backend', value: 'BACKEND' },
@@ -57,16 +57,16 @@ const MultiRoomSettingForm = () => {
     }));
   }, [availableFrameworks, draft.guestPosition]);
 
-  const handleHostPositionChange = (position: string) => {
-    setHostPosition(position as Position);
+  const handleHostPositionChange = (position: Position) => {
+    setHostPosition(position);
   };
 
   const handleHostFrameworkChange = (frameworkId: string) => {
     setHostFrameworkId(Number(frameworkId));
   };
 
-  const handleGuestPositionChange = (position: string) => {
-    setGuestPosition(position as Position);
+  const handleGuestPositionChange = (position: Position) => {
+    setGuestPosition(position);
   };
 
   const handleGuestFrameworkChange = (frameworkId: string) => {
@@ -95,7 +95,7 @@ const MultiRoomSettingForm = () => {
       {/* Row 3: Host (나) Configuration */}
       <SettingRow label="나">
         <div className="w-[368px] flex gap-[12px]">
-          <SelectField
+          <SelectField<Position>
             value={draft.hostPosition || ''}
             onChange={handleHostPositionChange}
             options={positionOptions}
@@ -115,7 +115,7 @@ const MultiRoomSettingForm = () => {
       {/* Row 4: Guest (상대) Configuration */}
       <SettingRow label="상대">
         <div className="w-[368px] flex gap-[12px]">
-          <SelectField
+          <SelectField<Position>
             value={draft.guestPosition || ''}
             onChange={handleGuestPositionChange}
             options={positionOptions}
