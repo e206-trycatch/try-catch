@@ -19,9 +19,7 @@ const SingleRoomSettingForm = () => {
   // position은 사용자가 직접 선택하도록 함 (기본값 강제 설정 제거)
 
   // 포지션 옵션에 FULLSTACK 추가
-  const positionSelectOptions = useMemo<
-    { label: string; value: Position }[]
-  >(
+  const positionSelectOptions = useMemo<{ label: string; value: Position }[]>(
     () => [
       { label: 'Frontend', value: 'FRONTEND' },
       { label: 'Backend', value: 'BACKEND' },
