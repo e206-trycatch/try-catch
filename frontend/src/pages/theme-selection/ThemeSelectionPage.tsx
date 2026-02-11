@@ -3,30 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import api from '../../api/api';
+import { fetchThemeList, type ThemeSummaryDto } from '../../api/themeApi';
 import { ThemeCardList } from '../../components/theme-selection/ThemeCardList';
 import { buttonClipPath } from '../../constants/clipPaths';
 import { MOCK_THEMES, type Theme } from '../../mocks/mockData';
 import { useGameStore } from '../../stores/useGameStore';
 import { useRoomStore } from '../../stores/useRoomStore';
-
-type ThemeSummaryDto = Readonly<{
-  themeId: number;
-  name: string;
-  description: string;
-  genre: string;
-  level: number;
-  themeImageUrl: string;
-}>;
-
-type ThemeListResult = Readonly<{
-  result: ThemeSummaryDto[];
-}>;
-
-type ApiResponseNullable<T> = Readonly<{
-  message: string;
-  result: T | null;
-}>;
 
 const ThemeSelectionPage = () => {
   const navigate = useNavigate();
@@ -67,26 +49,27 @@ const ThemeSelectionPage = () => {
       setEnabledThemeIds(new Set(ids));
     };
 
-    const fetchThemes = async () => {
+    const loadThemes = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const { data } = await api.get<ApiResponseNullable<ThemeListResult>>(
-          '/themes',
-          { signal: controller.signal },
-        );
+        const themes = await fetchThemeList(controller.signal);
 
-        const nested = data.result?.result;
-
-        if (!Array.isArray(nested)) {
-          setError(data.message ?? '테마 정보를 불러오지 못했습니다.');
+        if (!themes) {
+          setError('테마 정보를 불러오지 못했습니다.');
           applyMockAvailability();
           return;
         }
 
-        setEnabledThemeIds(new Set(nested.map((t) => t.themeId)));
-        setApiThemes(new Map(nested.map((t) => [t.themeId, t.themeImageUrl])));
+        setEnabledThemeIds(
+          new Set(themes.map((t: ThemeSummaryDto) => t.themeId)),
+        );
+        setApiThemes(
+          new Map(
+            themes.map((t: ThemeSummaryDto) => [t.themeId, t.themeImageUrl]),
+          ),
+        );
       } catch (e) {
         if (axios.isCancel(e)) return;
 
@@ -98,7 +81,7 @@ const ThemeSelectionPage = () => {
       }
     };
 
-    fetchThemes();
+    loadThemes();
     return () => controller.abort();
   }, []);
 

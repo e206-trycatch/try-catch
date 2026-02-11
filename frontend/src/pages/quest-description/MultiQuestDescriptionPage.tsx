@@ -8,11 +8,11 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import api from '../../api/api';
 import {
   fetchMultiQuestDetail,
   type MultiQuestParticipant,
 } from '../../api/roomApi';
+import { fetchThemeImageUrl } from '../../api/themeApi';
 import QuestDescriptionBox from '../../components/quest/QuestDescriptionBox';
 import type { QuestReadyStatusData, StartQuestData } from '../../sockets/types';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -67,30 +67,16 @@ const MultiQuestDescriptionPage: React.FC = () => {
     }
   }, [themeId, currentRoomId, navigate]);
 
-  // themeImageUrl이 없으면 테마 목록에서 가져오기 (guest용 fallback)
   useEffect(() => {
     if (themeImageUrl || !themeId) return;
 
-    const fetchThemeImage = async () => {
-      try {
-        const { data } = await api.get('/themes');
-        const themes = data.result?.result;
-        if (Array.isArray(themes)) {
-          const theme = themes.find(
-            (t: { themeId: number; themeImageUrl?: string }) =>
-              t.themeId === themeId,
-          );
-          if (theme?.themeImageUrl) {
-            setLocalThemeImageUrl(theme.themeImageUrl);
-            setThemeImageUrl(theme.themeImageUrl);
-          }
-        }
-      } catch (err) {
-        console.error('테마 이미지 URL 로드 실패:', err);
+    (async () => {
+      const imageUrl = await fetchThemeImageUrl(themeId);
+      if (imageUrl) {
+        setLocalThemeImageUrl(imageUrl);
+        setThemeImageUrl(imageUrl);
       }
-    };
-
-    fetchThemeImage();
+    })();
   }, [themeId, themeImageUrl, setThemeImageUrl]);
 
   // 멀티 모드 API 받아오기
