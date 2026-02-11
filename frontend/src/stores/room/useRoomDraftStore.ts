@@ -18,6 +18,24 @@ const pickFirstFrameworkId = (
   return list[0].id;
 };
 
+// position에 맞는 첫 번째 프레임워크 ID 반환
+const resolveFirstId = (
+  position: Position,
+  availableFrameworks: AvailableFrameworks | null,
+): number | null =>
+  pickFirstFrameworkId(
+    availableFrameworks?.[position === 'FRONTEND' ? 'FRONTEND' : 'BACKEND'],
+  );
+
+// position 다라 frontendId/backendId 분배
+const spreadByPosition = (
+  position: Position,
+  frameworkId: number | null,
+): Pick<RoomDraft, 'frontendId' | 'backendId'> => ({
+  frontendId: position === 'FRONTEND' ? frameworkId : null,
+  backendId: position === 'BACKEND' ? frameworkId : null,
+});
+
 interface RoomDraftState {
   draft: RoomDraft;
   currentRoomId: number | null;
@@ -93,50 +111,27 @@ export const useRoomDraftStore = create<RoomDraftState>()(
         set((s) => {
           // FULLSTACK인 경우 frontendId와 backendId 둘 다 초기화
           if (position === 'FULLSTACK') {
-            const firstFrontId = pickFirstFrameworkId(
-              availableFrameworks?.FRONTEND,
-            );
-            const firstBackId = pickFirstFrameworkId(
-              availableFrameworks?.BACKEND,
-            );
-
             return {
               draft: {
                 ...s.draft,
                 position,
-                selectedFrameworkId: null, // FULLSTACK에서는 미사용
-                frontendId: firstFrontId,
-                backendId: firstBackId,
+                selectedFrameworkId: null,
+                frontendId: pickFirstFrameworkId(availableFrameworks?.FRONTEND),
+                backendId: pickFirstFrameworkId(availableFrameworks?.BACKEND),
               },
             };
           }
 
-          // FRONTEND 또는 BACKEND인 경우
-          const firstId =
-            position === 'FRONTEND'
-              ? pickFirstFrameworkId(availableFrameworks?.FRONTEND)
-              : pickFirstFrameworkId(availableFrameworks?.BACKEND);
+          const firstId = resolveFirstId(position, availableFrameworks);
 
-          const nextSelectedFrameworkId = firstId;
-
-          const nextDraft =
-            position === 'FRONTEND'
-              ? {
-                  ...s.draft,
-                  position,
-                  selectedFrameworkId: nextSelectedFrameworkId,
-                  frontendId: nextSelectedFrameworkId,
-                  backendId: null,
-                }
-              : {
-                  ...s.draft,
-                  position,
-                  selectedFrameworkId: nextSelectedFrameworkId,
-                  backendId: nextSelectedFrameworkId,
-                  frontendId: null,
-                };
-
-          return { draft: nextDraft };
+          return {
+            draft: {
+              ...s.draft,
+              position,
+              selectedFrameworkId: firstId,
+              ...spreadByPosition(position, firstId),
+            },
+          };
         }),
 
       setSelectedFrameworkId: (selectedFrameworkId) =>
@@ -148,22 +143,13 @@ export const useRoomDraftStore = create<RoomDraftState>()(
             return { draft: { ...s.draft, selectedFrameworkId } };
           }
 
-          const nextDraft =
-            position === 'FRONTEND'
-              ? {
-                  ...s.draft,
-                  selectedFrameworkId,
-                  frontendId: selectedFrameworkId,
-                  backendId: null,
-                }
-              : {
-                  ...s.draft,
-                  selectedFrameworkId,
-                  backendId: selectedFrameworkId,
-                  frontendId: null,
-                };
-
-          return { draft: nextDraft };
+          return {
+            draft: {
+              ...s.draft,
+              selectedFrameworkId,
+              ...spreadByPosition(position, selectedFrameworkId),
+            },
+          };
         }),
 
       setFullstackFrameworks: (frontendId, backendId) =>
@@ -195,20 +181,13 @@ export const useRoomDraftStore = create<RoomDraftState>()(
         })),
 
       setHostPosition: (position, availableFrameworks) =>
-        set((s) => {
-          const firstId =
-            position === 'FRONTEND'
-              ? pickFirstFrameworkId(availableFrameworks?.FRONTEND)
-              : pickFirstFrameworkId(availableFrameworks?.BACKEND);
-
-          return {
-            draft: {
-              ...s.draft,
-              hostPosition: position,
-              hostFrameworkId: firstId,
-            },
-          };
-        }),
+        set((s) => ({
+          draft: {
+            ...s.draft,
+            hostPosition: position,
+            hostFrameworkId: resolveFirstId(position, availableFrameworks),
+          },
+        })),
 
       setHostFrameworkId: (frameworkId) =>
         set((s) => ({
@@ -216,20 +195,13 @@ export const useRoomDraftStore = create<RoomDraftState>()(
         })),
 
       setGuestPosition: (position, availableFrameworks) =>
-        set((s) => {
-          const firstId =
-            position === 'FRONTEND'
-              ? pickFirstFrameworkId(availableFrameworks?.FRONTEND)
-              : pickFirstFrameworkId(availableFrameworks?.BACKEND);
-
-          return {
-            draft: {
-              ...s.draft,
-              guestPosition: position,
-              guestFrameworkId: firstId,
-            },
-          };
-        }),
+        set((s) => ({
+          draft: {
+            ...s.draft,
+            guestPosition: position,
+            guestFrameworkId: resolveFirstId(position, availableFrameworks),
+          },
+        })),
 
       setGuestFrameworkId: (frameworkId) =>
         set((s) => ({
