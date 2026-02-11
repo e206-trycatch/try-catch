@@ -21,10 +21,9 @@ export const useStompSubscription = <T>(
   topics: StompTopic<T>[],
   handler: (msg: T) => void,
 ) => {
+  const token = useStore((state) => state.accessToken);
   useEffect(() => {
-    if (!roomId) return;
-    const token = useStore.getState().accessToken;
-    if (!token) return;
+    if (!roomId || !token) return;
 
     log.log('Initiating STOMP connection for room:', roomId);
 
@@ -46,5 +45,5 @@ export const useStompSubscription = <T>(
         socketStore.removeSubscription(`${key}-${roomId}`),
       );
     };
-  }, [roomId, handler, topics]);
+  }, [roomId, token, handler, topics]);
 };
