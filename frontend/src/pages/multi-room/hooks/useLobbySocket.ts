@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import {
-  connectStomp,
+  type StompTopic,
+  useStompSubscription,
+} from '@/hooks/useStompSubscription';
+
+import {
   sendSocketMessage,
   subscribeLobby,
   subscribeLobbyQuest,
@@ -9,10 +13,14 @@ import {
 import type { LobbySocketEvent } from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
-import { useStore } from '../../../stores/useStore';
 import { createLogger } from '../../../utils/logger';
 
 const log = createLogger('[useLobbySocket]');
+
+const LOBBY_TOPICS: StompTopic<LobbySocketEvent>[] = [
+  { key: 'lobby', subscribeFn: subscribeLobby },
+  { key: 'lobby-quest', subscribeFn: subscribeLobbyQuest },
+];
 
 export const useLobbySocket = (
   roomId: number | null,
@@ -85,27 +93,7 @@ export const useLobbySocket = (
   }, []);
 
   // 구독 설정 (roomId가 변경될 때만 재실행 - me 변경 시 구독 해제 방지)
-  useEffect(() => {
-    if (!roomId) return;
-    const token = useStore.getState().accessToken;
-    if (!token) return;
-
-    log.log('[useLobbySocket] Initiating STOMP connection for room:', roomId);
-
-    const connect = async () => {
-      await connectStomp(token);
-      subscribeLobby<LobbySocketEvent>(roomId, handleMessage);
-      subscribeLobbyQuest<LobbySocketEvent>(roomId, handleMessage);
-    };
-
-    connect();
-
-    return () => {
-      log.log('[useLobbySocket] Cleaning up, unsubscribing from topics');
-      useSocketStore.getState().removeSubscription(`lobby-${roomId}`);
-      useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
-    };
-  }, [roomId, handleMessage]);
+  useStompSubscription(roomId, LOBBY_TOPICS, handleMessage);
 
   // JOIN_ROOM 메시지 전송 (me가 로드된 후 한 번만 실행)
   useEffect(() => {
