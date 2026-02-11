@@ -44,7 +44,7 @@ const ThemeSelectionPage = () => {
       try {
         const apiThemes = await fetchThemeList(controller.signal);
 
-        if (!apiThemes) {
+        if (!apiThemes || apiThemes.length === 0) {
           setError('테마 정보를 불러오지 못했습니다.');
           return; // MOCK_THEMES 유지
         }
