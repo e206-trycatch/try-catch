@@ -38,21 +38,23 @@ const MultiQuestDescriptionPage: React.FC = () => {
   // state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [multiQuestId, setMultiQuestId] = useState<number | null>(null);
-  const [multiQuestOrder, setMultiQuestOrder] = useState<number>(1);
-  const [multiQuestTitle, setMultiQuestTitle] = useState('');
-  const [multiQuestDescription, setMultiQuestDescription] = useState('');
-  const [participants, setParticipants] = useState<MultiQuestParticipant[]>([]);
+  interface MultiQuestState {
+    questId: number;
+    questOrder: number;
+    title: string;
+    description: string;
+    participants: MultiQuestParticipant[];
+  }
+  const [questData, setQuestData] = useState<MultiQuestState | null>(null);
   const [themeImageUrl, setLocalThemeImageUrl] = useState<string | null>(
     storeThemeImageUrl,
   );
   const navigatingRef = useRef(false);
 
-  // myReady는 participants에서 계산 (단일 출처 원칙)
   const myReady = useMemo(
     () =>
-      participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
-    [participants, userNickname],
+      questData?.participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
+    [questData?.participants, userNickname],
   );
 
   // 테마 아이디 없거나 currentRoomId 없으면 테마 페이지로
@@ -93,12 +95,13 @@ const MultiQuestDescriptionPage: React.FC = () => {
           currentRoomId,
           currentQuestId,
         );
-        setMultiQuestId(detail.quest.questId);
-        setMultiQuestOrder(detail.quest.questOrder);
-        setMultiQuestTitle(detail.quest.title);
-        setMultiQuestDescription(detail.quest.description);
-        // 서버에서 2명이 아니면 isReady를 false로 보내주므로 그대로 사용
-        setParticipants(detail.participants);
+        setQuestData({
+          questId: detail.quest.questId,
+          questOrder: detail.quest.questOrder,
+          title: detail.quest.title,
+          description: detail.quest.description,
+          participants: detail.participants,
+        })
       } catch (err) {
         log.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
@@ -111,13 +114,17 @@ const MultiQuestDescriptionPage: React.FC = () => {
   }, [currentRoomId, currentQuestId, userNickname]);
 
   const onQuestReadyStatus = useCallback((data: QuestReadyStatusData) => {
-    setParticipants((prev) =>
-      prev.map((p) => {
-        if (p.role === 'HOST') return { ...p, isReady: data.host.isReady };
-        if (p.role === 'GUEST') return { ...p, isReady: data.guest.isReady };
-        return p;
-      }),
-    );
+    setQuestData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        participants: prev.participants.map((p) => {
+          if (p.role === 'HOST') return { ...p, isReady: data.host.isReady };
+          if (p.role === 'GUEST') return { ...p, isReady: data.guest.isReady };
+          return p;
+        }),
+      };
+    });
   }, []);
 
   // 웹소켓 callback: START QUEST
@@ -142,8 +149,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
   const handleReady = () => {
     // 이미 ready면 다시 클릭 못하기 막기 (토글 방지)
     if (myReady) return;
-    if (multiQuestId != null) {
-      sendQuestReady(multiQuestId);
+    if (questData) {
+      sendQuestReady(questData.questId);
     }
   };
 
@@ -157,7 +164,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
   }
 
   // 에러 처리
-  if (error || !multiQuestId) {
+  // - 에러 가드(!questData)를 통과한 이후이므로 questData는 non-null이 보장
+  if (error || !questData) {
     return (
       <div className="w-screen h-screen flex items-center justify-center">
         <div className="text-center">
@@ -188,12 +196,12 @@ const MultiQuestDescriptionPage: React.FC = () => {
       )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questOrder={multiQuestOrder}
-          themeName={multiQuestTitle}
-          questDescription={multiQuestDescription}
+          questOrder={questData.questOrder}
+          themeName={questData.title}
+          questDescription={questData.description}
           onStart={() => {}}
           isMulti={true}
-          participants={participants}
+          participants={questData.participants}
           myReady={myReady}
           onReady={handleReady}
         />
