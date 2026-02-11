@@ -1,5 +1,7 @@
 package io.ssafy.trycatch.domain.submission.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ssafy.trycatch.domain.game.dto.response.MultiProblemFileListRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFileRespDto;
 import io.ssafy.trycatch.domain.room.dto.response.ProblemFilesRespDto;
@@ -23,6 +25,7 @@ import io.ssafy.trycatch.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
@@ -56,6 +59,7 @@ public class SubmissionService {
     private final TransactionTemplate transactionTemplate;
     private final AsyncScoringService asyncScoringService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
 
     private static final String FRONTEND_RUBRIC = """
@@ -134,11 +138,6 @@ public class SubmissionService {
 
     @Transactional
     public SubmissionRespDto submitAsyncRedis(Long roomId, Long userId, SubmissionReqDto request, LocalDateTime submittedAt) {
-        Long pending = redisTemplate.opsForList().size("submission_queue");
-        if (pending != null && pending >= 50) {
-            log.warn("Redis queue is full.================================");
-            throw new CustomException(ErrorCode.SCORING_QUEUE_FULL); // 503 or 429로 매핑
-        }
         // 1. DB에 PENDING 상태로 우선 저장 (가볍게 INSERT만)
         // (기존 로직 재활용하거나 빌더로 직접 생성)
         SubmissionContext context = createSubmissions(roomId, userId, request, submittedAt);
@@ -154,17 +153,49 @@ public class SubmissionService {
                 .submittedAt(submittedAt)
                 .build();
 
-        Long newLen = redisTemplate.opsForList().leftPush("submission_queue", task);
-        if (newLen == null) {
-            throw new CustomException(ErrorCode.REDIS_ERROR); // 없으면 INTERNAL_SERVER_ERROR로
-        }
+        // 2. Lua 스크립트로 원자적 체크 & 삽입
+        String luaScript = """
+        local queueKey = KEYS[1]
+        local maxSize = tonumber(ARGV[1])
+        local taskJson = ARGV[2]
+        
+        local currentSize = redis.call('LLEN', queueKey)
+        
+        if currentSize >= maxSize then
+            return -1  -- 큐가 가득참
+        end
+        
+        redis.call('LPUSH', queueKey, taskJson)
+        return currentSize + 1  -- 새로운 큐 길이 반환
+        """;
 
-        // 3. 즉시 응답
-        return SubmissionRespDto.builder()
-                .submissionId(submission.getId())
-                .roomId(roomId)
-                .status("PENDING")
-                .build();
+        try {
+            String taskJson = objectMapper.writeValueAsString(task);
+
+            Long result = redisTemplate.execute(
+                    new DefaultRedisScript<>(luaScript, Long.class),
+                    List.of("submission_queue"),  // KEYS[1]
+                    10,                           // ARGV[1] - maxSize
+                    taskJson                      // ARGV[2] - task
+            );
+
+            if (result == null || result == -1) {
+                log.warn("Redis queue is FULL - rejected submission: {}", submission.getId());
+                throw new CustomException(ErrorCode.SCORING_QUEUE_FULL);
+            }
+
+            log.info("Task queued successfully. Queue size: {}", result);
+
+            return SubmissionRespDto.builder()
+                    .submissionId(submission.getId())
+                    .roomId(roomId)
+                    .status("PENDING")
+                    .build();
+
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize task", e);
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Transactional(readOnly = true)

@@ -1,5 +1,6 @@
 package io.ssafy.trycatch.domain.submission.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ssafy.trycatch.domain.submission.entity.Submission;
 import io.ssafy.trycatch.domain.submission.entity.SubmissionTaskDto;
@@ -28,16 +29,20 @@ public class SubmissionWorker {
     private final ExecutorService workerPool = Executors.newFixedThreadPool(10);
 
     @Scheduled(fixedDelay = 100) // 0.1초마다 폴링
-    public void processQueue() {
+    public void processQueue() throws JsonProcessingException {
         // 1. 레디스에서 꺼냄
         Object rawTask = redisTemplate.opsForList().rightPop("submission_queue");
 
         if (rawTask == null) return;
 
-        // 3. 안전하게 변환 (Map -> DTO)
-        // convertValue 메서드가 마법을 부려줍니다.
-        SubmissionTaskDto task = objectMapper.convertValue(rawTask, SubmissionTaskDto.class);
-
+        SubmissionTaskDto task;
+        if (rawTask instanceof String) {
+            // Lua에서 JSON 문자열로 저장했으므로
+            task = objectMapper.readValue((String) rawTask, SubmissionTaskDto.class);
+        } else {
+            // 기존 방식 호환
+            task = objectMapper.convertValue(rawTask, SubmissionTaskDto.class);
+        }
         // 2. 스레드 풀에 작업 투입
         workerPool.submit(() -> {
             try {
