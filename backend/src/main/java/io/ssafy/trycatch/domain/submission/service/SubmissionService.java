@@ -14,6 +14,7 @@ import io.ssafy.trycatch.domain.submission.dto.response.ScoreResult;
 import io.ssafy.trycatch.domain.submission.dto.response.SubmissionRespDto;
 import io.ssafy.trycatch.domain.submission.entity.Submission;
 import io.ssafy.trycatch.domain.submission.entity.SubmissionFile;
+import io.ssafy.trycatch.domain.submission.entity.SubmissionTaskDto;
 import io.ssafy.trycatch.domain.submission.repository.SubmissionFileRepository;
 import io.ssafy.trycatch.domain.submission.repository.SubmissionRepository;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
@@ -21,8 +22,10 @@ import io.ssafy.trycatch.global.exception.CustomException;
 import io.ssafy.trycatch.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -30,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static io.ssafy.trycatch.global.exception.ErrorCode.*;
@@ -50,7 +54,8 @@ public class SubmissionService {
     private final FrameworkRepository frameworkRepository;
     private final RoomUserRepository roomUserRepository;
     private final TransactionTemplate transactionTemplate;
-    private final SingleRoomService singleRoomService;
+    private final AsyncScoringService asyncScoringService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
 
     private static final String FRONTEND_RUBRIC = """
@@ -84,6 +89,82 @@ public class SubmissionService {
 
         // 3단계: 결과 업데이트 및 응답 생성 (트랜잭션 내)
         return updateAndBuildResponse(context, scoreResults);
+    }
+
+    /**
+     * 비동기 제출 (권장) - PENDING 즉시 반환
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public SubmissionRespDto submitAsync(Long roomId, Long userId, SubmissionReqDto request, LocalDateTime submittedAt) {
+        // 1단계: DB 작업만 (트랜잭션 내)
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        SubmissionContext context = transactionTemplate.execute(status ->
+                createSubmissions(roomId, userId, request, submittedAt)
+        );
+
+        if (context == null) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        Submission submission = context.getSubmissions().get(0);
+
+        // 2단계: 비동기로 GPT 채점 시작 (트랜잭션 밖에서 실행됨)
+        try {
+            asyncScoringService.scoreAsync(
+                    submission.getId(),
+                    roomId,
+                    context.getSubmissionDataList().get(0).getRoleName(),
+                    context.getSubmissionDataList().get(0).getFrameworkId(),
+                    submission.getSubmittedAt()
+            );
+        } catch (RuntimeException e) {
+            // ✅ 큐/스레드 부족으로 async 실행 자체가 거절된 케이스
+//            asyncScoringService.markAsFailed(submission.getId(), roomId, e.getMessage());
+            throw e; // 정책: 아예 submitAsync 요청을 실패로 처리하고 싶으면 그대로 throw
+            // 또는: 여기서 FAIL 응답을 만들어 반환하는 정책도 가능
+        }
+
+        // 3단계: PENDING 상태로 즉시 응답
+        return SubmissionRespDto.builder()
+                .submissionId(submission.getId())
+                .roomId(roomId)
+                .status("PENDING")
+                .build();
+    }
+
+    @Transactional
+    public SubmissionRespDto submitAsyncRedis(Long roomId, Long userId, SubmissionReqDto request, LocalDateTime submittedAt) {
+        Long pending = redisTemplate.opsForList().size("submission_queue");
+        if (pending != null && pending >= 50) {
+            log.warn("Redis queue is full.================================");
+            throw new CustomException(ErrorCode.SCORING_QUEUE_FULL); // 503 or 429로 매핑
+        }
+        // 1. DB에 PENDING 상태로 우선 저장 (가볍게 INSERT만)
+        // (기존 로직 재활용하거나 빌더로 직접 생성)
+        SubmissionContext context = createSubmissions(roomId, userId, request, submittedAt);
+        Submission submission = context.getSubmissions().get(0);
+        String roleName = context.getSubmissionDataList().get(0).getRoleName();
+
+        // 2. 레디스 큐에 ID 밀어넣기 (LPUSH)
+        SubmissionTaskDto task = SubmissionTaskDto.builder()
+                .submissionId(submission.getId())
+                .roomId(roomId)
+                .problemFrameworkId(request.getProblemFrameworkId())
+                .roleName(roleName)
+                .submittedAt(submittedAt)
+                .build();
+
+        Long newLen = redisTemplate.opsForList().leftPush("submission_queue", task);
+        if (newLen == null) {
+            throw new CustomException(ErrorCode.REDIS_ERROR); // 없으면 INTERNAL_SERVER_ERROR로
+        }
+
+        // 3. 즉시 응답
+        return SubmissionRespDto.builder()
+                .submissionId(submission.getId())
+                .roomId(roomId)
+                .status("PENDING")
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -245,7 +326,7 @@ public class SubmissionService {
     public SubmissionContext createSubmissions(Long roomId, Long userId, SubmissionReqDto request, LocalDateTime submittedAt) {
 //        Room room = roomRepository.findById(roomId)
 //                .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
-        Room room = roomRepository.findByIdForUpdate(roomId)
+        Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ROOM_NOT_FOUND));
 
         if (room.getLife() <= 0) {
@@ -395,7 +476,7 @@ public class SubmissionService {
     }
 
     // GPT 채점 (트랜잭션 밖)
-    private List<ScoreResult> scoreSubmissions(SubmissionContext context, Room room) {
+    public List<ScoreResult> scoreSubmissions(SubmissionContext context, Room room) {
         List<SubmissionContext.SubmissionData> dataList = context.getSubmissionDataList();
 
         if (dataList.size() == 1 && dataList.get(0).getRoleName().equals("FULLSTACK")) {
@@ -799,7 +880,7 @@ public class SubmissionService {
 
     // 내부 Context 클래스
     @lombok.Getter
-    private static class SubmissionContext {
+    public static class SubmissionContext {
         private final Room room;
         private final List<Submission> submissions = new ArrayList<>();
         private final List<SubmissionData> submissionDataList = new ArrayList<>();

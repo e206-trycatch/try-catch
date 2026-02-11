@@ -94,6 +94,6 @@ server:
   # 이 설정이 없으면 Spring은 요청의 Origin을 잘못 인식하여 CORS 에러가 발생할 수 있음
   forward-headers-strategy: framework
 scoring:
-  mock-enabled: true
+  mock-enabled: false
   mock-delay-ms: 30000
 
