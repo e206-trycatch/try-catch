@@ -25,7 +25,7 @@ interface LobbyState {
   setStatus: (status: LobbyStatus) => void;
   setError: (message: string) => void;
   setStartQuestData: (data: StartQuestData) => void;
-  setGameStarted: (roomId: number) => void;
+  setGameStarted: () => void;
   resetLobby: () => void;
 }
 

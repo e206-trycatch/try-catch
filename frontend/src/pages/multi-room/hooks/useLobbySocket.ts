@@ -79,7 +79,7 @@ export const useLobbySocket = (
       case 'GAME_STARTED': {
         // msg.data는 자동으로 GameStartedData
         log.log('[GAME_STARTED] Game starting for room:', msg.data.roomId);
-        useLobbyStore.getState().setGameStarted(msg.data.roomId);
+        useLobbyStore.getState().setGameStarted();
         break;
       }
       case 'QUEST_READY_STATUS': {
