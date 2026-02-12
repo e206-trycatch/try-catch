@@ -49,6 +49,32 @@ public class SubmissionController {
         );
     }
 
+    @PostMapping("/api/v2/rooms/{roomId}/submissions")
+    public ResponseEntity<ApiRespDto<SubmissionRespDto>> submissionV2(
+            @PathVariable Long roomId,
+            @RequestBody SubmissionReqDto request) {
+        Long userId = getCurrentUserId();
+        LocalDateTime submittedAt = LocalDateTime.now();
+        timeoutSchedulerService.cancelTimeout(roomId); // 타임아웃 취소 처리
+        SubmissionRespDto response = submissionService.submitAsync(roomId, userId, request, submittedAt);
+        return ResponseEntity.ok(
+                ApiRespDto.success(response)
+        );
+    }
+
+    @PostMapping("/api/v3/rooms/{roomId}/submissions")
+    public ResponseEntity<ApiRespDto<SubmissionRespDto>> submissionV3(
+            @PathVariable Long roomId,
+            @RequestBody SubmissionReqDto request) {
+        Long userId = getCurrentUserId();
+        LocalDateTime submittedAt = LocalDateTime.now();
+        timeoutSchedulerService.cancelTimeout(roomId); // 타임아웃 취소 처리
+        SubmissionRespDto response = submissionService.submitAsyncRedis(roomId, userId, request, submittedAt);
+        return ResponseEntity.ok(
+                ApiRespDto.success(response)
+        );
+    }
+
     @GetMapping("/api/v1/rooms/{roomId}/submissions")
     public ResponseEntity<ApiRespDto<SubmissionRespDto>> submission(
             @PathVariable Long roomId) {

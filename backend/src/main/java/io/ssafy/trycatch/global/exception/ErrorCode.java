@@ -62,6 +62,8 @@ public enum ErrorCode {
     CODE_TTL_EXPIRED(HttpStatus.GONE, "코드 유효 시간이 만료되었습니다."),
     NO_HINTS_REMAINING(HttpStatus.BAD_REQUEST, "남은 힌트 개수가 없습니다."),
     HINT_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS, "게임 시작 후 10초 이내에는 힌트를 요청할 수 없습니다."),
+    SCORING_QUEUE_FULL(HttpStatus.SERVICE_UNAVAILABLE,  "채점 대기열이 가득 찼습니다. 잠시 후 다시 시도해주세요."),
+    REDIS_ERROR(HttpStatus.SERVICE_UNAVAILABLE,  "채점 대기열이 가득 찼습니다. 잠시 후 다시 시도해주세요."),
     ;
 
     private final HttpStatus status;
