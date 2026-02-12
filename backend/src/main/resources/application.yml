@@ -37,6 +37,22 @@ spring:
           max-idle: 8
           min-idle: 0
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    listener:
+      simple:
+        # 동시 처리 스레드 수 (GPT API 호출 고려)
+        concurrency: 3
+        max-concurrency: 5
+        # 메시지 재시도 설정
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
   type-aliases-package: io.ssafy.trycatch.domain
