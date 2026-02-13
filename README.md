@@ -1,15 +1,15 @@
 ### 👀 목차
 
-1. [**✨ 서비스 소개**]()
-2. [**🗓️ 개발 일정**]()
-3. [**😊 팀 구성**]()
-4. [**🛠️ 기술 스택**]()
-5. [**▶️ 주요 기능 및 이미지**]()
-6. [**🖇️ ERD**]()
-7. [**🌏 아키텍처 구조**]()
-8. [**📁 디렉터리 구조**]()
-9. [**📝 프로젝트 산출물**]()
-10. [**✔️Jira Issues**]()
+1. [**✨ 서비스 소개**](#서비스-소개)
+2. [**🗓️ 개발 일정**](#️-개발-일정)
+3. [**😊 팀 구성**](#-팀-구성)
+4. [**🛠️ 기술 스택**](#️-기술-스택)
+5. [**▶️ 주요 기능 및 이미지**](#️-주요-기능-및-이미지)
+6. [**🖇️ ERD**](#️-erd)
+7. [**🌏 아키텍처 구조**](#-아키텍처-구조)
+8. [**📁 디렉터리 구조**](#-디렉터리-구조)
+9. [**📝 프로젝트 산출물**](#-프로젝트-산출물)
+10. [**✔️Jira Issues**](#jira-issues)
 
 ## ✨서비스 소개
 
@@ -53,14 +53,17 @@
                 <br> (BE)
             </td>
         </tr>
-        <td width="280px">
+        <td width="280px" valign="top">
             <sub>
-            - <br>
-            - <br>
-            - 
+            - 게임 페이지 구현 <br>
+            - STOMP WebSocket 기반 멀티모드 실시간 동기화 <br>
+            - STOMP 클라이언트 유틸리티 모듈 설계 <br>
+            - Zustand 전역 상태 관리 설계 (Game, Socket, Submission store) <br>
+            - 중간 발표 <br>
+            - JIRA 기반 프로젝트 일정 관리
             </sub>
         </td>
-        <td width="280px">
+        <td width="280px" valign="top">
             <sub>
             - 결과 로딩 페이지/ 결과 페이지 구현 <br>
             - 실시간 힌트 제공 챗봇 아키텍처 설계 및 구현(FAST API 서버 구축, LLM 기반) <br>
@@ -69,7 +72,7 @@
             - 최종 발표
             </sub>
         </td>
-        <td width="280px">
+        <td width="280px" valign="top">
             <sub>
             - 퀘스트 / 스토리 / 대기방 / 초대코드 API 구현 <br>
             - WebSocket / STOMP 기반 실시간 멀티 플레이 시스템 구현 <br>
@@ -89,7 +92,7 @@
                 <img src="./readme-assets/chaeyeong_jin.jpg" width="160px" /> <br> 진채영 </a> <br>(FE / Design)  <br></td>
         </tr>
         <tr>
-        <td width="280px">
+        <td width="280px" valign="top">
             <sub>
             - JWT 기반 인증 시스템 구현 <br>
             - Security 설정 및 필터 구성 <br>
@@ -98,7 +101,7 @@
             - 멀티모드 코드 공유/불러오기 API 구현
             </sub>
         </td>
-        <td width="280px">
+        <td width="280px" valign="top">
             <sub>
             - 제출 로직 API 구현 <br>
             - WebSocket 타이머 설계 <br>
@@ -106,7 +109,7 @@
             - 인프라 및 CI/CD 파이프라인 구축·운영
             </sub>
         </td>
-        <td width="280px">
+        <td width="280px" valign="top">
             <sub>
             - 프론트엔드 개발환경 세팅 및 공통 레이아웃 구현 <br>
             - 게임 진행 흐름 페이지 개발 (모드 선택 → 테마 선택 → 방 설정 → 대기방 → 퀘스트) <br>
@@ -147,7 +150,6 @@
 ### 🤖 AI
 
 <img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54">
-
 <img src="https://img.shields.io/badge/FAST API-009688?style=for-the-badge&logo=fastapi&logoColor=white">
 
 ### 🖧 Infra & DevOps
@@ -174,6 +176,10 @@
 
 <img src="https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white">
 <img src="https://img.shields.io/badge/grafana-%23F46800.svg?style=for-the-badge&logo=grafana&logoColor=white">
+
+<br>
+
+## ▶️ 주요 기능 및 이미지
 
 <br>
 
@@ -398,6 +404,6 @@
 
 [**⚪ 발표 자료**](https://drive.google.com/drive/u/0/folders/1onVcFV8c7dH82RdyhvgLq9hqbCHTS-8G)
 
-## Jira Issues
+## ✔️ Jira Issues
 
 <img src="./readme-assets/jira_issues.jpg" alt="Jira_issues">
