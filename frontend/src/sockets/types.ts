@@ -255,3 +255,24 @@ export interface HintErrorMessage {
   data: HintErrorData;
   timestamp: string;
 }
+
+// Discriminate Union: 로비 소켓 이벤트
+export type LobbySocketEvent =
+  | { type: 'PLAYER_JOINED'; data: PlayerJoinedData; timestamp: string }
+  | { type: 'READY_CHANGED'; data: ReadyStatusDto; timestamp: string }
+  | { type: 'GAME_STARTED'; data: GameStartedData; timestamp: string }
+  | {
+      type: 'QUEST_READY_STATUS';
+      data: QuestReadyStatusData;
+      timestamp: string;
+    }
+  | { type: 'START_QUEST'; data: StartQuestData; timestamp: string };
+
+// Discriminated Union: 퀘스트 소켓 이벤트
+export type QuestSocketEvent =
+  | {
+      type: 'QUEST_READY_STATUS';
+      data: QuestReadyStatusData;
+      timestamp: string;
+    }
+  | { type: 'START_QUEST'; data: StartQuestData; timestamp: string };

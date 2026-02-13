@@ -2,7 +2,9 @@ import { create } from 'zustand';
 
 import type { MultiRoomInfo } from '../api/roomApi';
 import type { GuestInfo, StartQuestData } from '../sockets/types';
-import { useRoomStore } from './useRoomStore';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('[useLobbyStore]');
 
 type LobbyStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -14,13 +16,16 @@ interface LobbyState {
   gameStarted: boolean;
 
   setRoomInfo: (info: MultiRoomInfo) => void;
-  updateGuestJoined: (guest: GuestInfo) => void;
+  updateGuestJoined: (
+    guest: GuestInfo,
+    guestPosition?: 'FRONTEND' | 'BACKEND' | 'FULLSTACK',
+  ) => void;
   updateReadyStatus: (role: 'HOST' | 'GUEST', isReady: boolean) => void;
   removeGuest: () => void;
   setStatus: (status: LobbyStatus) => void;
   setError: (message: string) => void;
   setStartQuestData: (data: StartQuestData) => void;
-  setGameStarted: (roomId: number) => void;
+  setGameStarted: () => void;
   resetLobby: () => void;
 }
 
@@ -44,17 +49,13 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
     });
   },
 
-  updateGuestJoined: (guest) => {
+  updateGuestJoined: (guest, guestPosition) => {
     const { roomInfo } = get();
     if (!roomInfo) return;
 
-    // 방 생성 시 호스트가 설정한 게스트 포지션 사용
-    // (소켓 PLAYER_JOINED 이벤트에 position 필드가 포함되지 않음)
-    const draftGuestPosition = useRoomStore.getState().draft.guestPosition;
-
     const validPosition =
       roomInfo.guest?.position ??
-      (draftGuestPosition === 'FULLSTACK' ? undefined : draftGuestPosition) ??
+      (guestPosition === 'FULLSTACK' ? undefined : guestPosition) ??
       undefined;
 
     set({
@@ -76,7 +77,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
     const { roomInfo } = get();
     if (!roomInfo) return;
 
-    console.log(`[useLobbyStore] updateReadyStatus - ${role}: ${isReady}`);
+    log.log(`[useLobbyStore] updateReadyStatus - ${role}: ${isReady}`);
 
     if (role === 'HOST') {
       set({
@@ -85,7 +86,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
           host: { ...roomInfo.host, isReady },
         },
       });
-      console.log('[useLobbyStore] Host ready status updated:', isReady);
+      log.log('[useLobbyStore] Host ready status updated:', isReady);
     } else if (role === 'GUEST' && roomInfo.guest) {
       set({
         roomInfo: {
@@ -93,7 +94,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
           guest: { ...roomInfo.guest, isReady },
         },
       });
-      console.log('[useLobbyStore] Guest ready status updated:', isReady);
+      log.log('[useLobbyStore] Guest ready status updated:', isReady);
     }
 
     // 양쪽 모두 준비 완료 확인
@@ -102,7 +103,7 @@ export const useLobbyStore = create<LobbyState>((set, get) => ({
       const bothReady =
         updatedStore.roomInfo.host.isReady &&
         updatedStore.roomInfo.guest?.isReady;
-      console.log('[useLobbyStore] Both ready check:', {
+      log.log('[useLobbyStore] Both ready check:', {
         hostReady: updatedStore.roomInfo.host.isReady,
         guestReady: updatedStore.roomInfo.guest?.isReady,
         bothReady,

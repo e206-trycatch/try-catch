@@ -1,22 +1,27 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import {
-  connectStomp,
+  type StompTopic,
+  useStompSubscription,
+} from '@/hooks/useStompSubscription';
+
+import {
   sendSocketMessage,
   subscribeLobby,
   subscribeLobbyQuest,
 } from '../../../sockets/stomp';
-import type {
-  GameStartedData,
-  PlayerJoinedData,
-  QuestReadyStatusData,
-  ReadyStatusDto,
-  SocketRespDto,
-  StartQuestData,
-} from '../../../sockets/types';
+import type { LobbySocketEvent } from '../../../sockets/types';
 import { useLobbyStore } from '../../../stores/useLobbyStore';
+import { useRoomStore } from '../../../stores/useRoomStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
-import { useStore } from '../../../stores/useStore';
+import { createLogger } from '../../../utils/logger';
+
+const log = createLogger('[useLobbySocket]');
+
+const LOBBY_TOPICS: StompTopic<LobbySocketEvent>[] = [
+  { key: 'lobby', subscribeFn: subscribeLobby },
+  { key: 'lobby-quest', subscribeFn: subscribeLobbyQuest },
+];
 
 export const useLobbySocket = (
   roomId: number | null,
@@ -24,95 +29,78 @@ export const useLobbySocket = (
 ) => {
   const joinedRef = useRef(false);
 
-  const handleMessage = useCallback((msg: SocketRespDto) => {
-    console.log('[STOMP Message]', msg.type, msg.data);
+  const handleMessage = useCallback((msg: LobbySocketEvent) => {
+    log.log('[useQuestSocket] Message received:', msg.type, msg.data);
+    log.log('[STOMP Message]', msg.type, msg.data);
 
     switch (msg.type) {
       case 'PLAYER_JOINED': {
-        const data = msg.data as PlayerJoinedData;
+        // msg.data는 자동으로 PlayerJoinedData
         const store = useLobbyStore.getState();
         const roomInfo = store.roomInfo;
         if (!roomInfo) break;
 
-        console.log('[PLAYER_JOINED] Guest joined:', data);
-        // host가 보낸 or host인 PLAYER_JOINED는 guest 업데이트에 사용하지 않게
-        if (data.userId === roomInfo.host.userId) {
-          console.log('[PLAYED_JOINED] ignored (host join echo):', data);
+        log.log('[PLAYER_JOINED] Guest joined:', msg.data);
+        if (msg.data.userId === roomInfo.host.userId) {
+          log.log('[PLAYED_JOINED] ignored (host join echo):', msg.data);
           break;
         }
 
-        store.updateGuestJoined({
-          userId: data.userId,
-          nickname: data.nickname,
-          frameworkId: data.frameworkId,
-          frameworkName: data.frameworkName,
-          isReady: data.isReady,
-        });
+        const guestPosition =
+          useRoomStore.getState().draft.guestPosition ?? undefined;
+
+        store.updateGuestJoined(
+          {
+            userId: msg.data.userId,
+            nickname: msg.data.nickname,
+            frameworkId: msg.data.frameworkId,
+            frameworkName: msg.data.frameworkName,
+            isReady: msg.data.isReady,
+          },
+          guestPosition,
+        );
         break;
       }
       case 'READY_CHANGED': {
-        const data = msg.data as ReadyStatusDto;
-        console.log('[READY_CHANGED] User ready status changed:', data);
+        // msg.data는 자동으로 ReadyStatusDto
+        log.log('[READY_CHANGED] User ready status changed:', msg.data);
         const store = useLobbyStore.getState();
         const { roomInfo } = store;
         if (!roomInfo) break;
 
-        // userId로 HOST인지 GUEST인지 판단
-        const role = roomInfo.host.userId === data.userId ? 'HOST' : 'GUEST';
-        console.log(
-          `[READY_CHANGED] Updating ${role} to isReady=${data.isReady}`,
+        const role =
+          roomInfo.host.userId === msg.data.userId ? 'HOST' : 'GUEST';
+        log.log(
+          `[READY_CHANGED] Updating ${role} to isReady=${msg.data.isReady}`,
         );
-        store.updateReadyStatus(role, data.isReady);
+        store.updateReadyStatus(role, msg.data.isReady);
         break;
       }
       case 'GAME_STARTED': {
-        const data = msg.data as GameStartedData;
-        console.log('[GAME_STARTED] Game starting for room:', data.roomId);
-        useLobbyStore.getState().setGameStarted(data.roomId);
+        // msg.data는 자동으로 GameStartedData
+        log.log('[GAME_STARTED] Game starting for room:', msg.data.roomId);
+        useLobbyStore.getState().setGameStarted();
         break;
       }
       case 'QUEST_READY_STATUS': {
-        const data = msg.data as QuestReadyStatusData;
-        console.log('[QUEST_READY_STATUS] Quest ready status:', data);
+        // msg.data는 자동으로 QuestReadyStatusData
+        log.log('[QUEST_READY_STATUS] Quest ready status:', msg.data);
         const store = useLobbyStore.getState();
-        store.updateReadyStatus('HOST', data.host.isReady);
-        store.updateReadyStatus('GUEST', data.guest.isReady);
+        store.updateReadyStatus('HOST', msg.data.host.isReady);
+        store.updateReadyStatus('GUEST', msg.data.guest.isReady);
         break;
       }
       case 'START_QUEST': {
-        const data = msg.data as StartQuestData;
-        console.log('[START_QUEST] Quest starting:', data);
-        useLobbyStore.getState().setStartQuestData(data);
+        // msg.data는 자동으로 StartQuestData
+        log.log('[START_QUEST] Quest starting:', msg.data);
+        useLobbyStore.getState().setStartQuestData(msg.data);
         break;
       }
     }
   }, []);
 
   // 구독 설정 (roomId가 변경될 때만 재실행 - me 변경 시 구독 해제 방지)
-  useEffect(() => {
-    if (!roomId) return;
-    const token = useStore.getState().accessToken;
-    if (!token) return;
-
-    console.log(
-      '[useLobbySocket] Initiating STOMP connection for room:',
-      roomId,
-    );
-
-    const connect = async () => {
-      await connectStomp(token);
-      subscribeLobby(roomId, handleMessage);
-      subscribeLobbyQuest(roomId, handleMessage);
-    };
-
-    connect();
-
-    return () => {
-      console.log('[useLobbySocket] Cleaning up, unsubscribing from topics');
-      useSocketStore.getState().removeSubscription(`lobby-${roomId}`);
-      useSocketStore.getState().removeSubscription(`lobby-quest-${roomId}`);
-    };
-  }, [roomId, handleMessage]);
+  useStompSubscription(roomId, LOBBY_TOPICS, handleMessage);
 
   // JOIN_ROOM 메시지 전송 (me가 로드된 후 한 번만 실행)
   useEffect(() => {
@@ -124,10 +112,7 @@ export const useLobbySocket = (
       const timer = setTimeout(() => {
         const { connected: isConnected } = useSocketStore.getState();
         if (isConnected && !joinedRef.current) {
-          console.log(
-            '[useLobbySocket] Sending JOIN_ROOM for user:',
-            me.nickname,
-          );
+          log.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
           sendSocketMessage(`/app/rooms/${roomId}/join`, {
             type: 'JOIN_ROOM',
             roomId,
@@ -140,7 +125,7 @@ export const useLobbySocket = (
       return () => clearTimeout(timer);
     }
 
-    console.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
+    log.log('[useLobbySocket] Sending JOIN_ROOM for user:', me.nickname);
     sendSocketMessage(`/app/rooms/${roomId}/join`, {
       type: 'JOIN_ROOM',
       roomId,
@@ -154,7 +139,7 @@ export const useLobbySocket = (
     (userId: number, nickname: string) => {
       if (!roomId) return;
 
-      console.log('[sendJoin] Preparing to send join message:', {
+      log.log('[sendJoin] Preparing to send join message:', {
         roomId,
         userId,
         nickname,
@@ -167,7 +152,7 @@ export const useLobbySocket = (
         nickname,
       });
 
-      console.log('[sendJoin] Join message sent successfully');
+      log.log('[sendJoin] Join message sent successfully');
     },
     [roomId],
   );
@@ -177,7 +162,7 @@ export const useLobbySocket = (
 
     const { client, connected } = useSocketStore.getState();
 
-    console.log('[sendReady] Client state check:', {
+    log.log('[sendReady] Client state check:', {
       roomId,
       hasClient: !!client,
       connected,
@@ -186,17 +171,17 @@ export const useLobbySocket = (
     });
 
     if (!client) {
-      console.error('[sendReady] No client available!');
+      log.error('[sendReady] No client available!');
       return;
     }
 
     if (!connected) {
-      console.error('[sendReady] Not connected!');
+      log.error('[sendReady] Not connected!');
       return;
     }
 
     if (!client.active) {
-      console.error('[sendReady] Client not active!');
+      log.error('[sendReady] Client not active!');
       return;
     }
 
@@ -204,16 +189,16 @@ export const useLobbySocket = (
       const message = {};
       const destination = `/app/rooms/${roomId}/ready`;
 
-      console.log('[sendReady] Publishing:', { destination, message });
+      log.log('[sendReady] Publishing:', { destination, message });
 
       client.publish({
         destination,
         body: JSON.stringify(message),
       });
 
-      console.log('[sendReady] Publish call completed');
+      log.log('[sendReady] Publish call completed');
     } catch (err) {
-      console.error('[sendReady] Publish error:', err);
+      log.error('[sendReady] Publish error:', err);
     }
   }, [roomId]);
 

@@ -2,8 +2,8 @@ import { gsap } from 'gsap';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import api from '../../api/api';
 import { joinMultiRoomByCode } from '../../api/roomApi';
+import { fetchThemeImageUrl } from '../../api/themeApi';
 import Envelope from '../../components/invitation-code/InvitationEnvelope';
 import Letter from '../../components/invitation-code/InvitationLetter';
 import { useRoomStore } from '../../stores/useRoomStore';
@@ -54,24 +54,6 @@ const InvitationPage: React.FC = () => {
       duration: 0.8,
     });
   }, []);
-
-  const fetchThemeImageUrl = async (
-    themeId: number,
-  ): Promise<string | null> => {
-    try {
-      const { data } = await api.get('/themes');
-      const themes = data.result?.result;
-      if (Array.isArray(themes)) {
-        const theme = themes.find(
-          (t: { themeId: number }) => t.themeId === themeId,
-        );
-        return theme?.themeImageUrl ?? null;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  };
 
   const handleSubmitCode = useCallback(
     async (invitationCode: string) => {

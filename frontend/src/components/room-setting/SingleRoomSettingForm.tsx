@@ -19,11 +19,11 @@ const SingleRoomSettingForm = () => {
   // position은 사용자가 직접 선택하도록 함 (기본값 강제 설정 제거)
 
   // 포지션 옵션에 FULLSTACK 추가
-  const positionSelectOptions = useMemo(
+  const positionSelectOptions = useMemo<{ label: string; value: Position }[]>(
     () => [
       { label: 'Frontend', value: 'FRONTEND' },
       { label: 'Backend', value: 'BACKEND' },
-      { label: 'Full-stack', value: 'FULLSTACK' }, // FULLSTACK 옵션 추가
+      { label: 'Full-stack', value: 'FULLSTACK' },
     ],
     [],
   );
@@ -62,8 +62,8 @@ const SingleRoomSettingForm = () => {
     }));
   }, [availableFrameworks]);
 
-  const handlePositionChange = (newPosition: string) => {
-    setPosition(newPosition as Position);
+  const handlePositionChange = (newPosition: Position) => {
+    setPosition(newPosition);
   };
 
   const handleFrameworkChange = (frameworkId: string) => {
@@ -90,7 +90,7 @@ const SingleRoomSettingForm = () => {
 
       <SettingRow label="포지션">
         <div className="w-[368px] flex justify-start">
-          <SelectField
+          <SelectField<Position>
             value={draft.position || ''}
             onChange={handlePositionChange}
             options={positionSelectOptions}
