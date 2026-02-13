@@ -9,10 +9,9 @@ import { startSingleGameTimer } from '@/api/startSingleGameTimer';
 import { useGameStore } from '@/stores/useGameStore';
 import { useRoomStore } from '@/stores/useRoomStore';
 
+import { TIMER_DELAY } from '../constants';
 import type { GameSessionResponse } from '../types/apiTypes';
 import type { CodeRole, QuestInfo } from '../types/ideTypes';
-
-const TIMER_DELAY = 2000;
 
 export function useGameInit(
   roomId: string | undefined,

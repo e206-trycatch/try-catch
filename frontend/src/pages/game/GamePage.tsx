@@ -1,25 +1,11 @@
 import { Resizable } from 're-resizable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import { getSingleTimer } from '@/api/getSingleTimer';
 import { saveCodeForShare } from '@/api/saveCodeForShare';
 import { getShareCode } from '@/api/shareCode';
-import { startMultiGameTimer } from '@/api/startMultiGameTimer';
-import {
-  connectStomp,
-  sendSocketMessage,
-  subscribeLobby,
-  subscribeRoom,
-} from '@/sockets/stomp';
-import type {
-  CodeSavedMessage,
-  HintErrorData,
-  HintMessageData,
-  HintQuestionData,
-} from '@/sockets/types';
-import { useGameStore } from '@/stores/useGameStore';
+import { sendSocketMessage } from '@/sockets/stomp';
 import { useHintStore } from '@/stores/useHintStore';
 import { useStore } from '@/stores/useStore';
 import { useSubmissionStore } from '@/stores/useSubmissionStore';
@@ -32,13 +18,14 @@ import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
 import TimeOverModal from './components/TimeOverModal';
-import ShareCodeToast from './components/toast/ShareCodeToast';
 import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
 import { gameToastStyle } from './components/toast/toastStyles';
+import { SUBMIT_TOAST_CLOSE } from './constants';
 import { useBackgroundImage } from './hooks/useBackgroundImage';
 import { useFile } from './hooks/useFile';
 import { useGameInit } from './hooks/useGameInit';
 import { useIde } from './hooks/useIde';
+import { useStompSubscription } from './hooks/useStompSubscription';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
 import type { SubmissionRequest } from './types/apiTypes';
@@ -50,14 +37,9 @@ import {
   snapshotFileCodes,
 } from './utils/submissionUtils';
 
-const TIMER_DELAY = 2000;
-const SUBMIT_TOAST_CLOSE = 3000;
-
 export default function GamePage() {
-  const navigate = useNavigate();
   const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
   const [openFileMenu, setOpenFileMenu] = useState(true);
-  const { startTimer, expireTimer } = useGameStore();
   const { setResult } = useSubmissionStore();
   const currentNickname = useStore((state) => state.user?.nickname);
 
@@ -138,109 +120,7 @@ export default function GamePage() {
     };
   }, []);
 
-  // STOMP 구독 해제 함수 저장용 ref
-  const unsubscribeRoomRef = useRef<(() => void) | undefined>(undefined);
-  const unsubscribeLobbyRef = useRef<(() => void) | undefined>(undefined);
-
-  // STOMP 연결 및 게임 이벤트 구독 (멀티모드: 구독 후 ready 전송)
-  useEffect(() => {
-    if (!roomId) return;
-
-    const { addQuestion, addHintResponse, addError, reset } =
-      useHintStore.getState();
-    const { setGameState, currentLife } = useGameStore.getState();
-
-    // 방 변경 시 힌트 상태 초기화
-    reset();
-
-    const init = async () => {
-      const token = useStore.getState().accessToken;
-      if (token) await connectStomp(token);
-
-      // 게임 토픽 구독 및 해제 함수 저장
-      unsubscribeRoomRef.current = subscribeRoom(Number(roomId), (msg) => {
-        // 타이머 이벤트
-        if (msg.type === 'TIMER_STARTED') {
-          startTimer(msg.data.deadlineAt);
-        }
-        if (msg.type === 'TIME_OUT') {
-          expireTimer();
-        }
-
-        // 힌트 이벤트
-        if (msg.type === 'HINT_QUESTION') {
-          const data = msg.data as HintQuestionData;
-          addQuestion(data);
-          setGameState(currentLife, data.remainingHintCount);
-        }
-        if (msg.type === 'HINT_MESSAGE') {
-          const data = msg.data as HintMessageData;
-          addHintResponse(data);
-          setGameState(
-            useGameStore.getState().currentLife,
-            data.remainingHintCount,
-          );
-        }
-        if (msg.type === 'HINT_ERROR') {
-          const data = msg.data as HintErrorData;
-          addError(data);
-        }
-
-        if (msg.type === 'SUBMISSION_STARTED') {
-          navigate(`/result/loading/${roomId}`);
-        }
-      });
-
-      // 멀티모드 처리 (STOMP 구독 완료 후 ready 신호 전송)
-      if (mode === 'MULTI') {
-        // 타이머가 이미 시작된 경우(새로고침) ready 신호 재전송 방지
-        const timeData = await getSingleTimer(Number(roomId));
-        if (!timeData.startedAt) {
-          await new Promise((r) => setTimeout(r, TIMER_DELAY));
-          await startMultiGameTimer(Number(roomId));
-        }
-
-        // CODE_SAVED 구독 및 해제 함수 저장
-        const myNickname = useStore.getState().user?.nickname;
-        unsubscribeLobbyRef.current = subscribeLobby(Number(roomId), (msg) => {
-          if (msg.type === 'CODE_SAVED') {
-            const { nickname } = msg.data as CodeSavedMessage['data'];
-            if (nickname !== myNickname) {
-              const toastId = `share-code-${Date.now()}`;
-              toast.info(
-                <ShareCodeToast
-                  nickname={nickname}
-                  toastId={toastId}
-                  onLoad={() => loadShareCodeRef.current?.()}
-                />,
-                {
-                  toastId,
-                  position: 'top-left',
-                  autoClose: false,
-                  hideProgressBar: true,
-                  closeButton: false,
-                  icon: false,
-                  style: {
-                    ...gameToastStyle,
-                    marginTop: '100px',
-                    marginLeft: '60px',
-                  },
-                },
-              );
-            }
-          }
-        });
-      }
-    };
-
-    init();
-
-    return () => {
-      // 저장된 unsub 함수로 구독 해제
-      unsubscribeRoomRef.current?.();
-      unsubscribeLobbyRef.current?.();
-    };
-  }, [roomId, mode, startTimer, expireTimer, navigate]);
+  useStompSubscription(roomId, mode, loadShareCodeRef);
 
   // 코드 저장 버튼을 눌렀을 때 실행되는 함수
   const saveCode = async () => {
