@@ -127,5 +127,5 @@ export function useStompSubscription(
       unsubscribeRoomRef.current?.();
       unsubscribeLobbyRef.current?.();
     };
-  }, [roomId, mode, startTimer, expireTimer, navigate]);
+  }, [roomId, mode, startTimer, expireTimer, navigate, loadShareCodeRef]);
 }
