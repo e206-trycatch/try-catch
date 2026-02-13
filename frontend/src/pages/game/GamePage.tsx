@@ -31,9 +31,8 @@ import { useRoomStore } from '@/stores/useRoomStore';
 import { useStore } from '@/stores/useStore';
 import { useSubmissionStore } from '@/stores/useSubmissionStore';
 
-import CodeEditor from './components/CodeEditor';
+import EditorPanel from './components/EditorPanel';
 import Explorer from './components/Explorer';
-import FileTabs from './components/FileTabs';
 import GameInfoBar from './components/GameInfoBar';
 import HintModal from './components/hint/HintModal';
 import MenuBar from './components/MenuBar';
@@ -137,7 +136,6 @@ export default function GamePage() {
           throw new Error('submissionId가 올바르지 않습니다.');
         }
 
-        console.log(data.myPosition);
         setUserRole(data.myPosition ?? null);
         setProblemFrameworkId(data.problemFrameworkId);
         setQuestInfo(data);
@@ -409,18 +407,6 @@ export default function GamePage() {
     );
   };
 
-  useEffect(() => {
-    if (!roomId) return;
-
-    const unsub = subscribeLobby(Number(roomId), (msg) => {
-      if (msg.type === 'SUBMISSION_STARTED') {
-        navigate(`/result/loading/${roomId}`);
-      }
-    });
-
-    return () => unsub?.(); // 구독 정리
-  }, [roomId, navigate]);
-
   const { isExpired } = useTimer();
   const { files } = useFile(questInfo);
   const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
@@ -544,79 +530,37 @@ export default function GamePage() {
                   </div>
                 </Resizable>
               )}
-
               <div className="flex flex-1 min-w-0 min-h-0">
-                <div
-                  className={`flex flex-col flex-1 min-w-0 min-h-0 ${
-                    // 스플릿 모드에서 이 패널이 포커스되면 상단 테두리 표시
-                    ide.isSplit && ide.focusedPanel === 'primary'
-                      ? 'border-t-2 border-amber-300'
-                      : ''
-                  }`}
-                  // 패널 영역 클릭 시 이 패널을 포커스 상태로 변경
-                  onMouseDown={() => ide.setFocusedPanel('primary')}
-                >
-                  {/* 탭 영역: 열린 파일들을 탭으로 표시 */}
-                  <FileTabs
-                    openTabs={ide.openTabs}
-                    activeFileId={ide.activeFileId}
-                    // 탭 클릭/닫기 시 'primary' 파라미터로 어떤 패널인지 구분
-                    onSelectTab={(fileId) => ide.selectTab(fileId, 'primary')}
-                    onCloseTab={(fileId) => ide.closeTab(fileId, 'primary')}
-                  />
-                  {/* 에디터 영역 */}
-                  <div
-                    className={`flex-1 min-h-0 ${
-                      // 파일이 열려있으면 투명 배경, 없으면 반투명 배경
-                      ide.activeFile ? 'bg-[#1E1E1E00]' : 'bg-[#1E1E1EE6]'
-                    }`}
-                  >
-                    <CodeEditor
-                      activeFile={ide.activeFile}
-                      code={ide.currentCode}
-                      onChange={ide.setCurrentCode}
-                      userRole={userRole}
-                    />
-                  </div>
-                </div>
+                <EditorPanel
+                  openTabs={ide.openTabs}
+                  activeFileId={ide.activeFileId}
+                  activeFile={ide.activeFile}
+                  code={ide.currentCode}
+                  isFocused={ide.isSplit && ide.focusedPanel === 'primary'}
+                  userRole={userRole}
+                  onSelectTab={(fileId) => ide.selectTab(fileId, 'primary')}
+                  onCloseTab={(fileId) => ide.closeTab(fileId, 'primary')}
+                  onChange={ide.setCurrentCode}
+                  onFocus={() => ide.setFocusedPanel('primary')}
+                />
 
                 {ide.isSplit && (
                   <>
-                    {/* 패널 구분선 */}
                     <div className="w-[1px] bg-gray-700" />
-                    <div
-                      className={`flex flex-col flex-1 min-w-0 min-h-0 ${
-                        ide.focusedPanel === 'secondary'
-                          ? 'border-t-2 border-amber-300'
-                          : ''
-                      }`}
-                      onMouseDown={() => ide.setFocusedPanel('secondary')}
-                    >
-                      <FileTabs
-                        openTabs={ide.secondaryOpenTabs}
-                        activeFileId={ide.secondaryActiveFileId}
-                        onSelectTab={(fileId) =>
-                          ide.selectTab(fileId, 'secondary')
-                        }
-                        onCloseTab={(fileId) =>
-                          ide.closeTab(fileId, 'secondary')
-                        }
-                      />
-                      <div
-                        className={`flex-1 min-h-0 ${
-                          ide.secondaryActiveFile
-                            ? 'bg-[#1E1E1E00]'
-                            : 'bg-[#1E1E1EE6]'
-                        }`}
-                      >
-                        <CodeEditor
-                          activeFile={ide.secondaryActiveFile}
-                          code={ide.secondaryCurrentCode}
-                          onChange={ide.setSecondaryCurrentCode}
-                          userRole={userRole}
-                        />
-                      </div>
-                    </div>
+                    <EditorPanel
+                      openTabs={ide.secondaryOpenTabs}
+                      activeFileId={ide.secondaryActiveFileId}
+                      activeFile={ide.secondaryActiveFile}
+                      code={ide.secondaryCurrentCode}
+                      isFocused={ide.focusedPanel === 'secondary'}
+                      userRole={userRole}
+                      onSelectTab={(fileId) =>
+                        ide.selectTab(fileId, 'secondary')
+                      }
+                      onCloseTab={(fileId) => ide.closeTab(fileId, 'secondary')}
+                      onChange={ide.setSecondaryCurrentCode}
+                      onFocus={() => ide.setFocusedPanel('secondary')}
+                    />
                   </>
                 )}
               </div>
