@@ -3,15 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import { getGameSession } from '@/api/gameSession';
 import { getSingleTimer } from '@/api/getSingleTimer';
-import { getMultiQuest } from '@/api/multiQuestFile';
-import { getQuestFile } from '@/api/questFile';
-import { getRetryQuestFile } from '@/api/retryQuestFile';
 import { saveCodeForShare } from '@/api/saveCodeForShare';
 import { getShareCode } from '@/api/shareCode';
 import { startMultiGameTimer } from '@/api/startMultiGameTimer';
-import { startSingleGameTimer } from '@/api/startSingleGameTimer';
 import {
   connectStomp,
   sendSocketMessage,
@@ -26,7 +21,6 @@ import type {
 } from '@/sockets/types';
 import { useGameStore } from '@/stores/useGameStore';
 import { useHintStore } from '@/stores/useHintStore';
-import { useRoomStore } from '@/stores/useRoomStore';
 import { useStore } from '@/stores/useStore';
 import { useSubmissionStore } from '@/stores/useSubmissionStore';
 
@@ -43,11 +37,12 @@ import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
 import { gameToastStyle } from './components/toast/toastStyles';
 import { useBackgroundImage } from './hooks/useBackgroundImage';
 import { useFile } from './hooks/useFile';
+import { useGameInit } from './hooks/useGameInit';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
-import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
-import type { CodeRole, FileNode, QuestInfo } from './types/ideTypes';
+import type { SubmissionRequest } from './types/apiTypes';
+import type { FileNode } from './types/ideTypes';
 import { findFileIdByPath } from './utils/fileTreeUtils';
 import { resolveFramework } from './utils/frameworkUtils';
 import {
@@ -61,30 +56,47 @@ const SUBMIT_TOAST_CLOSE = 3000;
 export default function GamePage() {
   const navigate = useNavigate();
   const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
-  const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
-  const [problemFrameworkId, setProblemFrameworkId] = useState<number | null>(
-    null,
-  );
-
-  const [gameSession, setGameSession] = useState<GameSessionResponse | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
-  const {
-    submissionId,
-    startTimer,
-    stopTimer,
-    expireTimer,
-    initializeForRoom,
-  } = useGameStore();
+  const { startTimer, expireTimer } = useGameStore();
   const { setResult } = useSubmissionStore();
-  const mode = useGameStore((state) => state.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
-  const [userRole, setUserRole] = useState<CodeRole>(null);
 
   const backgroundImage = useBackgroundImage(questId);
+  const {
+    questInfo,
+    problemFrameworkId,
+    gameSession,
+    userRole,
+    loading,
+    error,
+    mode,
+  } = useGameInit(roomId, questId);
+
+  const { isExpired } = useTimer();
+  const { files } = useFile(questInfo);
+  const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
+
+  // 힌트 모달 상태
+  const { isModalOpen, openModal, closeModal } = useHintStore();
+
+  const currentFramework = useMemo(
+    () => resolveFramework(questInfo),
+    [questInfo],
+  );
+
+  const rootNode = useMemo<FileNode>(
+    () => ({
+      id: 'root',
+      name: 'root',
+      type: 'folder' as const,
+      path: '/',
+      role: null,
+      children: files,
+    }),
+    [files],
+  );
+
+  const ide = useIde(rootNode);
 
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수
   const loadShareCode = async () => {
@@ -109,78 +121,9 @@ export default function GamePage() {
   };
 
   const loadShareCodeRef = useRef<() => Promise<void>>(undefined);
-  loadShareCodeRef.current = loadShareCode;
-
-  // 초기 게임 상태 설정
   useEffect(() => {
-    if (!roomId || !questId) return;
-    const mode = useGameStore.getState().mode;
-
-    const initSetting = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        let data = null;
-
-        if (submissionId === null) {
-          // 첫 진입 (재도전 아님)
-          data =
-            mode === 'MULTI'
-              ? await getMultiQuest(questId, roomId)
-              : await getQuestFile(questId, roomId);
-        } else if (submissionId) {
-          // 재도전: 이전 제출 코드 + 에러 로그 복원
-          data = await getRetryQuestFile(submissionId, roomId);
-        } else {
-          throw new Error('submissionId가 올바르지 않습니다.');
-        }
-
-        setUserRole(data.myPosition ?? null);
-        setProblemFrameworkId(data.problemFrameworkId);
-        setQuestInfo(data);
-      } catch (e) {
-        console.error('문제 정보 로드 실패:', e);
-        setError('문제 정보를 불러오지 못했습니다.');
-        return;
-      } finally {
-        setLoading(false);
-      }
-
-      if (mode === 'MULTI') {
-        try {
-          const session = await getGameSession(Number(roomId));
-          setGameSession(session);
-        } catch (e) {
-          console.error('멀티 세션 로드 실패:', e);
-        }
-      }
-      // 타이머 복원
-      try {
-        const timeData = await getSingleTimer(Number(roomId));
-
-        if (timeData.startedAt) {
-          // 기존 타이머가 있으면 복원 (새로고침 대응)
-          startTimer(timeData.deadlineAt);
-        } else if (mode === 'SINGLE') {
-          await new Promise((r) => setTimeout(r, TIMER_DELAY));
-          const newTimeData = await startSingleGameTimer(Number(roomId));
-          startTimer(newTimeData.deadlineAt);
-        }
-      } catch (e) {
-        console.error('타이머 조회 실패:', e);
-      }
-    };
-
-    initSetting();
-  }, [questId, roomId, submissionId, startTimer, mode]);
-
-  // 언마운트 시 타이머 정리
-  useEffect(() => {
-    return () => {
-      stopTimer();
-    };
-  }, [stopTimer]);
+    loadShareCodeRef.current = loadShareCode;
+  });
 
   // 새로고침 방지 경고
   useEffect(() => {
@@ -299,22 +242,6 @@ export default function GamePage() {
     };
   }, [roomId, mode, startTimer, expireTimer, navigate]);
 
-  // 초기 게임 상태 설정 - 목숨/힌트 수
-  useEffect(() => {
-    const { draft } = useRoomStore.getState();
-    const { currentRoomId } = useGameStore.getState();
-
-    if (!draft) {
-      setError('유효하지 않은 접근입니다. 처음부터 시작해주세요.');
-      return;
-    }
-
-    // 새 방 진입 시에만 draft에서 초기화 (실패 후 재도전 시에는 현재 값 유지)
-    if (currentRoomId !== Number(roomId)) {
-      initializeForRoom(Number(roomId), draft.life, draft.hints);
-    }
-  }, [roomId, initializeForRoom]);
-
   // 코드 저장 버튼을 눌렀을 때 실행되는 함수
   const saveCode = async () => {
     if (!roomId) return;
@@ -388,32 +315,6 @@ export default function GamePage() {
       },
     );
   };
-
-  const { isExpired } = useTimer();
-  const { files } = useFile(questInfo);
-  const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
-
-  // 힌트 모달 상태
-  const { isModalOpen, openModal, closeModal } = useHintStore();
-
-  const currentFramework = useMemo(
-    () => resolveFramework(questInfo),
-    [questInfo],
-  );
-
-  const rootNode = useMemo<FileNode>(
-    () => ({
-      id: 'root',
-      name: 'root',
-      type: 'folder' as const, // 값을 리터럴 타입으로 고정해서 타입이 넓어지는 걸 막는 문법
-      path: '/',
-      role: null,
-      children: files,
-    }),
-    [files], // files 값이 바뀔 때마다 실행하기
-  );
-
-  const ide = useIde(rootNode);
 
   // 힌트 요청 시 현재 코드 스냅샷 생성
   const getSubmissionData = useCallback(() => {
