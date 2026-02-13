@@ -9,8 +9,9 @@
 [🌏 아키텍처 구조](#-아키텍처-구조)  
 [📁 디렉터리 구조](#-디렉터리-구조)  
 [📝 프로젝트 산출물](#-프로젝트-산출물)  
-[✔️ Jira Issues](#️-jira-issues)
+[✔️ Jira Issues](#️-jira-issues)  
 
+<br /><br />
 
 ## ✨ 서비스 소개
 
@@ -22,7 +23,8 @@
 - **웹 IDE 환경**과 유사한 화면에서 **프레임워크 별 버그 코드를 직접 수정하며 탈출**합니다.
 - **WebSocket + STOMP를 활용**한 멀티모드에서는 팀원과 역할을 나누어 각자 **버그를 해결하며 함께 탈출하는 협업 경험을 제공**합니다.
 - **LLM 기반 AI 힌트 시스템**이 정답 없이 **단계별 힌트를 제공**합니다.
-- **GPT API 기반 AI 채점 시스템**이 정답 코드의 점수를 매겨줍니다.
+- **GPT API 기반 AI 채점 시스템**이 정답 코드의 점수를 매겨줍니다.  
+<br />
 
 ## 🗓️ 개발 일정
 
@@ -31,7 +33,8 @@
 - **3주차 (1/19 ~ 1/25)** : 인프라 및 구현
 - **4주차 (1/26 ~2/1)** : 구현 및 연동
 - **5주차 (2/2~2/8)** : 테스트, 마무리
-- **2/9** : 최종 프로젝트 평가
+- **2/9** : 최종 프로젝트 평가  
+<br />
 
 ## 😊 팀 구성
 
@@ -124,6 +127,7 @@
         </tr>
     </table>
 </div>
+<br />
 
 ## 🛠️ 기술 스택
 
@@ -181,7 +185,7 @@
 <img src="https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white">
 <img src="https://img.shields.io/badge/grafana-%23F46800.svg?style=for-the-badge&logo=grafana&logoColor=white">
 
-<br>
+<br /><br />
 
 ## ▶️ 주요 기능 및 이미지
 
@@ -267,15 +271,19 @@
     </table>
 </div>
 
-<br>
+<br />
 
 ## 🖇️ ERD
 
 <img src="./readme-assets/erd_S14P11E206.png" alt="erd">
 
+<br />
+
 ## 🌏 아키텍처 구조
 
 <img src="./readme-assets/architecture.png" alt="아키텍처">
+
+<br />
 
 ## 📁 디렉터리 구조
 
@@ -478,6 +486,8 @@
 
 </details>
 
+<br />
+
 ## 📝 프로젝트 산출물
 
 [**⚪ 기획서**](https://www.notion.so/2ea70a13d69a80e7b723c1df39a410a7?pvs=21)
@@ -489,6 +499,8 @@
 [**⚪ API 명세서**](https://www.notion.so/infinity-platinum-ad1/API-2e870a13d69a80629aa3ed8cd78a28e0)
 
 [**⚪ 발표 자료**](https://drive.google.com/drive/u/0/folders/1onVcFV8c7dH82RdyhvgLq9hqbCHTS-8G)
+
+<br />
 
 ## ✔️ Jira Issues
 
