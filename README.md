@@ -1,24 +1,21 @@
 ### 👀 목차
 
-- [✨서비스 소개](#서비스-소개)
-- [🗓️ 개발 일정](#️-개발-일정)
-- [😊 팀 구성](#-팀-구성)
-- [🛠️ 기술 스택](#️-기술-스택)
-  - [🟣 Front-End](#-front-end)
-  - [🔵 Back-End](#-back-end)
-  - [🤖 AI](#-ai)
-  - [🖧 Infra \& DevOps](#-infra--devops)
-  - [🗄️ Database](#️-database)
-  - [⚙️ Tools](#️-tools)
-  - [🖥️ Monitoring](#️-monitoring)
-- [▶️ 주요 기능 및 이미지](#️-주요-기능-및-이미지)
-- [🖇️ ERD](#️-erd)
-- [🌏 아키텍처 구조](#-아키텍처-구조)
-- [📁 디렉터리 구조](#-디렉터리-구조)
-- [📝 프로젝트 산출물](#-프로젝트-산출물)
-- [✔️ Jira Issues](#️-jira-issues)
+[✨ 서비스 소개](#-서비스-소개)  
+[🗓️ 개발 일정](#️-개발-일정)  
+[😊 팀 구성](#-팀-구성)  
+[🛠️ 기술 스택](#️-기술-스택)  
+[▶️ 주요 기능 및 이미지](#️-주요-기능-및-이미지)  
+[🖇️ ERD](#️-erd)  
+[🌏 아키텍처 구조](#-아키텍처-구조)  
+[📁 디렉터리 구조](#-디렉터리-구조)  
+[📝 프로젝트 산출물](#-프로젝트-산출물)  
+[✔️ Jira Issues](#️-jira-issues)
 
-## ✨서비스 소개
+
+## ✨ 서비스 소개
+
+<img src="./readme-assets/01_try-catch_main.gif" width="100%">  
+<br /><br />
 
 **[방탈출 컨셉 게임으로 즐기는 실전 디버깅 학습 서비스]**
 
@@ -130,7 +127,7 @@
 
 ## 🛠️ 기술 스택
 
-### 🟣 Front-End
+<h3>🟣 Front-End </h3>
 
 <img src="https://img.shields.io/badge/Visual Studio Code-007ACC?style=for-the-badge">
 <img src="https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white">
@@ -143,7 +140,7 @@
 <img src="https://img.shields.io/badge/WebSocket-000000?style=for-the-badge&logo=&logoColor=white"> 
 <br>
 
-### 🔵 Back-End
+<h3>🔵 Back-End</h3>
 
 <img src="https://img.shields.io/badge/IntelliJ IDEA-000000?style=for-the-badge">
 <img src="https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white">
@@ -154,24 +151,24 @@
 <img src="https://img.shields.io/badge/JWT-6f1082?style=for-the-badge&logo=JSON%20web%20tokens">
 <img src="https://img.shields.io/badge/STOMP-000000?style=for-the-badge&logo=&logoColor=white">
 
-### 🤖 AI
+<h3>🤖 AI</h3>
 
 <img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54">
 <img src="https://img.shields.io/badge/FAST API-009688?style=for-the-badge&logo=fastapi&logoColor=white">
 
-### 🖧 Infra & DevOps
+<h3>🖧 Infra & DevOps</h3>
 
 <img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white">
 <img src="https://img.shields.io/badge/docker compose-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white">
 <img src="https://img.shields.io/badge/jenkins-%232C5263.svg?style=for-the-badge&logo=jenkins&logoColor=white">
 <img src="https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white">
 
-### 🗄️ Database
+<h3>🗄️ Database</h3>
 
 <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=MySQL&logoColor=white"> 
 <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=Redis&logoColor=white">
 
-### ⚙️ Tools
+<h3>⚙️ Tools</h3>
 
 <img src="https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white">
 <img src="https://img.shields.io/badge/gitlab-%23181717.svg?style=for-the-badge&logo=gitlab&logoColor=white">
@@ -179,7 +176,7 @@
 <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white">
 <img src="https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white">
 
-### 🖥️ Monitoring
+<h3>🖥️ Monitoring</h3>
 
 <img src="https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white">
 <img src="https://img.shields.io/badge/grafana-%23F46800.svg?style=for-the-badge&logo=grafana&logoColor=white">
