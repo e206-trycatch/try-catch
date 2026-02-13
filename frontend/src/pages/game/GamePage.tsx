@@ -7,7 +7,6 @@ import { getGameSession } from '@/api/gameSession';
 import { getSingleTimer } from '@/api/getSingleTimer';
 import { getMultiQuest } from '@/api/multiQuestFile';
 import { getQuestFile } from '@/api/questFile';
-import { getQuestStoriesInfo } from '@/api/questStories';
 import { getRetryQuestFile } from '@/api/retryQuestFile';
 import { saveCodeForShare } from '@/api/saveCodeForShare';
 import { getShareCode } from '@/api/shareCode';
@@ -19,8 +18,8 @@ import {
   subscribeLobby,
   subscribeRoom,
 } from '@/sockets/stomp';
-import type { CodeSavedMessage } from '@/sockets/types';
 import type {
+  CodeSavedMessage,
   HintErrorData,
   HintMessageData,
   HintQuestionData,
@@ -42,13 +41,13 @@ import TimeOverModal from './components/TimeOverModal';
 import ShareCodeToast from './components/toast/ShareCodeToast';
 import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
 import { gameToastStyle } from './components/toast/toastStyles';
+import { useBackgroundImage } from './hooks/useBackgroundImage';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
 import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
-import type { CodeRole, QuestInfo } from './types/ideTypes';
-import type { FileNode } from './types/ideTypes';
+import type { CodeRole, FileNode, QuestInfo } from './types/ideTypes';
 import { findFileIdByPath } from './utils/fileTreeUtils';
 import { resolveFramework } from './utils/frameworkUtils';
 import {
@@ -73,7 +72,6 @@ export default function GamePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
-  const [backgroundImg, setBackgroundImg] = useState<string | null>(null);
   const {
     submissionId,
     startTimer,
@@ -85,6 +83,8 @@ export default function GamePage() {
   const mode = useGameStore((state) => state.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
   const [userRole, setUserRole] = useState<CodeRole>(null);
+
+  const backgroundImage = useBackgroundImage(questId);
 
   // 멀티 모드 - 코드 덮어씌우기를 위한 함수
   const loadShareCode = async () => {
@@ -315,24 +315,6 @@ export default function GamePage() {
     }
   }, [roomId, initializeForRoom]);
 
-  // 배경 이미지
-  useEffect(() => {
-    if (!questId) return;
-
-    const getQuestStories = async () => {
-      try {
-        const data = await getQuestStoriesInfo(questId);
-        const lastImage = data.at(-1)?.imageUrl;
-        setBackgroundImg(lastImage ?? '');
-      } catch (error) {
-        console.error('퀘스트 스토리 배경 이미지 로드 실패:', error);
-        setBackgroundImg('');
-      }
-    };
-
-    getQuestStories();
-  }, [questId]);
-
   // 코드 저장 버튼을 눌렀을 때 실행되는 함수
   const saveCode = async () => {
     if (!roomId) return;
@@ -473,7 +455,7 @@ export default function GamePage() {
       )}
       <div
         className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px] bg-cover bg-center"
-        style={{ backgroundImage: `url(${backgroundImg})` }}
+        style={{ backgroundImage: `url(${backgroundImage})` }}
       >
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar gameSession={gameSession} />
