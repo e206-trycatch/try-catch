@@ -1,19 +1,21 @@
+import EmptyHeartIcon from '@/assets/images/icons/empty_heart_icon.png';
+import FullHeartIcon from '@/assets/images/icons/full_heart_icon.png';
 import TimerIcon from '@/assets/images/icons/timer-icon.png';
+import type { GameSessionResponse } from '@/pages/game/types/apiTypes';
+import { useGameStore } from '@/stores/useGameStore';
 
-import EmptyHeartIcon from '../../../assets/images/icons/empty_heart_icon.png';
-import FullHeartIcon from '../../../assets/images/icons/full_heart_icon.png';
-import type { GameSessionResponse } from '../../../pages/game/types/apiTypes';
-import { useGameStore } from '../../../stores/useGameStore';
 import useTimer from '../hooks/useTimer';
 
 interface GameInfoBarProps {
   gameSession: GameSessionResponse | null;
 }
 
+const MAX_LIFE = 3;
+
 export default function GameInfoBar({ gameSession }: GameInfoBarProps) {
   const { currentLife } = useGameStore();
   const { display, isWarning } = useTimer();
-  const loseLife = 3 - currentLife;
+  const loseLife = MAX_LIFE - currentLife;
 
   return (
     <div className="flex gap-[45px] items-center justify-center">

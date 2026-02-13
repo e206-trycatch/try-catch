@@ -40,6 +40,9 @@ import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
 import TimeOverModal from './components/TimeOverModal';
+import ShareCodeToast from './components/toast/ShareCodeToast';
+import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
+import { gameToastStyle } from './components/toast/toastStyles';
 import { useFile } from './hooks/useFile';
 import { useIde } from './hooks/useIde';
 import useTerminal from './hooks/useTerminal';
@@ -48,13 +51,14 @@ import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
 import type { CodeRole, QuestInfo } from './types/ideTypes';
 import type { FileNode } from './types/ideTypes';
 import { findFileIdByPath } from './utils/fileTreeUtils';
+import { resolveFramework } from './utils/frameworkUtils';
 import {
   buildSubmissionPayload,
   snapshotFileCodes,
 } from './utils/submissionUtils';
-import ShareCodeToast from './components/toast/ShareCodeToast';
-import { gameToastStyle } from './components/toast/toastStyles';
-import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
+
+const TIMER_DELAY = 2000;
+const SUBMIT_TOAST_CLOSE = 3000;
 
 export default function GamePage() {
   const navigate = useNavigate();
@@ -161,8 +165,7 @@ export default function GamePage() {
           // 기존 타이머가 있으면 복원 (새로고침 대응)
           startTimer(timeData.deadlineAt);
         } else if (mode === 'SINGLE') {
-          // 싱글: 화면 전환 후 3초 대기 → 타이머 시작
-          await new Promise((r) => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, TIMER_DELAY));
           const newTimeData = await startSingleGameTimer(Number(roomId));
           startTimer(newTimeData.deadlineAt);
         }
@@ -252,8 +255,7 @@ export default function GamePage() {
         // 타이머가 이미 시작된 경우(새로고침) ready 신호 재전송 방지
         const timeData = await getSingleTimer(Number(roomId));
         if (!timeData.startedAt) {
-          // 화면 전환 후 3초 대기 → ready 신호 전송
-          await new Promise((r) => setTimeout(r, 2000));
+          await new Promise((r) => setTimeout(r, TIMER_DELAY));
           await startMultiGameTimer(Number(roomId));
         }
 
@@ -394,7 +396,7 @@ export default function GamePage() {
       {
         toastId,
         position: 'top-right',
-        autoClose: 3500,
+        autoClose: SUBMIT_TOAST_CLOSE,
         hideProgressBar: true,
         closeButton: false,
         icon: false,
@@ -426,47 +428,10 @@ export default function GamePage() {
   // 힌트 모달 상태
   const { isModalOpen, openModal, closeModal } = useHintStore();
 
-  // 현재 사용 중인 framework 이름 가져오기
-  const currentFramework = useMemo(() => {
-    // 1. API 응답에 framework가 있으면 바로 사용 (멀티모드, 재도전)
-    if (questInfo?.framework) {
-      return questInfo.framework;
-    }
-
-    // 2. framework가 없으면 기존 로직으로 폴백 (싱글 첫 진입, 싱글 풀스택)
-    const { draft, availableFrameworks } = useRoomStore.getState();
-    const { selectedFrameworkId, frontendId, backendId, position } = draft;
-    const mode = useGameStore.getState().mode;
-
-    // FULLSTACK 모드인 경우 'fullstack' 반환
-    if (mode === 'SINGLE' && position === 'FULLSTACK') {
-      return 'fullstack';
-    }
-
-    // 싱글 모드 첫 진입의 경우 availableFrameworks에서 찾기
-    if (mode === 'SINGLE') {
-      const frameworkId = selectedFrameworkId || frontendId || backendId;
-      if (!frameworkId || !availableFrameworks) return '';
-
-      const allFrameworks = [
-        ...(availableFrameworks.FRONTEND || []),
-        ...(availableFrameworks.BACKEND || []),
-        ...(availableFrameworks.FULLSTACK || []),
-      ];
-      const found = allFrameworks.find((f) => f.id === frameworkId);
-      if (!found) return '';
-
-      const name = found.name.toLowerCase();
-      if (name.includes('spring')) return 'spring';
-      if (name.includes('django')) return 'django';
-      if (name.includes('vue')) return 'vue';
-      if (name.includes('react')) return 'react';
-      return name;
-    }
-
-    // 멀티모드인데 framework가 없는 경우 (이론상 발생하지 않음)
-    return '';
-  }, [questInfo?.framework]);
+  const currentFramework = useMemo(
+    () => resolveFramework(questInfo),
+    [questInfo],
+  );
 
   const rootNode = useMemo<FileNode>(
     () => ({

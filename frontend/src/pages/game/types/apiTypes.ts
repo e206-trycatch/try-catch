@@ -117,7 +117,7 @@ export interface GameSessionResponse {
   roomStatus: string;
 }
 
-export interface QuestStoreisResponse {
+export interface QuestStoriesResponse {
   storyId: number;
   storyOrder: number;
   imageUrl: string;
