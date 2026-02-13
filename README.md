@@ -1,15 +1,22 @@
 ### 👀 목차
 
-1. [**✨ 서비스 소개**](#서비스-소개)
-2. [**🗓️ 개발 일정**](#️-개발-일정)
-3. [**😊 팀 구성**](#-팀-구성)
-4. [**🛠️ 기술 스택**](#️-기술-스택)
-5. [**▶️ 주요 기능 및 이미지**](#️-주요-기능-및-이미지)
-6. [**🖇️ ERD**](#️-erd)
-7. [**🌏 아키텍처 구조**](#-아키텍처-구조)
-8. [**📁 디렉터리 구조**](#-디렉터리-구조)
-9. [**📝 프로젝트 산출물**](#-프로젝트-산출물)
-10. [**✔️Jira Issues**](#jira-issues)
+- [✨서비스 소개](#서비스-소개)
+- [🗓️ 개발 일정](#️-개발-일정)
+- [😊 팀 구성](#-팀-구성)
+- [🛠️ 기술 스택](#️-기술-스택)
+  - [🟣 Front-End](#-front-end)
+  - [🔵 Back-End](#-back-end)
+  - [🤖 AI](#-ai)
+  - [🖧 Infra \& DevOps](#-infra--devops)
+  - [🗄️ Database](#️-database)
+  - [⚙️ Tools](#️-tools)
+  - [🖥️ Monitoring](#️-monitoring)
+- [▶️ 주요 기능 및 이미지](#️-주요-기능-및-이미지)
+- [🖇️ ERD](#️-erd)
+- [🌏 아키텍처 구조](#-아키텍처-구조)
+- [📁 디렉터리 구조](#-디렉터리-구조)
+- [📝 프로젝트 산출물](#-프로젝트-산출물)
+- [✔️ Jira Issues](#️-jira-issues)
 
 ## ✨서비스 소개
 
@@ -22,12 +29,12 @@
 
 ## 🗓️ 개발 일정
 
-- 1주차 (1/5 ~ 1/11) : 프로젝트 기획
-- 2주차 (1/12 ~ 1/18) : 설계 및 구체화
-- 3주차 (1/19 ~ 1/25) : 인프라 및 구현
-- 4주차 (1/26 ~2/1) : 구현 및 연동
-- 5주차 (2/2~2/8) : 테스트, 마무리
-- 2/9 : 최종 프로젝트 평가
+- **1주차 (1/5 ~ 1/11)** : 프로젝트 기획
+- **2주차 (1/12 ~ 1/18)** : 설계 및 구체화
+- **3주차 (1/19 ~ 1/25)** : 인프라 및 구현
+- **4주차 (1/26 ~2/1)** : 구현 및 연동
+- **5주차 (2/2~2/8)** : 테스트, 마무리
+- **2/9** : 최종 프로젝트 평가
 
 ## 😊 팀 구성
 
@@ -36,19 +43,19 @@
         <tr>
             <td width="33%" align="center"> 
                 <a href="https://github.com/elfffffy">
-                    <img src="./readme-assets/jungwon_park.jpg" width="160px" /> <br> 박정원 
+                    <img src="./readme-assets/jungwon_park.jpg" width="160px" /> <br> <strong>박정원</strong> 
                 </a>
-                <br> (FE) 
+                <br>(FE)
             </td>
             <td width="33%" align="center">
                 <a href="https://github.com/JPW-star">
-                    <img src="./readme-assets/junsu_park.jpg" width="160px" /> <br> 박준수 
+                    <img src="./readme-assets/junsu_park.jpg" width="160px" /> <br> <strong>박준수</strong> 
                 </a>
-                <br> (Leader / FE / AI) 
+                <br>(Leader / FE / AI)
             </td>
             <td width="33%" align="center"> 
                 <a href="https://github.com/seh8145">
-                    <img src="./readme-assets/eunhyuk_song.jpg" width="160px" /> <br> 송은혁 
+                    <img src="./readme-assets/eunhyuk_song.jpg" width="160px" /> <br> <strong>송은혁</strong>
                 </a> 
                 <br> (BE)
             </td>
@@ -85,11 +92,11 @@
         <table>
         <tr>
             <td width="33%" align="center"> <a href="https://github.com/aidenjy42">
-                <img src="./readme-assets/juyeong_woo.jpg" width="160px" /> <br> 우주영 </a> <br>(BE)  <br></td>
+                <img src="./readme-assets/juyeong_woo.jpg" width="160px" /> <br> <strong>우주영</strong> </a> <br>(BE)  <br></td>
             <td width="33%" align="center"> <a href="https://github.com/wjdheesp44">
-                <img src="./readme-assets/heesu_jeong.jpg" width="160px" /> <br> 정희수 </a> <br>(BE / DevOps / AI)  <br></td>
+                <img src="./readme-assets/heesu_jeong.jpg" width="160px" /> <br> <strong>정희수</strong> </a> <br>(BE / DevOps / AI)  <br></td>
             <td width="33%" align="center"> <a href="https://github.com/chaezerojj">
-                <img src="./readme-assets/chaeyeong_jin.jpg" width="160px" /> <br> 진채영 </a> <br>(FE / Design)  <br></td>
+                <img src="./readme-assets/chaeyeong_jin.jpg" width="160px" /> <br> <strong>진채영</strong> </a> <br>(FE / Design)  <br></td>
         </tr>
         <tr>
         <td width="280px" valign="top">
@@ -180,6 +187,88 @@
 <br>
 
 ## ▶️ 주요 기능 및 이미지
+
+<div align="center">
+    <table>
+        <tr>
+            <td align="center" width="50%">
+                <b>01. 메인 화면</b><br><br>
+                <img src="./readme-assets/01_try-catch_main.gif" width="100%">
+            </td>
+            <td align="center" width="50%">
+                <b>02. 모드 & 테마 선택</b><br><br>
+                <img src="./readme-assets/02_mode_theme_selection.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>03. 멀티 방 설정</b><br><br>
+                <img src="./readme-assets/03_multi_room_setting.gif" width="100%">
+            </td>
+            <td align="center">
+                <b>04. 멀티 방 초대</b><br><br>
+                <img src="./readme-assets/04_multi_room_invitation.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>05. 멀티 대기방 - 게스트 입장</b><br><br>
+                <img src="./readme-assets/05_multi_room_lobby_guest_in.gif" width="100%">
+            </td>
+            <td align="center">
+                <b>06. 멀티 대기방 - 게스트 준비</b><br><br>
+                <img src="./readme-assets/06_multi_room_lobby_guest_ready.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>07. 대기방 → 퀘스트 설명까지</b><br><br>
+                <img src="./readme-assets/07_multi_room+lobby_to_quest_descript.gif" width="100%">
+            </td>
+            <td align="center">
+                <b>08. 게임 - README로 문제 확인</b><br><br>
+                <img src="./readme-assets/08_game_readme_check.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>09. 게임 - AI 힌트 확인</b><br><br>
+                <img src="./readme-assets/09_game_hint_check.gif" width="100%">
+            </td>
+            <td align="center">
+                <b>10. 게임 - 코드 작성</b><br><br>
+                <img src="./readme-assets/10_game_code_play.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>11. 게임 - 코드 저장</b><br><br>
+                <img src="./readme-assets/11_game_code_save.gif" width="100%">
+            </td>
+            <td align="center">
+                <b>12. 게임 - 코드 불러오기</b><br><br>
+                <img src="./readme-assets/12_game_code_load.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>13. 코드 제출 후 대기하는 동안 공룡게임</b><br><br>
+                <img src="./readme-assets/13_code_submit_and_dinogame.gif" width="100%">
+            </td>
+            <td align="center">
+                <b>14. 공룡 게임 후 AI 채점 결과 확인(성공)</b><br><br>
+                <img src="./readme-assets/14_dinogame_and_result_success.gif" width="100%">
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <b>15. 마이페이지 내 모드별 풀이 기록 확인</b><br><br>
+                <img src="./readme-assets/15_mypage.gif" width="100%">
+            </td>
+            <td></td>
+        </tr>
+    </table>
+</div>
 
 <br>
 
