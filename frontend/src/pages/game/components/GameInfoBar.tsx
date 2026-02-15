@@ -20,7 +20,13 @@ export default function GameInfoBar({ gameSession }: GameInfoBarProps) {
   return (
     <div className="flex gap-[45px] items-center justify-center">
       <div className="flex gap-3 justify-center items-center">
-        <img src={TimerIcon} alt=" 남은 시간" className="w-[20px]" />
+        <img
+          src={TimerIcon}
+          alt=" 남은 시간"
+          width={20}
+          height={20}
+          className="w-[20px]"
+        />
         <span>남은 시간</span>
         <div className={`text-xl ${isWarning ? 'timer-warning' : ''}`}>
           {display}
@@ -35,6 +41,8 @@ export default function GameInfoBar({ gameSession }: GameInfoBarProps) {
               key={`full-${i}`}
               src={FullHeartIcon}
               alt="남은 목숨"
+              width={22}
+              height={20}
               className="w-[22px] h-[20px]"
             />
           ))}
@@ -43,6 +51,8 @@ export default function GameInfoBar({ gameSession }: GameInfoBarProps) {
               key={`empty-${i}`}
               src={EmptyHeartIcon}
               alt="소진된 목숨"
+              width={22}
+              height={20}
               className="w-[22px] h-[20px]"
             />
           ))}

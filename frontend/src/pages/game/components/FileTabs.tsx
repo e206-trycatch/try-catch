@@ -28,7 +28,13 @@ export default function FileTabs({
                 ${active ? 'bg-white/10 text-amber-300' : 'bg-transparent text-gray-400'}
             `}
             >
-              <img src={CodeFileIcon} alt="코드파일" className="w-4 mr-1" />
+              <img
+                src={CodeFileIcon}
+                alt="코드파일"
+                width={16}
+                height={16}
+                className="w-4 mr-1"
+              />
               <span className="whitespace-nowrap overflow-hidden text-ellipsis">
                 {tab.name}
               </span>

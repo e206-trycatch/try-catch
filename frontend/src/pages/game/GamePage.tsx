@@ -1,5 +1,13 @@
 import { Resizable } from 're-resizable';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -13,7 +21,7 @@ import { useSubmissionStore } from '@/stores/useSubmissionStore';
 import EditorPanel from './components/EditorPanel';
 import Explorer from './components/Explorer';
 import GameInfoBar from './components/GameInfoBar';
-import HintModal from './components/hint/HintModal';
+const HintModal = lazy(() => import('./components/hint/HintModal'));
 import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
@@ -226,13 +234,15 @@ export default function GamePage() {
     <>
       {isExpired && <TimeOverModal />}
       {isModalOpen && problemFrameworkId && questInfo && (
-        <HintModal
-          roomId={Number(roomId)}
-          problemFrameworkId={problemFrameworkId}
-          framework={currentFramework}
-          getSubmissionData={getSubmissionData}
-          onClose={closeModal}
-        />
+        <Suspense fallback={null}>
+          <HintModal
+            roomId={Number(roomId)}
+            problemFrameworkId={problemFrameworkId}
+            framework={currentFramework}
+            getSubmissionData={getSubmissionData}
+            onClose={closeModal}
+          />
+        </Suspense>
       )}
       <div
         className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px] bg-cover bg-center"

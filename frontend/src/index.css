@@ -58,6 +58,16 @@
   }
 }
 
+/* 페이지 전환 페이드인 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* 깜빡이는 효과 */
 @keyframes blink {
   0% {
@@ -90,19 +100,20 @@
 
 .animate-lobby-blink {
   animation: lobby-blink 1.2s ease-in-out infinite;
-  /* 타이머 경고 */
-  @keyframes timer-blink {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.2;
-    }
-  }
+}
 
-  .timer-warning {
-    color: #ef4444;
-    animation: timer-blink 1s linear infinite;
+/* 타이머 경고 */
+@keyframes timer-blink {
+  0%,
+  100% {
+    opacity: 1;
   }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.timer-warning {
+  color: #ef4444;
+  animation: timer-blink 1s linear infinite;
 }
