@@ -59,6 +59,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
               onError={(e) => {
                 e.currentTarget.src = defaultProfile;
               }}
+              loading="lazy"
             />
           </div>
           <ActionButton variant="small">수정</ActionButton>

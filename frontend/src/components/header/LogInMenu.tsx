@@ -25,6 +25,7 @@ const LoggedInMenu = ({
         onError={(e) => {
           e.currentTarget.src = defaultProfile;
         }}
+        loading="lazy"
       />
       <span className="font-medium">{userName} 님</span>
     </Link>

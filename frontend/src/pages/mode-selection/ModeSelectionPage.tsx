@@ -54,6 +54,7 @@ const ModeCard = ({ title, onClick }: ModeCardProps) => {
         src={ModeSelectionButton}
         alt="mode card"
         className="absolute inset-0 w-full h-full object-cover group-hover:brightness-110 transition-all duration-300"
+        loading="lazy"
       />
 
       {/* 텍스트 내용 */}

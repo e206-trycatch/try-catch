@@ -111,6 +111,7 @@ const StorySlide = ({
         src={imageUrl}
         alt="Story scene"
         className="absolute inset-0 w-full h-full object-cover object-[center_30%]"
+        loading="lazy"
       />
 
       {/* 텍스트: 이미지 위에 absolute 오버레이, 하단 35%, 반투명(50%) */}
