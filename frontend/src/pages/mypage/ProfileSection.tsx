@@ -2,7 +2,7 @@
 
 import { toast } from 'react-toastify';
 
-import defaultProfile from '../../assets/images/icons/default_profile.png';
+import defaultProfile from '../../assets/images/icons/default_profile.webp';
 import type { Profile } from './types/user';
 
 interface ProfileSectionProps {
