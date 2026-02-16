@@ -6,9 +6,25 @@
 /* ! 전역 스타일 설정 */
 @font-face {
   font-family: 'Umdot';
-  src: url('./assets/fonts/Umdot11.woff') format('woff2');
+  src: url('./assets/fonts/Umdot11.woff2') format('woff2');
   font-weight: normal;
   font-display: swap;
+}
+
+@keyframes success-letter {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-success-letter {
+  opacity: 0;
+  animation: success-letter 0.4s cubic-bezier(0.5, 1.5, 0.5, 1) forwards;
 }
 
 @layer base {
