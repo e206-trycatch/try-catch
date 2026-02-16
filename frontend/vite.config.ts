@@ -7,6 +7,18 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          router: ['react-router-dom'],
+          monaco: ['monaco-editor'],
+          stomp: ['@stomp/stompjs', 'sockjs-client'],
+        },
+      },
+    },
+  },
+
   // sockjs-client가 Node.js의 global 변수를 참조하므로 브라우저용 호환처리
   define: {
     global: 'globalThis',
