@@ -1,6 +1,5 @@
 import axios from 'axios';
-import { AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Bounce, ToastContainer } from 'react-toastify';
 
@@ -8,23 +7,38 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import GuestRoute from './components/routes/GuestRoute';
 import PrivateRoute from './components/routes/PrivateRoute';
 import MainLayout from './layouts/AppLayout';
-import DinoGamePage from './pages/dino-game/DinoGamePage';
-import GamePage from './pages/game/GamePage';
 import HomePage from './pages/home/HomePage';
-import InvitationPage from './pages/invitation-code/InvitationCodePage';
 import LoginPage from './pages/login/LoginPage';
-import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
-import LobbyPage from './pages/multi-room/LobbyPage';
-import MyPage from './pages/mypage/MyPage';
-import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
-import ResultLoadingPage from './pages/result/ResultLoadingPage';
-import ResultPage from './pages/result/ResultPage';
-import MultiRoomSettingPage from './pages/room-settings/MultiRoomSettingPage';
-import SingleRoomSettingPage from './pages/room-settings/SingleRoomSettingPage';
 import SignupPage from './pages/signup/SignupPage';
-import StoryPage from './pages/story/StoryPage';
-import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import { useStore } from './stores/useStore';
+
+const GamePage = lazy(() => import('./pages/game/GamePage'));
+const DinoGamePage = lazy(() => import('./pages/dino-game/DinoGamePage'));
+const ResultPage = lazy(() => import('./pages/result/ResultPage'));
+const ResultLoadingPage = lazy(
+  () => import('./pages/result/ResultLoadingPage'),
+);
+const MyPage = lazy(() => import('./pages/mypage/MyPage'));
+const StoryPage = lazy(() => import('./pages/story/StoryPage'));
+const LobbyPage = lazy(() => import('./pages/multi-room/LobbyPage'));
+const QuestDescriptionPage = lazy(
+  () => import('./pages/quest-description/QuestDescriptionPage'),
+);
+const ThemeSelectionPage = lazy(
+  () => import('./pages/theme-selection/ThemeSelectionPage'),
+);
+const ModeSelectionPage = lazy(
+  () => import('./pages/mode-selection/ModeSelectionPage'),
+);
+const SingleRoomSettingPage = lazy(
+  () => import('./pages/room-settings/SingleRoomSettingPage'),
+);
+const MultiRoomSettingPage = lazy(
+  () => import('./pages/room-settings/MultiRoomSettingPage'),
+);
+const InvitationPage = lazy(
+  () => import('./pages/invitation-code/InvitationCodePage'),
+);
 
 function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -85,7 +99,13 @@ function App() {
           minHeight: 'auto',
         }}
       />
-      <AnimatePresence>
+      <Suspense
+        fallback={
+          <div className="flex justify-center items-center min-h-screen">
+            <LoadingSpinner />
+          </div>
+        }
+      >
         <Routes>
           <Route element={<MainLayout />}>
             {/* Public - 누구나 접근 가능 */}
@@ -127,7 +147,7 @@ function App() {
             </Route>
           </Route>
         </Routes>
-      </AnimatePresence>
+      </Suspense>
     </>
   );
 }

@@ -1,9 +1,8 @@
-// import { arrayMove } from '@dnd-kit/sortable';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import type { FileNode } from '../types/ideTypes';
 
-function collectIdeData(root: FileNode) {
+const collectIdeData = (root: FileNode) => {
   const fileCodes: Record<string, string> = {};
   const folderIds = new Set<string>();
 
@@ -21,16 +20,14 @@ function collectIdeData(root: FileNode) {
   };
   dfs(root);
   return { fileCodes, folderIds };
-}
+};
 
 export type PanelType = 'primary' | 'secondary';
 
 export function useIde(root: FileNode) {
   // primary 상단 탭 영역에 열려 있는 파일 목록
   const [openTabs, setOpenTabs] = useState<FileNode[]>([]);
-  // 파일 탐색기에서 현재 클릭한 파일
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
-  // 현재 활성화 된 파일이고, 사용자가 타이핑 중인 코드
   const [currentCode, setCurrentCode] = useState('');
 
   // secondary 상단 탭 영역에 열려 있는 파일 목록
@@ -42,17 +39,37 @@ export function useIde(root: FileNode) {
 
   // 스플릿 상태
   const [isSplit, setIsSplit] = useState(false);
-  const [focusedPane, setFocusedPane] = useState<PanelType>('primary');
+  const [focusedPanel, setFocusedPanel] = useState<PanelType>('primary');
 
-  // 파일 탐색기에서 현재 열려 있는 폴더 id(string 타입)들을 저장하는 상태
-  // Set을 사용해 중복 없이 폴더 열림 상태를 관리
-  // 함수 형태 => 첫 렌더링 때만 Set을 생성하도록 함 (리렌더 시 재생성 방지)
+  // 파일 탐색기에서 현재 열려 있는 폴더 id를 저장하는 상태
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(['root']),
   );
 
   // {파일 id : 코드} 형식으로 저장하기 (두 패널이 공유)
   const [fileCodes, setFileCodes] = useState<Record<string, string>>({});
+
+  // 패널별 상태 접근자
+  const getPanel = (panel: PanelType) => {
+    if (panel === 'primary') {
+      return {
+        activeFileId,
+        currentCode,
+        openTabs,
+        setActiveFileId,
+        setCurrentCode,
+        setOpenTabs,
+      };
+    }
+    return {
+      activeFileId: secondaryActiveFileId,
+      currentCode: secondaryCurrentCode,
+      openTabs: secondaryOpenTabs,
+      setActiveFileId: setSecondaryActiveFileId,
+      setCurrentCode: setSecondaryCurrentCode,
+      setOpenTabs: setSecondaryOpenTabs,
+    };
+  };
 
   // root가 변경되면 fileCodes와 expanded를 렌더 중 동기적으로 재설정
   const [prevRoot, setPrevRoot] = useState(root);
@@ -66,19 +83,12 @@ export function useIde(root: FileNode) {
 
   // 작성중인 코드 저장하는 함수
   const saveCurrentFile = (panel: PanelType = 'primary') => {
-    if (panel === 'primary') {
-      if (!activeFileId) return;
-      setFileCodes((prev) => ({
-        ...prev,
-        [activeFileId]: currentCode,
-      }));
-    } else {
-      if (!secondaryActiveFileId) return;
-      setFileCodes((prev) => ({
-        ...prev,
-        [secondaryActiveFileId]: secondaryCurrentCode,
-      }));
-    }
+    const panelState = getPanel(panel);
+    if (!panelState.activeFileId) return;
+    setFileCodes((prev) => ({
+      ...prev,
+      [panelState.activeFileId!]: panelState.currentCode,
+    }));
   };
 
   // 모든 패널의 현재 코드 저장
@@ -119,150 +129,89 @@ export function useIde(root: FileNode) {
     if (file.type !== 'file') return;
 
     // 스플릿 모드이고 secondary에 포커스된 경우
-    if (isSplit && focusedPane === 'secondary') {
-      openFileInPane(file, 'secondary');
+    if (isSplit && focusedPanel === 'secondary') {
+      openFileInPanel(file, 'secondary');
     } else {
-      openFileInPane(file, 'primary');
+      openFileInPanel(file, 'primary');
     }
   };
 
-  // 특정 패널에 파일 열기
-  const openFileInPane = (file: FileNode, panel: PanelType) => {
-    // 현재 파일의 코드를 저장하고 최신 fileCodes 상태를 로컬 변수로 유지
+  // 파일 탐색기에서 클릭
+  const openFileInPanel = (file: FileNode, panel: PanelType) => {
+    const panelState = getPanel(panel);
     const latestFileCodes = { ...fileCodes };
 
-    if (panel === 'primary') {
-      if (activeFileId) {
-        latestFileCodes[activeFileId] = currentCode;
-        setFileCodes(latestFileCodes);
-      }
-
-      setOpenTabs((prev) => {
-        const exists = prev.some((f) => f.id === file.id);
-        if (exists) return prev;
-        return [...prev, file];
-      });
-
-      setActiveFileId(file.id);
-      const code = latestFileCodes[file.id] ?? file.code ?? '';
-      setCurrentCode(code);
-    } else {
-      if (secondaryActiveFileId) {
-        latestFileCodes[secondaryActiveFileId] = secondaryCurrentCode;
-        setFileCodes(latestFileCodes);
-      }
-
-      setSecondaryOpenTabs((prev) => {
-        const exists = prev.some((f) => f.id === file.id);
-        if (exists) return prev;
-        return [...prev, file];
-      });
-
-      setSecondaryActiveFileId(file.id);
-      const code = latestFileCodes[file.id] ?? file.code ?? '';
-      setSecondaryCurrentCode(code);
+    if (panelState.activeFileId) {
+      latestFileCodes[panelState.activeFileId] = panelState.currentCode;
+      setFileCodes(latestFileCodes);
     }
+
+    panelState.setOpenTabs((prev) => {
+      const exists = prev.some((f) => f.id === file.id);
+      if (exists) return prev;
+      return [...prev, file];
+    });
+
+    panelState.setActiveFileId(file.id);
+    const code = latestFileCodes[file.id] ?? file.code ?? '';
+    panelState.setCurrentCode(code);
   };
 
+  // 이미 열린 탭 클릭
   const selectTab = (fileId: string, panel: PanelType = 'primary') => {
-    if (panel === 'primary') {
-      if (fileId === activeFileId) return;
+    const panelState = getPanel(panel);
+    if (fileId === panelState.activeFileId) return;
 
-      // 현재 파일의 코드를 저장하고 최신 fileCodes 상태를 로컬 변수로 유지
-      const latestFileCodes = { ...fileCodes };
-      if (activeFileId) {
-        latestFileCodes[activeFileId] = currentCode;
-        setFileCodes(latestFileCodes);
-      }
-
-      setActiveFileId(fileId);
-      const code = latestFileCodes[fileId];
-      setCurrentCode(code ?? '');
-    } else {
-      if (fileId === secondaryActiveFileId) return;
-
-      const latestFileCodes = { ...fileCodes };
-      if (secondaryActiveFileId) {
-        latestFileCodes[secondaryActiveFileId] = secondaryCurrentCode;
-        setFileCodes(latestFileCodes);
-      }
-
-      setSecondaryActiveFileId(fileId);
-      const code = latestFileCodes[fileId];
-      setSecondaryCurrentCode(code ?? '');
+    const latestFileCodes = { ...fileCodes };
+    if (panelState.activeFileId) {
+      latestFileCodes[panelState.activeFileId] = panelState.currentCode;
+      setFileCodes(latestFileCodes);
     }
+
+    panelState.setActiveFileId(fileId);
+    const code = latestFileCodes[fileId];
+    panelState.setCurrentCode(code ?? '');
   };
 
   const closeTab = (fileId: string, panel: PanelType = 'primary') => {
-    if (panel === 'primary') {
-      if (fileId === activeFileId) {
-        saveCurrentFile('primary');
-      }
+    const panelState = getPanel(panel);
 
-      setOpenTabs((prev) => {
-        const idx = prev.findIndex((f) => f.id === fileId);
-        const newTabs = prev.filter((f) => f.id !== fileId);
-
-        if (activeFileId === fileId) {
-          const nextActive = newTabs[idx - 1] ?? newTabs[idx] ?? null;
-          setActiveFileId(nextActive?.id ?? null);
-
-          if (nextActive) {
-            const code = fileCodes[nextActive.id];
-            setCurrentCode(code);
-          } else {
-            setCurrentCode('');
-          }
-        }
-
-        return newTabs;
-      });
-    } else {
-      if (fileId === secondaryActiveFileId) {
-        saveCurrentFile('secondary');
-      }
-
-      setSecondaryOpenTabs((prev) => {
-        const idx = prev.findIndex((f) => f.id === fileId);
-        const newTabs = prev.filter((f) => f.id !== fileId);
-
-        if (secondaryActiveFileId === fileId) {
-          const nextActive = newTabs[idx - 1] ?? newTabs[idx] ?? null;
-          setSecondaryActiveFileId(nextActive?.id ?? null);
-
-          if (nextActive) {
-            const code = fileCodes[nextActive.id];
-            setSecondaryCurrentCode(code);
-          } else {
-            setSecondaryCurrentCode('');
-          }
-        }
-
-        // secondary 탭이 모두 닫히면 자동으로 스플릿 해제
-        if (newTabs.length === 0) {
-          setIsSplit(false);
-          setFocusedPane('primary');
-        }
-
-        return newTabs;
-      });
+    if (fileId === panelState.activeFileId) {
+      saveCurrentFile(panel);
     }
+
+    panelState.setOpenTabs((prev) => {
+      const idx = prev.findIndex((f) => f.id === fileId);
+      const newTabs = prev.filter((f) => f.id !== fileId);
+
+      if (panelState.activeFileId === fileId) {
+        const nextActive = newTabs[idx - 1] ?? newTabs[idx] ?? null;
+        panelState.setActiveFileId(nextActive?.id ?? null);
+
+        if (nextActive) {
+          const code = fileCodes[nextActive.id];
+          panelState.setCurrentCode(code);
+        } else {
+          panelState.setCurrentCode('');
+        }
+      }
+
+      // secondary 탭이 모두 닫힌 경우
+      if (panel === 'secondary' && newTabs.length === 0) {
+        setIsSplit(false);
+        setFocusedPanel('primary');
+      }
+
+      return newTabs;
+    });
   };
 
   // 현재 선택된 탭의 파일 정보
-  // useMemo() : 재런더링 될 때 계산 결과를 캐싱할 수 있게 해준다.
-  const activeFile = useMemo(() => {
-    if (!activeFileId) return null;
-    return openTabs.find((f) => f.id === activeFileId) ?? null;
-  }, [activeFileId, openTabs]);
+  const activeFile = openTabs.find((f) => f.id === activeFileId) ?? null;
 
   // secondary 패널의 현재 선택된 탭 파일 정보
-  const secondaryActiveFile = useMemo(() => {
-    if (!secondaryActiveFileId) return null;
-    return (
-      secondaryOpenTabs.find((f) => f.id === secondaryActiveFileId) ?? null
-    );
-  }, [secondaryActiveFileId, secondaryOpenTabs]);
+  const secondaryActiveFile =
+    secondaryOpenTabs.find((f) => f.id === secondaryActiveFileId) ?? null;
 
   // 스플릿 토글 (현재 active 파일을 secondary에 복제하여 열기)
   const toggleSplit = () => {
@@ -270,7 +219,7 @@ export function useIde(root: FileNode) {
       // 스플릿 해제: secondary 상태 초기화
       saveCurrentFile('secondary');
       setIsSplit(false);
-      setFocusedPane('primary');
+      setFocusedPanel('primary');
       setSecondaryOpenTabs([]);
       setSecondaryActiveFileId(null);
       setSecondaryCurrentCode('');
@@ -312,8 +261,8 @@ export function useIde(root: FileNode) {
 
     // 스플릿 상태
     isSplit,
-    focusedPane,
-    setFocusedPane,
+    focusedPanel,
+    setFocusedPanel,
     toggleSplit,
 
     // 파일 조작

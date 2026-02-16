@@ -57,3 +57,5 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
+
+stats.html

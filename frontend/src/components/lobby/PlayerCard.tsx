@@ -48,6 +48,7 @@ const PlayerCard = ({
           src={isActive ? onProfileImg : offProfileImg}
           alt={isActive ? 'Active profile' : 'Inactive profile'}
           className="w-[110px] h-[110px] object-contain"
+          loading="lazy"
         />
       </div>
 

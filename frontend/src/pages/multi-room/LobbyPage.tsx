@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useGameStore } from '@/stores/useGameStore';
 
 import { fetchQuestList, leaveMultiRoom } from '../../api/roomApi';
-import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
+import shootingStarWhite from '../../assets/images/try-catch-favicon.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
@@ -14,9 +14,12 @@ import { useLobbyStore } from '../../stores/useLobbyStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useStore } from '../../stores/useStore';
+import { createLogger } from '../../utils/logger';
 import { getFramework, getPosition } from '../../utils/participantUtils';
 import { useLobbyData } from './hooks/useLobbyData';
 import { useLobbySocket } from './hooks/useLobbySocket';
+
+const log = createLogger('[LobbyPage]');
 
 // * 초대코드(invitationCode) 초기화 로직
 // - location.state: 이전 페이지에서 navigate로 넘어온 경우 (최초 진입)
@@ -96,7 +99,7 @@ const LobbyPage = () => {
         const roomStore = useRoomStore.getState();
         roomStore.setQuestList(roomInfo.themeId, quests);
       } catch (err) {
-        console.error('퀘스트 목록 로드 실패:', err);
+        log.error('퀘스트 목록 로드 실패:', err);
       }
     };
 
@@ -125,7 +128,7 @@ const LobbyPage = () => {
   // 프론트: GAME_STARTED 수신 → 모든 참가자 자동으로 /story 이동
   const navigatingRef = useRef(false);
   useEffect(() => {
-    console.log('[LobbyPage] Navigation check:', {
+    log.log('[LobbyPage] Navigation check:', {
       gameStarted,
       roomInfo: !!roomInfo,
       firstQuestId,
@@ -135,7 +138,7 @@ const LobbyPage = () => {
     if (!gameStarted || !roomInfo || !firstQuestId || navigatingRef.current)
       return;
 
-    console.log('[LobbyPage] Starting navigation to /story');
+    log.log('[LobbyPage] Starting navigation to /story');
     navigatingRef.current = true;
     isNavigatingToGameRef.current = true;
 
@@ -209,7 +212,7 @@ const LobbyPage = () => {
       useGameStore.getState().setMode(null);
       navigate('/selection/theme');
     } catch (err) {
-      console.error('방 나가기 실패:', err);
+      log.error('방 나가기 실패:', err);
       isLeavingRef.current = false;
     }
   };
@@ -278,6 +281,7 @@ const LobbyPage = () => {
               src={shootingStarWhite}
               alt="Shooting Star"
               className="w-[28px]"
+              loading="lazy"
             />
             <span className="text-white text-[22px] font-semibold tracking-wide">
               Waiting Room · · ·

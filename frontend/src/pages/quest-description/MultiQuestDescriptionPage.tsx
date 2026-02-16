@@ -8,16 +8,27 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import api from '../../api/api';
 import {
   fetchMultiQuestDetail,
   type MultiQuestParticipant,
 } from '../../api/roomApi';
+import { fetchThemeImageUrl } from '../../api/themeApi';
 import QuestDescriptionBox from '../../components/quest/QuestDescriptionBox';
 import type { QuestReadyStatusData, StartQuestData } from '../../sockets/types';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useStore } from '../../stores/useStore';
+import { createLogger } from '../../utils/logger';
 import { useQuestSocket } from './hooks/useQuestSocket';
+
+const log = createLogger('[MultiQuestDescriptionPage');
+
+interface MultiQuestState {
+  questId: number;
+  questOrder: number;
+  title: string;
+  description: string;
+  participants: MultiQuestParticipant[];
+}
 
 const MultiQuestDescriptionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,21 +46,17 @@ const MultiQuestDescriptionPage: React.FC = () => {
   // state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [multiQuestId, setMultiQuestId] = useState<number | null>(null);
-  const [multiQuestOrder, setMultiQuestOrder] = useState<number>(1);
-  const [multiQuestTitle, setMultiQuestTitle] = useState('');
-  const [multiQuestDescription, setMultiQuestDescription] = useState('');
-  const [participants, setParticipants] = useState<MultiQuestParticipant[]>([]);
+  const [questData, setQuestData] = useState<MultiQuestState | null>(null);
   const [themeImageUrl, setLocalThemeImageUrl] = useState<string | null>(
     storeThemeImageUrl,
   );
   const navigatingRef = useRef(false);
 
-  // myReady는 participants에서 계산 (단일 출처 원칙)
   const myReady = useMemo(
     () =>
-      participants.find((p) => p.nickname === userNickname)?.isReady ?? false,
-    [participants, userNickname],
+      questData?.participants.find((p) => p.nickname === userNickname)
+        ?.isReady ?? false,
+    [questData?.participants, userNickname],
   );
 
   // 테마 아이디 없거나 currentRoomId 없으면 테마 페이지로
@@ -67,30 +74,16 @@ const MultiQuestDescriptionPage: React.FC = () => {
     }
   }, [themeId, currentRoomId, navigate]);
 
-  // themeImageUrl이 없으면 테마 목록에서 가져오기 (guest용 fallback)
   useEffect(() => {
     if (themeImageUrl || !themeId) return;
 
-    const fetchThemeImage = async () => {
-      try {
-        const { data } = await api.get('/themes');
-        const themes = data.result?.result;
-        if (Array.isArray(themes)) {
-          const theme = themes.find(
-            (t: { themeId: number; themeImageUrl?: string }) =>
-              t.themeId === themeId,
-          );
-          if (theme?.themeImageUrl) {
-            setLocalThemeImageUrl(theme.themeImageUrl);
-            setThemeImageUrl(theme.themeImageUrl);
-          }
-        }
-      } catch (err) {
-        console.error('테마 이미지 URL 로드 실패:', err);
+    (async () => {
+      const imageUrl = await fetchThemeImageUrl(themeId);
+      if (imageUrl) {
+        setLocalThemeImageUrl(imageUrl);
+        setThemeImageUrl(imageUrl);
       }
-    };
-
-    fetchThemeImage();
+    })();
   }, [themeId, themeImageUrl, setThemeImageUrl]);
 
   // 멀티 모드 API 받아오기
@@ -104,14 +97,15 @@ const MultiQuestDescriptionPage: React.FC = () => {
           currentRoomId,
           currentQuestId,
         );
-        setMultiQuestId(detail.quest.questId);
-        setMultiQuestOrder(detail.quest.questOrder);
-        setMultiQuestTitle(detail.quest.title);
-        setMultiQuestDescription(detail.quest.description);
-        // 서버에서 2명이 아니면 isReady를 false로 보내주므로 그대로 사용
-        setParticipants(detail.participants);
+        setQuestData({
+          questId: detail.quest.questId,
+          questOrder: detail.quest.questOrder,
+          title: detail.quest.title,
+          description: detail.quest.description,
+          participants: detail.participants,
+        });
       } catch (err) {
-        console.error('멀티 퀘스트 정보 로드 실패:', err);
+        log.error('멀티 퀘스트 정보 로드 실패:', err);
         setError('퀘스트 정보를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
@@ -121,47 +115,19 @@ const MultiQuestDescriptionPage: React.FC = () => {
     loadMultiQuest();
   }, [currentRoomId, currentQuestId, userNickname]);
 
-  // 웹소켓 callback : QUEST READY STATUS
-  // - participants를 role 기준으로 업데이트 (myReady는 useMemo로 자동 계산됨)
-  const onQuestReadyStatus = useCallback(
-    (data: QuestReadyStatusData) => {
-      console.log('[DEBUG] onQuestReadyStatus 호출됨');
-      console.log('[DEBUG] 서버 데이터:', JSON.stringify(data, null, 2));
-      console.log('[DEBUG] 현재 userNickname:', userNickname);
-
-      setParticipants((prev) => {
-        console.log(
-          '[DEBUG] 기존 participants:',
-          JSON.stringify(prev, null, 2),
-        );
-
-        const updated = prev.map((p) => {
-          // userId 대신 role로 비교하여 host/guest ready 상태 매핑
-          if (p.role === 'HOST') {
-            console.log(
-              `[DEBUG] HOST(${p.nickname}) isReady: ${data.host.isReady}`,
-            );
-            return { ...p, isReady: data.host.isReady };
-          }
-          if (p.role === 'GUEST') {
-            console.log(
-              `[DEBUG] GUEST(${p.nickname}) isReady: ${data.guest.isReady}`,
-            );
-            return { ...p, isReady: data.guest.isReady };
-          }
+  const onQuestReadyStatus = useCallback((data: QuestReadyStatusData) => {
+    setQuestData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        participants: prev.participants.map((p) => {
+          if (p.role === 'HOST') return { ...p, isReady: data.host.isReady };
+          if (p.role === 'GUEST') return { ...p, isReady: data.guest.isReady };
           return p;
-        });
-
-        console.log(
-          '[DEBUG] 업데이트된 participants:',
-          JSON.stringify(updated, null, 2),
-        );
-
-        return updated;
-      });
-    },
-    [userNickname],
-  );
+        }),
+      };
+    });
+  }, []);
 
   // 웹소켓 callback: START QUEST
   const onStartQuest = useCallback(
@@ -169,9 +135,7 @@ const MultiQuestDescriptionPage: React.FC = () => {
       if (navigatingRef.current) return;
       navigatingRef.current = true;
 
-      console.log(
-        '[MultiQuestDescriptionPage] START_QUEST received, navigating to game...',
-      );
+      log.log('START_QUEST received, navigating to game...');
       navigate(`/game/${data.roomId}/${data.questId}`);
     },
     [navigate],
@@ -187,8 +151,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
   const handleReady = () => {
     // 이미 ready면 다시 클릭 못하기 막기 (토글 방지)
     if (myReady) return;
-    if (multiQuestId != null) {
-      sendQuestReady(multiQuestId);
+    if (questData) {
+      sendQuestReady(questData.questId);
     }
   };
 
@@ -202,7 +166,8 @@ const MultiQuestDescriptionPage: React.FC = () => {
   }
 
   // 에러 처리
-  if (error || !multiQuestId) {
+  // - 에러 가드(!questData)를 통과한 이후이므로 questData는 non-null이 보장
+  if (error || !questData) {
     return (
       <div className="w-screen h-screen flex items-center justify-center">
         <div className="text-center">
@@ -233,12 +198,12 @@ const MultiQuestDescriptionPage: React.FC = () => {
       )}
       <div className="flex items-center justify-center z-10">
         <QuestDescriptionBox
-          questOrder={multiQuestOrder}
-          themeName={multiQuestTitle}
-          questDescription={multiQuestDescription}
+          questOrder={questData.questOrder}
+          themeName={questData.title}
+          questDescription={questData.description}
           onStart={() => {}}
           isMulti={true}
-          participants={participants}
+          participants={questData.participants}
           myReady={myReady}
           onReady={handleReady}
         />

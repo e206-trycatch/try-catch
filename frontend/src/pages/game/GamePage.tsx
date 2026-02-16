@@ -1,96 +1,94 @@
 import { Resizable } from 're-resizable';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import { getMultiQuest } from '@/api/multiQuestFile';
-import { getQuestStoriesInfo } from '@/api/questStories';
+import { saveCodeForShare } from '@/api/saveCodeForShare';
 import { getShareCode } from '@/api/shareCode';
+import { sendSocketMessage } from '@/sockets/stomp';
+import { useHintStore } from '@/stores/useHintStore';
+import { useStore } from '@/stores/useStore';
+import { useSubmissionStore } from '@/stores/useSubmissionStore';
 
-import { getGameSession } from '../../api/gameSession';
-import { getSingleTimer } from '../../api/getSingleTimer';
-import { getQuestFile } from '../../api/questFile';
-import { getRetryQuestFile } from '../../api/retryQuestFile';
-import { saveCodeForShare } from '../../api/saveCodeForShare';
-import { startMultiGameTimer } from '../../api/startMultiGameTimer';
-import { startSingleGameTimer } from '../../api/startSingleGameTimer';
-import {
-  connectStomp,
-  sendSocketMessage,
-  subscribeLobby,
-  subscribeRoom,
-} from '../../sockets/stomp';
-import type { CodeSavedMessage } from '../../sockets/types';
-import type {
-  HintErrorData,
-  HintMessageData,
-  HintQuestionData,
-} from '../../sockets/types';
-import { useGameStore } from '../../stores/useGameStore';
-import { useHintStore } from '../../stores/useHintStore';
-import { useRoomStore } from '../../stores/useRoomStore';
-import { useStore } from '../../stores/useStore';
-import { useSubmissionStore } from '../../stores/useSubmissionStore';
-import CodeEditor from './components/CodeEditor';
+import EditorPanel from './components/EditorPanel';
 import Explorer from './components/Explorer';
-import FileTabs from './components/FileTabs';
 import GameInfoBar from './components/GameInfoBar';
-import HintModal from './components/hint/HintModal';
+const HintModal = lazy(() => import('./components/hint/HintModal'));
 import MenuBar from './components/MenuBar';
 import SubmitBtn from './components/SubmitBtn';
 import Terminal from './components/Terminal';
 import TimeOverModal from './components/TimeOverModal';
+import SubmitConfirmToast from './components/toast/SubmitConfirmToast';
+import { gameToastStyle } from './components/toast/toastStyles';
+import { SUBMIT_TOAST_CLOSE } from './constants';
+import { useBackgroundImage } from './hooks/useBackgroundImage';
 import { useFile } from './hooks/useFile';
+import { useGameInit } from './hooks/useGameInit';
 import { useIde } from './hooks/useIde';
+import { useStompSubscription } from './hooks/useStompSubscription';
 import useTerminal from './hooks/useTerminal';
 import useTimer from './hooks/useTimer';
-import type { GameSessionResponse, SubmissionRequest } from './types/apiTypes';
-import type { CodeRole, QuestInfo } from './types/ideTypes';
+import type { SubmissionRequest } from './types/apiTypes';
 import type { FileNode } from './types/ideTypes';
-import { buildFilesRequestData } from './utils/codeSubmissionMapper';
+import { findFileIdByPath } from './utils/fileTreeUtils';
+import { resolveFramework } from './utils/frameworkUtils';
+import {
+  buildSubmissionPayload,
+  snapshotFileCodes,
+} from './utils/submissionUtils';
 
 export default function GamePage() {
-  const navigate = useNavigate();
   const { roomId, questId } = useParams<{ roomId: string; questId: string }>();
-  const [questInfo, setQuestInfo] = useState<QuestInfo | null>(null);
-  const [problemFrameworkId, setProblemFrameworkId] = useState<number | null>(
-    null,
-  );
-
-  const [gameSession, setGameSession] = useState<GameSessionResponse | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [openFileMenu, setOpenFileMenu] = useState(true);
-  const [backgroundImg, setBackgroundImg] = useState<string | null>(null);
-  const {
-    submissionId,
-    startTimer,
-    stopTimer,
-    expireTimer,
-    initializeForRoom,
-  } = useGameStore();
   const { setResult } = useSubmissionStore();
-  const mode = useGameStore((state) => state.mode);
   const currentNickname = useStore((state) => state.user?.nickname);
-  const [userRole, setUserRole] = useState<CodeRole>(null);
 
-  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 1
-  const findFileIdByPath = (
-    node: FileNode,
-    filePath: string,
-  ): string | null => {
-    if (node.type === 'file' && node.path === filePath) return node.id;
+  const backgroundImage = useBackgroundImage(questId);
+  const {
+    questInfo,
+    problemFrameworkId,
+    gameSession,
+    userRole,
+    loading,
+    error,
+    mode,
+  } = useGameInit(roomId, questId);
 
-    for (const child of node.children ?? []) {
-      const found = findFileIdByPath(child, filePath);
-      if (found) return found;
-    }
-    return null;
-  };
+  const { isExpired } = useTimer();
+  const { files } = useFile(questInfo);
+  const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
 
-  // 멀티 모드 - 코드 덮어씌우기를 위한 함수 2
+  // 힌트 모달 상태
+  const { isModalOpen, openModal, closeModal } = useHintStore();
+
+  const currentFramework = useMemo(
+    () => resolveFramework(questInfo),
+    [questInfo],
+  );
+
+  const rootNode = useMemo<FileNode>(
+    () => ({
+      id: 'root',
+      name: 'root',
+      type: 'folder' as const,
+      path: '/',
+      role: null,
+      children: files,
+    }),
+    [files],
+  );
+
+  const ide = useIde(rootNode);
+
+  // 멀티 모드 - 코드 덮어씌우기를 위한 함수
   const loadShareCode = async () => {
     if (!roomId || problemFrameworkId === null) return;
 
@@ -113,80 +111,9 @@ export default function GamePage() {
   };
 
   const loadShareCodeRef = useRef<() => Promise<void>>(undefined);
-  loadShareCodeRef.current = loadShareCode;
-
-  // 초기 게임 상태 설정
   useEffect(() => {
-    if (!roomId || !questId) return;
-    const mode = useGameStore.getState().mode;
-
-    const initSetting = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        let data = null;
-
-        if (submissionId === null) {
-          // 첫 진입 (재도전 아님)
-          data =
-            mode === 'MULTI'
-              ? await getMultiQuest(questId, roomId)
-              : await getQuestFile(questId, roomId);
-        } else if (submissionId) {
-          // 재도전: 이전 제출 코드 + 에러 로그 복원
-          data = await getRetryQuestFile(submissionId, roomId);
-        } else {
-          throw new Error('submissionId가 올바르지 않습니다.');
-        }
-
-        console.log(data.myPosition);
-        setUserRole(data.myPosition ?? null);
-        setProblemFrameworkId(data.problemFrameworkId);
-        setQuestInfo(data);
-      } catch (e) {
-        console.error('문제 정보 로드 실패:', e);
-        setError('문제 정보를 불러오지 못했습니다.');
-        return;
-      } finally {
-        setLoading(false);
-      }
-
-      if (mode === 'MULTI') {
-        try {
-          const session = await getGameSession(Number(roomId));
-          setGameSession(session);
-        } catch (e) {
-          console.error('멀티 세션 로드 실패:', e);
-        }
-      }
-      // 타이머 복원
-      try {
-        const timeData = await getSingleTimer(Number(roomId));
-
-        if (timeData.startedAt) {
-          // 기존 타이머가 있으면 복원 (새로고침 대응)
-          startTimer(timeData.deadlineAt);
-        } else if (mode === 'SINGLE') {
-          // 싱글: 화면 전환 후 3초 대기 → 타이머 시작
-          await new Promise((r) => setTimeout(r, 3000));
-          const newTimeData = await startSingleGameTimer(Number(roomId));
-          startTimer(newTimeData.deadlineAt);
-        }
-      } catch (e) {
-        console.error('타이머 조회 실패:', e);
-      }
-    };
-
-    initSetting();
-  }, [questId, roomId, submissionId, startTimer, mode]);
-
-  // 언마운트 시 타이머 정리
-  useEffect(() => {
-    return () => {
-      stopTimer();
-    };
-  }, [stopTimer]);
+    loadShareCodeRef.current = loadShareCode;
+  });
 
   // 새로고침 방지 경고
   useEffect(() => {
@@ -201,185 +128,24 @@ export default function GamePage() {
     };
   }, []);
 
-  // STOMP 구독 해제 함수 저장용 ref
-  const unsubscribeRoomRef = useRef<(() => void) | undefined>(undefined);
-  const unsubscribeLobbyRef = useRef<(() => void) | undefined>(undefined);
-
-  // STOMP 연결 및 게임 이벤트 구독 (멀티모드: 구독 후 ready 전송)
-  useEffect(() => {
-    if (!roomId) return;
-
-    const { addQuestion, addHintResponse, addError, reset } =
-      useHintStore.getState();
-    const { setGameState, currentLife } = useGameStore.getState();
-
-    // 방 변경 시 힌트 상태 초기화
-    reset();
-
-    const init = async () => {
-      const token = useStore.getState().accessToken;
-      if (token) await connectStomp(token);
-
-      // 게임 토픽 구독 및 해제 함수 저장
-      unsubscribeRoomRef.current = subscribeRoom(Number(roomId), (msg) => {
-        // 타이머 이벤트
-        if (msg.type === 'TIMER_STARTED') {
-          startTimer(msg.data.deadlineAt);
-        }
-        if (msg.type === 'TIME_OUT') {
-          expireTimer();
-        }
-
-        // 힌트 이벤트
-        if (msg.type === 'HINT_QUESTION') {
-          const data = msg.data as HintQuestionData;
-          addQuestion(data);
-          setGameState(currentLife, data.remainingHintCount);
-        }
-        if (msg.type === 'HINT_MESSAGE') {
-          const data = msg.data as HintMessageData;
-          addHintResponse(data);
-          setGameState(
-            useGameStore.getState().currentLife,
-            data.remainingHintCount,
-          );
-        }
-        if (msg.type === 'HINT_ERROR') {
-          const data = msg.data as HintErrorData;
-          addError(data);
-        }
-
-        if (msg.type === 'SUBMISSION_STARTED') {
-          navigate(`/result/loading/${roomId}`);
-        }
-      });
-
-      // 멀티모드 처리 (STOMP 구독 완료 후 ready 신호 전송)
-      if (mode === 'MULTI') {
-        // 타이머가 이미 시작된 경우(새로고침) ready 신호 재전송 방지
-        const timeData = await getSingleTimer(Number(roomId));
-        if (!timeData.startedAt) {
-          // 화면 전환 후 3초 대기 → ready 신호 전송
-          await new Promise((r) => setTimeout(r, 2000));
-          await startMultiGameTimer(Number(roomId));
-        }
-
-        // CODE_SAVED 구독 및 해제 함수 저장
-        const myNickname = useStore.getState().user?.nickname;
-        unsubscribeLobbyRef.current = subscribeLobby(Number(roomId), (msg) => {
-          if (msg.type === 'CODE_SAVED') {
-            const { nickname } = msg.data as CodeSavedMessage['data'];
-            if (nickname !== myNickname) {
-              const toastId = `share-code-${Date.now()}`;
-              toast.info(
-                <div className="flex flex-1 gap-5 items-center justify-between">
-                  <div>{nickname}님이 코드를 공유했습니다.</div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="flex justify-center items-center bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
-                      onClick={() => {
-                        loadShareCodeRef.current?.();
-                        toast.dismiss(toastId);
-                      }}
-                    >
-                      불러오기
-                    </button>
-                  </div>
-                </div>,
-                {
-                  toastId,
-                  position: 'top-left',
-                  autoClose: false,
-                  hideProgressBar: true,
-                  closeButton: false,
-                  icon: false,
-                  style: {
-                    zIndex: 99999,
-                    width: '380px',
-                    backgroundColor: '#2d0a0a',
-                    border: '1px solid #dc2626',
-                    color: '#fff',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    paddingRight: 20,
-                    paddingLeft: 20,
-                    marginTop: '100px',
-                    marginLeft: '60px',
-                  },
-                },
-              );
-            }
-          }
-        });
-      }
-    };
-
-    init();
-
-    return () => {
-      // 저장된 unsub 함수로 구독 해제
-      unsubscribeRoomRef.current?.();
-      unsubscribeLobbyRef.current?.();
-    };
-  }, [roomId, mode, startTimer, expireTimer, navigate]);
-
-  // 초기 게임 상태 설정 - 목숨/힌트 수
-  useEffect(() => {
-    const { draft } = useRoomStore.getState();
-    const { currentRoomId } = useGameStore.getState();
-
-    if (!draft) {
-      setError('유효하지 않은 접근입니다. 처음부터 시작해주세요.');
-      return;
-    }
-
-    // 새 방 진입 시에만 draft에서 초기화 (실패 후 재도전 시에는 현재 값 유지)
-    if (currentRoomId !== Number(roomId)) {
-      initializeForRoom(Number(roomId), draft.life, draft.hints);
-    }
-  }, [roomId, initializeForRoom]);
-
-  // 배경 이미지
-  useEffect(() => {
-    if (!questId) return;
-
-    const getQuestStories = async () => {
-      try {
-        const data = await getQuestStoriesInfo(questId);
-        const lastImage = data.at(-1)?.imageUrl;
-        setBackgroundImg(lastImage ?? '');
-      } catch (error) {
-        console.error('퀘스트 스토리 배경 이미지 로드 실패:', error);
-        setBackgroundImg('');
-      }
-    };
-
-    getQuestStories();
-  }, [questId]);
+  useStompSubscription(roomId, mode, loadShareCodeRef);
 
   // 코드 저장 버튼을 눌렀을 때 실행되는 함수
   const saveCode = async () => {
     if (!roomId) return;
 
-    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
-    if (ide.activeFileId) {
-      allFileCodes[ide.activeFileId] = ide.currentCode;
-    }
+    const allFileCodes = snapshotFileCodes(
+      ide.fileCodes,
+      ide.activeFileId,
+      ide.currentCode,
+    );
 
-    const files = [
-      ...buildFilesRequestData({
-        node: rootNode,
-        fileCodes: allFileCodes,
-        role: 'FRONTEND',
-      }),
-      ...buildFilesRequestData({
-        node: rootNode,
-        fileCodes: allFileCodes,
-        role: 'BACKEND',
-      }),
-    ];
+    const { frontend, backend } = buildSubmissionPayload(
+      rootNode,
+      allFileCodes,
+    );
+
+    const files = [...frontend.files, ...backend.files];
 
     try {
       await saveCodeForShare(Number(roomId), {
@@ -394,32 +160,22 @@ export default function GamePage() {
 
   // 실제 제출 로직
   const submitCode = () => {
-    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+    const allFileCodes = snapshotFileCodes(
+      ide.fileCodes,
+      ide.activeFileId,
+      ide.currentCode,
+      ide.openTabs,
+    );
 
-    if (ide.activeFileId) {
-      allFileCodes[ide.activeFileId] = ide.currentCode;
-    }
-
-    ide.openTabs.forEach((f) => {
-      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
-    });
+    const { frontend, backend } = buildSubmissionPayload(
+      rootNode,
+      allFileCodes,
+    );
 
     const requestBody: SubmissionRequest = {
-      problemFrameworkId: problemFrameworkId,
-      frontend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'FRONTEND',
-        }),
-      },
-      backend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'BACKEND',
-        }),
-      },
+      problemFrameworkId,
+      frontend,
+      backend,
     };
 
     setResult(requestBody);
@@ -431,46 +187,16 @@ export default function GamePage() {
   const submitCodeHandler = () => {
     const toastId = `submit-confirm-${Date.now()}`;
     toast.info(
-      <div className="flex flex-1 gap-5 items-center justify-between">
-        <div>정말 제출하시겠습니까?</div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="flex justify-center items-center bg-red-600 text-white px-4 py-[7px] rounded text-sm hover:bg-red-700"
-            onClick={() => {
-              toast.dismiss(toastId);
-              submitCode();
-            }}
-          >
-            제출
-          </button>
-          <button
-            type="button"
-            className="flex justify-center items-center bg-red-900/50 text-red-200 px-4 py-[7px] rounded text-sm hover:bg-red-900/70 border border-red-700"
-            onClick={() => toast.dismiss(toastId)}
-          >
-            취소
-          </button>
-        </div>
-      </div>,
+      <SubmitConfirmToast toastId={toastId} onConfirm={submitCode} />,
       {
         toastId,
         position: 'top-right',
-        autoClose: 3500,
+        autoClose: SUBMIT_TOAST_CLOSE,
         hideProgressBar: true,
         closeButton: false,
         icon: false,
         style: {
-          zIndex: 99999,
-          width: '380px',
-          backgroundColor: '#2d0a0a',
-          border: '1px solid #dc2626',
-          color: '#fff',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: 500,
-          paddingRight: 20,
-          paddingLeft: 20,
+          ...gameToastStyle,
           marginTop: '120px',
           marginRight: '60px',
         },
@@ -478,109 +204,16 @@ export default function GamePage() {
     );
   };
 
-  useEffect(() => {
-    if (!roomId) return;
-
-    const unsub = subscribeLobby(Number(roomId), (msg) => {
-      if (msg.type === 'SUBMISSION_STARTED') {
-        navigate(`/result/loading/${roomId}`);
-      }
-    });
-
-    return () => unsub?.(); // 구독 정리
-  }, [roomId, navigate]);
-
-  const { isExpired } = useTimer();
-  const { files } = useFile(questInfo);
-  const { frontendErrorLog, backendErrorLog } = useTerminal(questInfo);
-
-  // 힌트 모달 상태
-  const { isModalOpen, openModal, closeModal } = useHintStore();
-
-  // 현재 사용 중인 framework 이름 가져오기
-  const currentFramework = useMemo(() => {
-    // 1. API 응답에 framework가 있으면 바로 사용 (멀티모드, 재도전)
-    if (questInfo?.framework) {
-      return questInfo.framework;
-    }
-
-    // 2. framework가 없으면 기존 로직으로 폴백 (싱글 첫 진입, 싱글 풀스택)
-    const { draft, availableFrameworks } = useRoomStore.getState();
-    const { selectedFrameworkId, frontendId, backendId, position } = draft;
-    const mode = useGameStore.getState().mode;
-
-    // FULLSTACK 모드인 경우 'fullstack' 반환
-    if (mode === 'SINGLE' && position === 'FULLSTACK') {
-      return 'fullstack';
-    }
-
-    // 싱글 모드 첫 진입의 경우 availableFrameworks에서 찾기
-    if (mode === 'SINGLE') {
-      const frameworkId = selectedFrameworkId || frontendId || backendId;
-      if (!frameworkId || !availableFrameworks) return '';
-
-      const allFrameworks = [
-        ...(availableFrameworks.FRONTEND || []),
-        ...(availableFrameworks.BACKEND || []),
-        ...(availableFrameworks.FULLSTACK || []),
-      ];
-      const found = allFrameworks.find((f) => f.id === frameworkId);
-      if (!found) return '';
-
-      const name = found.name.toLowerCase();
-      if (name.includes('spring')) return 'spring';
-      if (name.includes('django')) return 'django';
-      if (name.includes('vue')) return 'vue';
-      if (name.includes('react')) return 'react';
-      return name;
-    }
-
-    // 멀티모드인데 framework가 없는 경우 (이론상 발생하지 않음)
-    return '';
-  }, [questInfo?.framework]);
-
-  const rootNode = useMemo<FileNode>(
-    () => ({
-      id: 'root',
-      name: 'root',
-      type: 'folder' as const, // 값을 리터럴 타입으로 고정해서 타입이 넓어지는 걸 막는 문법
-      path: '/',
-      role: null,
-      children: files,
-    }),
-    [files], // files 값이 바뀔 때마다 실행하기
-  );
-
-  const ide = useIde(rootNode);
-
   // 힌트 요청 시 현재 코드 스냅샷 생성
   const getSubmissionData = useCallback(() => {
-    const allFileCodes: Record<string, string> = { ...ide.fileCodes };
+    const allFileCodes = snapshotFileCodes(
+      ide.fileCodes,
+      ide.activeFileId,
+      ide.currentCode,
+      ide.openTabs,
+    );
 
-    if (ide.activeFileId) {
-      allFileCodes[ide.activeFileId] = ide.currentCode;
-    }
-
-    ide.openTabs.forEach((f) => {
-      allFileCodes[f.id] = allFileCodes[f.id] ?? f.code ?? '';
-    });
-
-    return {
-      frontend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'FRONTEND',
-        }),
-      },
-      backend: {
-        files: buildFilesRequestData({
-          node: rootNode,
-          fileCodes: allFileCodes,
-          role: 'BACKEND',
-        }),
-      },
-    };
+    return buildSubmissionPayload(rootNode, allFileCodes);
   }, [
     ide.fileCodes,
     ide.activeFileId,
@@ -601,17 +234,19 @@ export default function GamePage() {
     <>
       {isExpired && <TimeOverModal />}
       {isModalOpen && problemFrameworkId && questInfo && (
-        <HintModal
-          roomId={Number(roomId)}
-          problemFrameworkId={problemFrameworkId}
-          framework={currentFramework}
-          getSubmissionData={getSubmissionData}
-          onClose={closeModal}
-        />
+        <Suspense fallback={null}>
+          <HintModal
+            roomId={Number(roomId)}
+            problemFrameworkId={problemFrameworkId}
+            framework={currentFramework}
+            getSubmissionData={getSubmissionData}
+            onClose={closeModal}
+          />
+        </Suspense>
       )}
       <div
         className="w-full h-screen flex flex-col px-20 pt-[80px] pb-[40px] bg-cover bg-center"
-        style={{ backgroundImage: `url(${backgroundImg})` }}
+        style={{ backgroundImage: `url(${backgroundImage})` }}
       >
         <div className="flex w-full h-[45px] gap-[48px] mb-[5px] shrink-0">
           <GameInfoBar gameSession={gameSession} />
@@ -659,7 +294,7 @@ export default function GamePage() {
                         onToggleFolder={ide.toggleFolder}
                         onOpenFile={ide.openFile}
                         activeFileId={
-                          ide.isSplit && ide.focusedPane === 'secondary'
+                          ide.isSplit && ide.focusedPanel === 'secondary'
                             ? ide.secondaryActiveFileId
                             : ide.activeFileId
                         }
@@ -668,79 +303,37 @@ export default function GamePage() {
                   </div>
                 </Resizable>
               )}
-
               <div className="flex flex-1 min-w-0 min-h-0">
-                <div
-                  className={`flex flex-col flex-1 min-w-0 min-h-0 ${
-                    // 스플릿 모드에서 이 패널이 포커스되면 상단 테두리 표시
-                    ide.isSplit && ide.focusedPane === 'primary'
-                      ? 'border-t-2 border-amber-300'
-                      : ''
-                  }`}
-                  // 패널 영역 클릭 시 이 패널을 포커스 상태로 변경
-                  onMouseDown={() => ide.setFocusedPane('primary')}
-                >
-                  {/* 탭 영역: 열린 파일들을 탭으로 표시 */}
-                  <FileTabs
-                    openTabs={ide.openTabs}
-                    activeFileId={ide.activeFileId}
-                    // 탭 클릭/닫기 시 'primary' 파라미터로 어떤 패널인지 구분
-                    onSelectTab={(fileId) => ide.selectTab(fileId, 'primary')}
-                    onCloseTab={(fileId) => ide.closeTab(fileId, 'primary')}
-                  />
-                  {/* 에디터 영역 */}
-                  <div
-                    className={`flex-1 min-h-0 ${
-                      // 파일이 열려있으면 투명 배경, 없으면 반투명 배경
-                      ide.activeFile ? 'bg-[#1E1E1E00]' : 'bg-[#1E1E1EE6]'
-                    }`}
-                  >
-                    <CodeEditor
-                      activeFile={ide.activeFile}
-                      code={ide.currentCode}
-                      onChange={ide.setCurrentCode}
-                      userRole={userRole}
-                    />
-                  </div>
-                </div>
+                <EditorPanel
+                  openTabs={ide.openTabs}
+                  activeFileId={ide.activeFileId}
+                  activeFile={ide.activeFile}
+                  code={ide.currentCode}
+                  isFocused={ide.isSplit && ide.focusedPanel === 'primary'}
+                  userRole={userRole}
+                  onSelectTab={(fileId) => ide.selectTab(fileId, 'primary')}
+                  onCloseTab={(fileId) => ide.closeTab(fileId, 'primary')}
+                  onChange={ide.setCurrentCode}
+                  onFocus={() => ide.setFocusedPanel('primary')}
+                />
 
                 {ide.isSplit && (
                   <>
-                    {/* 패널 구분선 */}
                     <div className="w-[1px] bg-gray-700" />
-                    <div
-                      className={`flex flex-col flex-1 min-w-0 min-h-0 ${
-                        ide.focusedPane === 'secondary'
-                          ? 'border-t-2 border-amber-300'
-                          : ''
-                      }`}
-                      onMouseDown={() => ide.setFocusedPane('secondary')}
-                    >
-                      <FileTabs
-                        openTabs={ide.secondaryOpenTabs}
-                        activeFileId={ide.secondaryActiveFileId}
-                        onSelectTab={(fileId) =>
-                          ide.selectTab(fileId, 'secondary')
-                        }
-                        onCloseTab={(fileId) =>
-                          ide.closeTab(fileId, 'secondary')
-                        }
-                      />
-                      <div
-                        className={`flex-1 min-h-0 ${
-                          ide.secondaryActiveFile
-                            ? 'bg-[#1E1E1E00]'
-                            : 'bg-[#1E1E1EE6]'
-                        }`}
-                      >
-                        <CodeEditor
-                          activeFile={ide.secondaryActiveFile}
-                          code={ide.secondaryCurrentCode}
-                          onChange={ide.setSecondaryCurrentCode}
-                          userRole={userRole}
-                        />
-                      </div>
-                    </div>
+                    <EditorPanel
+                      openTabs={ide.secondaryOpenTabs}
+                      activeFileId={ide.secondaryActiveFileId}
+                      activeFile={ide.secondaryActiveFile}
+                      code={ide.secondaryCurrentCode}
+                      isFocused={ide.focusedPanel === 'secondary'}
+                      userRole={userRole}
+                      onSelectTab={(fileId) =>
+                        ide.selectTab(fileId, 'secondary')
+                      }
+                      onCloseTab={(fileId) => ide.closeTab(fileId, 'secondary')}
+                      onChange={ide.setSecondaryCurrentCode}
+                      onFocus={() => ide.setFocusedPanel('secondary')}
+                    />
                   </>
                 )}
               </div>

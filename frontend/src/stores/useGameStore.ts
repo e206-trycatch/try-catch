@@ -8,7 +8,6 @@ interface GameState {
   currentLife: number;
   currentHints: number;
   currentRoomId: number | null;
-  problemFrameworkId: number | null;
   submissionId: string | null;
   deadlineAt: string | null;
   remainingSeconds: number;
@@ -16,11 +15,8 @@ interface GameState {
   setMode: (mode: GameMode) => void;
   setGameState: (life: number, hints: number) => void;
   initializeForRoom: (roomId: number, life: number, hints: number) => void;
-  setProblemFrameworkId: (id: number | null) => void;
   setSubmissionId: (id: number | null) => void;
   resetSubmissionId: () => void;
-  setDeadlineAt: (deadline: string) => void;
-  clearDeadLineAt: () => void;
   startTimer: (deadlineAt: string) => void;
   stopTimer: () => void;
   expireTimer: () => void;
@@ -30,12 +26,11 @@ let intervalId: number | null = null;
 
 export const useGameStore = create<GameState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       mode: null,
       currentLife: 3,
       currentHints: 3,
       currentRoomId: null,
-      problemFrameworkId: null,
       submissionId: null,
       deadlineAt: null,
       remainingSeconds: 0,
@@ -55,11 +50,6 @@ export const useGameStore = create<GameState>()(
           currentHints: hints,
         }),
 
-      setProblemFrameworkId: (id) =>
-        set({
-          problemFrameworkId: id,
-        }),
-
       setSubmissionId: (id) =>
         set({
           submissionId: id ? String(id) : null,
@@ -68,16 +58,6 @@ export const useGameStore = create<GameState>()(
       resetSubmissionId: () =>
         set({
           submissionId: null,
-        }),
-
-      setDeadlineAt: (deadline) =>
-        set({
-          deadlineAt: deadline,
-        }),
-
-      clearDeadLineAt: () =>
-        set({
-          deadlineAt: null,
         }),
 
       startTimer: (deadlineAt) => {
@@ -96,7 +76,6 @@ export const useGameStore = create<GameState>()(
           set({ remainingSeconds: sec });
 
           if (sec <= 0 && intervalId) {
-            console.log('time over');
             clearInterval(intervalId);
             intervalId = null;
           }
@@ -105,17 +84,13 @@ export const useGameStore = create<GameState>()(
 
       stopTimer: () => {
         if (intervalId) {
-          console.log('stop!');
           clearInterval(intervalId);
           intervalId = null;
         }
       },
 
       expireTimer: () => {
-        if (intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
+        get().stopTimer();
         set({ remainingSeconds: 0 });
       },
     }),

@@ -8,6 +8,7 @@ import io.ssafy.trycatch.domain.submission.dto.response.ScoreResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -24,6 +25,12 @@ public class GptScoringService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+
+    @Value("${scoring.mock-enabled}")
+    private boolean mockEnabled;
+
+    @Value("${scoring.mock-delay-ms}")
+    private long mockDelay;
 
     @Value("${gpt.api.url}")
     private String gptApiUrl;
@@ -46,6 +53,11 @@ public class GptScoringService {
             String expectedLanguage,
             Room room,
             LocalDateTime submittedAt) {
+
+        if (mockEnabled) {
+            return mockScore(room, submittedAt, roleName);
+        }
+
         try {
             String prompt = buildQualityPrompt(
                     problemDoc,
@@ -66,6 +78,25 @@ public class GptScoringService {
                     .executionTime(calculateExecutionTime(room, submittedAt))
                     .build();
         }
+    }
+
+    private ScoreResult mockScore(Room room, LocalDateTime submittedAt, String role) {
+        try {
+            Thread.sleep(mockDelay + (long)(Math.random() * 1000));
+            log.info("[MockScoring] {} 채점 완료", role);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        boolean success = Math.random() > 0.2;
+        return ScoreResult.builder()
+                .success(success)
+                .score(success ? 80 : 0)
+                .errorLog(success ? "" : "Mock 실패")
+                .frontendErrorLog("")
+                .backendErrorLog("")
+                .executionTime(calculateExecutionTime(room, submittedAt))
+                .build();
     }
 
     private long calculateExecutionTime(Room room, LocalDateTime submittedAt) {

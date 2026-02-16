@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import defaultProfile from '../../assets/images/icons/default_profile.png';
+import defaultProfile from '../../assets/images/icons/default_profile.webp';
 
 interface LoggedInMenuProps {
   userName?: string;
@@ -25,6 +25,7 @@ const LoggedInMenu = ({
         onError={(e) => {
           e.currentTarget.src = defaultProfile;
         }}
+        loading="lazy"
       />
       <span className="font-medium">{userName} 님</span>
     </Link>

@@ -13,7 +13,13 @@ export default function SubmitBtn({ onClick }: SubmitBtnProps) {
     >
       <span>제출</span>
       <span>
-        <img src={SubmitBtnIcon} alt="제출" className="w-8" />
+        <img
+          src={SubmitBtnIcon}
+          alt="제출"
+          width={32}
+          height={32}
+          className="w-8"
+        />
       </span>
     </button>
   );

@@ -1,99 +1,81 @@
-// src/stores/useRoomStore.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+// ! src/stores/useRoomStore.ts
+// * Facade pattern
+// - 기존 API 유지하면서 내부는 분리된 stores 사용
+import { useMemo } from 'react';
 
-import type { CreateMultiRoomRequest, QuestDetail } from '../api/roomApi';
+import type { QuestDetail } from '../api/roomApi';
+import {
+  buildCreatePayload,
+  buildMultiRoomPayload,
+  validateDraft,
+} from './room/roomUtils';
+import { useQuestCacheStore } from './room/useQuestCacheStore';
+import { useRoomDraftStore } from './room/useRoomDraftStore';
+import { useRoomMetaStore } from './room/useRoomMetaStore';
 
-export type GameMode = 'SINGLE' | 'MULTI';
+// Re-export types for backward compatibility
+export type {
+  AvailableFrameworks,
+  CreateRoomRequest,
+  FrameworkItem,
+  GameMode,
+  Position,
+  RoomDraft,
+} from './room/types';
+
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
 
-export type Position = 'FRONTEND' | 'BACKEND' | 'FULLSTACK';
-
-export interface FrameworkItem {
-  id: number;
-  name: string;
-}
-
-export interface AvailableFrameworks {
-  FRONTEND: FrameworkItem[];
-  BACKEND: FrameworkItem[];
-  FULLSTACK: FrameworkItem[];
-}
-
-export interface RoomDraft {
-  // 아직 선택 전이면 null 가능
-  mode: GameMode | null;
-  themeId: number | null;
-
-  // 상세 추가 설정
-  roomName: string;
-
-  // 싱글 설정용
-  position: Position | null;
-  selectedFrameworkId: number | null; // FULL-STACK에서는 사용 X
-
-  // 서버 요청용 (ERD 반영: FE/BE 분리)
-  // - FULL-STACK인 경우 둘 다 선택 가능
-  frontendId: number | null;
-  backendId: number | null;
-
-  // 게임 룰(목숨 3개, 힌트 3개)
-  life: number; // default 3
-  hints: number; // default 3
-
-  // 멀티 모드 설정용
-  hostPosition: Position | null; // FRONTEND or BACKEND only
-  hostFrameworkId: number | null;
-  guestPosition: Position | null; // FRONTEND or BACKEND only
-  guestFrameworkId: number | null;
-}
-
-export interface CreateRoomRequest {
-  themeId: number;
-  position: string;
-  frontId: number | null;
-  backId: number | null;
-}
-
+// Facade interface - 기존 API 완전 호환
 interface RoomCreationState {
-  draft: RoomDraft;
+  // Getters (computed)
+  draft: ReturnType<typeof useRoomDraftStore.getState>['draft'];
   currentRoomId: number | null;
   currentQuestId: number | null;
 
-  // 퀘스트 목록 캐싱
   questList: QuestDetail[] | null;
   questListThemeId: number | null;
+
+  themeName: string | null;
+  themeImageUrl: string | null;
+  availableFrameworks: ReturnType<
+    typeof useRoomMetaStore.getState
+  >['availableFrameworks'];
+
+  // Quest actions
   setQuestList: (themeId: number, list: QuestDetail[]) => void;
   clearQuestList: () => void;
 
-  // 서버에서 받아오는 데이터 저장
-  themeName: string | null;
-  themeImageUrl: string | null;
-  availableFrameworks: AvailableFrameworks | null;
+  // Meta actions
   setThemeName: (name: string) => void;
   setThemeImageUrl: (url: string | null) => void;
-  setAvailableFrameworks: (data: AvailableFrameworks) => void;
+  setAvailableFrameworks: (
+    data: NonNullable<
+      ReturnType<typeof useRoomMetaStore.getState>['availableFrameworks']
+    >,
+  ) => void;
   clearAvailableFrameworks: () => void;
   setRoomId: (id: number | string) => void;
   setCurrentQuestId: (id: number | null) => void;
 
-  // 동작
-  setMode: (mode: GameMode) => void;
+  // Draft actions
+  setMode: (
+    mode: ReturnType<typeof useRoomDraftStore.getState>['draft']['mode'],
+  ) => void;
   setThemeId: (themeId: number) => void;
-
   setRoomName: (name: string) => void;
 
-  // 싱글 설정용 액션
-  setPosition: (position: Position) => void;
+  setPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['position']
+    >,
+  ) => void;
   setSelectedFrameworkId: (frameworkId: number | null) => void;
 
-  // FULLSTACK용 프레임워크 설정 액션
   setFullstackFrameworks: (
     frontendId: number | null,
     backendId: number | null,
   ) => void;
 
-  // (직접 id 세팅이 필요한 경우 대비 - 유지)
   setFrameworkIds: (ids: {
     frontendId?: number | null;
     backendId?: number | null;
@@ -102,410 +84,241 @@ interface RoomCreationState {
   setLife: (life: number) => void;
   setHints: (count: number) => void;
 
-  // 멀티 모드 설정용 액션
-  setHostPosition: (position: Position) => void;
+  setHostPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['hostPosition']
+    >,
+  ) => void;
   setHostFrameworkId: (frameworkId: number | null) => void;
-  setGuestPosition: (position: Position) => void;
+  setGuestPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['guestPosition']
+    >,
+  ) => void;
   setGuestFrameworkId: (frameworkId: number | null) => void;
 
-  // 유효성 검사 및 payload 생성
-  validateDraft: () => { ok: true } | { ok: false; errors: string[] };
-  buildCreatePayload: () => CreateRoomRequest | null;
-  buildMultiRoomPayload: () => CreateMultiRoomRequest | null;
+  // Validation & payload builders
+  validateDraft: () => ReturnType<typeof validateDraft>;
+  buildCreatePayload: () => ReturnType<typeof buildCreatePayload>;
+  buildMultiRoomPayload: () => ReturnType<typeof buildMultiRoomPayload>;
 
-  // 초기화
+  // Reset
   resetRoomCreation: () => void;
 }
 
-const DEFAULT_DRAFT: RoomDraft = {
-  mode: null,
-  themeId: null,
-
-  roomName: '',
-
-  position: null,
-  selectedFrameworkId: null,
-
-  frontendId: null,
-  backendId: null,
-
-  life: 3,
-  hints: 3,
-
-  hostPosition: null,
-  hostFrameworkId: null,
-  guestPosition: null,
-  guestFrameworkId: null,
-};
-
+// Helper to pick first framework
 const pickFirstFrameworkId = (
-  list: FrameworkItem[] | undefined,
+  list:
+    | NonNullable<
+        ReturnType<typeof useRoomMetaStore.getState>['availableFrameworks']
+      >['FRONTEND']
+    | undefined,
 ): number | null => {
   if (!list || list.length === 0) return null;
   return list[0].id;
 };
 
-export const useRoomStore = create<RoomCreationState>()(
-  persist(
-    (set, get) => ({
-      draft: DEFAULT_DRAFT,
-      currentRoomId: null,
-      currentQuestId: null,
+// Actions (한 번만 생성, 재사용)
+const actions = {
+  get setQuestList() {
+    return useQuestCacheStore.getState().setQuestList;
+  },
+  get clearQuestList() {
+    return useQuestCacheStore.getState().clearQuestList;
+  },
+  get setThemeName() {
+    return useRoomMetaStore.getState().setThemeName;
+  },
+  get setThemeImageUrl() {
+    return useRoomMetaStore.getState().setThemeImageUrl;
+  },
+  setAvailableFrameworks: (
+    data: NonNullable<
+      ReturnType<typeof useRoomMetaStore.getState>['availableFrameworks']
+    >,
+  ) => {
+    const draftState = useRoomDraftStore.getState();
+    const currentPosition = draftState.draft.position;
 
-      questList: null,
-      questListThemeId: null,
-      setQuestList: (themeId, list) =>
-        set({ questList: list, questListThemeId: themeId }),
-      clearQuestList: () => set({ questList: null, questListThemeId: null }),
+    if (currentPosition && currentPosition !== 'FULLSTACK') {
+      const firstId = pickFirstFrameworkId(
+        data[currentPosition === 'FRONTEND' ? 'FRONTEND' : 'BACKEND'],
+      );
+      const nextSelected = draftState.draft.selectedFrameworkId ?? firstId;
 
-      themeName: null,
-      themeImageUrl: null,
-      availableFrameworks: null,
+      useRoomDraftStore.setState((s) => ({
+        draft: {
+          ...s.draft,
+          selectedFrameworkId: nextSelected,
+          frontendId: currentPosition === 'FRONTEND' ? nextSelected : null,
+          backendId: currentPosition === 'BACKEND' ? nextSelected : null,
+        },
+      }));
+    }
 
-      setThemeName: (name) => set({ themeName: name }),
-      setThemeImageUrl: (url) => set({ themeImageUrl: url }),
+    useRoomMetaStore.getState().setAvailableFrameworks(data);
+  },
+  get clearAvailableFrameworks() {
+    return useRoomMetaStore.getState().clearAvailableFrameworks;
+  },
+  get setRoomId() {
+    return useRoomDraftStore.getState().setRoomId;
+  },
+  get setCurrentQuestId() {
+    return useRoomDraftStore.getState().setCurrentQuestId;
+  },
+  get setMode() {
+    return useRoomDraftStore.getState().setMode;
+  },
+  get setThemeId() {
+    return useRoomDraftStore.getState().setThemeId;
+  },
+  get setRoomName() {
+    return useRoomDraftStore.getState().setRoomName;
+  },
+  setPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['position']
+    >,
+  ) => {
+    const metaState = useRoomMetaStore.getState();
+    useRoomDraftStore
+      .getState()
+      .setPosition(position, metaState.availableFrameworks);
+  },
+  get setSelectedFrameworkId() {
+    return useRoomDraftStore.getState().setSelectedFrameworkId;
+  },
+  get setFullstackFrameworks() {
+    return useRoomDraftStore.getState().setFullstackFrameworks;
+  },
+  get setFrameworkIds() {
+    return useRoomDraftStore.getState().setFrameworkIds;
+  },
+  get setLife() {
+    return useRoomDraftStore.getState().setLife;
+  },
+  get setHints() {
+    return useRoomDraftStore.getState().setHints;
+  },
+  setHostPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['hostPosition']
+    >,
+  ) => {
+    const metaState = useRoomMetaStore.getState();
+    useRoomDraftStore
+      .getState()
+      .setHostPosition(position, metaState.availableFrameworks);
+  },
+  get setHostFrameworkId() {
+    return useRoomDraftStore.getState().setHostFrameworkId;
+  },
+  setGuestPosition: (
+    position: NonNullable<
+      ReturnType<typeof useRoomDraftStore.getState>['draft']['guestPosition']
+    >,
+  ) => {
+    const metaState = useRoomMetaStore.getState();
+    useRoomDraftStore
+      .getState()
+      .setGuestPosition(position, metaState.availableFrameworks);
+  },
+  get setGuestFrameworkId() {
+    return useRoomDraftStore.getState().setGuestFrameworkId;
+  },
+  validateDraft: () => {
+    return validateDraft(useRoomDraftStore.getState().draft);
+  },
+  buildCreatePayload: () => {
+    return buildCreatePayload(useRoomDraftStore.getState().draft);
+  },
+  buildMultiRoomPayload: () => {
+    return buildMultiRoomPayload(useRoomDraftStore.getState().draft);
+  },
+  resetRoomCreation: () => {
+    useRoomDraftStore.getState().resetDraft();
+    useRoomMetaStore.getState().resetMeta();
+    useQuestCacheStore.getState().clearQuestList();
+  },
+};
 
-      setAvailableFrameworks: (data) =>
-        set((s) => {
-          // 이미 포지션이 선택돼 있으면, 그 포지션의 첫 framework로 기본 선택해줄 수도 있음(UX)
-          const currentPosition = s.draft.position;
+/**
+ * Facade Store - 기존 useRoomStore API 완전 유지
+ * 내부적으로는 분리된 stores 사용
+ */
+const getState = (): RoomCreationState => {
+  const draftStore = useRoomDraftStore.getState();
+  const metaStore = useRoomMetaStore.getState();
+  const questStore = useQuestCacheStore.getState();
 
-          if (!currentPosition) {
-            return { availableFrameworks: data };
-          }
+  return {
+    // Getters
+    draft: draftStore.draft,
+    currentRoomId: draftStore.currentRoomId,
+    currentQuestId: draftStore.currentQuestId,
 
-          const firstId =
-            currentPosition === 'FRONTEND'
-              ? pickFirstFrameworkId(data.FRONTEND)
-              : pickFirstFrameworkId(data.BACKEND);
+    questList: questStore.questList,
+    questListThemeId: questStore.questListThemeId,
 
-          // 선택값이 없을 때만 자동 세팅(사용자가 이미 고른 경우 존중)
-          const nextSelected = s.draft.selectedFrameworkId ?? firstId;
+    themeName: metaStore.themeName,
+    themeImageUrl: metaStore.themeImageUrl,
+    availableFrameworks: metaStore.availableFrameworks,
 
-          // position에 따라 frontendId/backendId 반영
-          const nextDraft =
-            currentPosition === 'FRONTEND'
-              ? {
-                  ...s.draft,
-                  selectedFrameworkId: nextSelected,
-                  frontendId: nextSelected,
-                  backendId: null,
-                }
-              : {
-                  ...s.draft,
-                  selectedFrameworkId: nextSelected,
-                  backendId: nextSelected,
-                  frontendId: null,
-                };
+    // Actions (재사용)
+    ...actions,
+  };
+};
 
-          return {
-            availableFrameworks: data,
-            draft: nextDraft,
-          };
-        }),
+// Hook wrapper (selector pattern) - selector를 통한 부분 구독만 지원
+function useRoomStoreHook<T>(selector: (state: RoomCreationState) => T): T;
+function useRoomStoreHook(): RoomCreationState;
+function useRoomStoreHook<T = RoomCreationState>(
+  selector?: (state: RoomCreationState) => T,
+): T {
+  // Subscribe to individual stores for reactivity (state만)
+  const draft = useRoomDraftStore((s) => s.draft);
+  const currentRoomId = useRoomDraftStore((s) => s.currentRoomId);
+  const currentQuestId = useRoomDraftStore((s) => s.currentQuestId);
 
-      clearAvailableFrameworks: () => set({ availableFrameworks: null }),
+  const questList = useQuestCacheStore((s) => s.questList);
+  const questListThemeId = useQuestCacheStore((s) => s.questListThemeId);
 
-      setRoomId: (id) =>
-        set({ currentRoomId: typeof id === 'string' ? parseInt(id, 10) : id }),
+  const themeName = useRoomMetaStore((s) => s.themeName);
+  const themeImageUrl = useRoomMetaStore((s) => s.themeImageUrl);
+  const availableFrameworks = useRoomMetaStore((s) => s.availableFrameworks);
 
-      setCurrentQuestId: (id) => set({ currentQuestId: id }),
-
-      setMode: (mode) =>
-        set((s) => ({
-          draft: { ...s.draft, mode },
-        })),
-
-      setThemeId: (themeId) =>
-        set((s) => ({
-          draft: { ...s.draft, themeId },
-        })),
-
-      setRoomName: (roomName) =>
-        set((s) => ({
-          draft: { ...s.draft, roomName },
-        })),
-
-      setPosition: (position) =>
-        set((s) => {
-          const af = get().availableFrameworks;
-
-          // FULLSTACK인 경우 frontendId와 backendId 둘 다 초기화
-          if (position === 'FULLSTACK') {
-            const firstFrontId = pickFirstFrameworkId(af?.FRONTEND);
-            const firstBackId = pickFirstFrameworkId(af?.BACKEND);
-
-            return {
-              draft: {
-                ...s.draft,
-                position,
-                selectedFrameworkId: null, // FULLSTACK에서는 미사용
-                frontendId: firstFrontId,
-                backendId: firstBackId,
-              },
-            };
-          }
-
-          // FRONTEND 또는 BACKEND인 경우 기존 로직 유지
-          const firstId =
-            position === 'FRONTEND'
-              ? pickFirstFrameworkId(af?.FRONTEND)
-              : pickFirstFrameworkId(af?.BACKEND);
-
-          const nextSelectedFrameworkId = firstId;
-
-          const nextDraft =
-            position === 'FRONTEND'
-              ? {
-                  ...s.draft,
-                  position,
-                  selectedFrameworkId: nextSelectedFrameworkId,
-                  frontendId: nextSelectedFrameworkId,
-                  backendId: null,
-                }
-              : {
-                  ...s.draft,
-                  position,
-                  selectedFrameworkId: nextSelectedFrameworkId,
-                  backendId: nextSelectedFrameworkId,
-                  frontendId: null,
-                };
-
-          return { draft: nextDraft };
-        }),
-
-      setSelectedFrameworkId: (selectedFrameworkId) =>
-        set((s) => {
-          const { position } = s.draft;
-
-          // position이 없으면 selected만 저장(나중에 position 선택 시 재정리)
-          if (!position) {
-            return { draft: { ...s.draft, selectedFrameworkId } };
-          }
-
-          const nextDraft =
-            position === 'FRONTEND'
-              ? {
-                  ...s.draft,
-                  selectedFrameworkId,
-                  frontendId: selectedFrameworkId,
-                  backendId: null,
-                }
-              : {
-                  ...s.draft,
-                  selectedFrameworkId,
-                  backendId: selectedFrameworkId,
-                  frontendId: null,
-                };
-
-          return { draft: nextDraft };
-        }),
-
-      setFullstackFrameworks: (
-        frontendId: number | null,
-        backendId: number | null,
-      ) =>
-        set((s) => ({
-          draft: {
-            ...s.draft,
-            frontendId,
-            backendId,
-          },
-        })),
-
-      setFrameworkIds: ({ frontendId, backendId }) =>
-        set((s) => ({
-          draft: {
-            ...s.draft,
-            ...(frontendId !== undefined ? { frontendId } : {}),
-            ...(backendId !== undefined ? { backendId } : {}),
-          },
-        })),
-
-      setLife: (life) =>
-        set((s) => ({
-          draft: { ...s.draft, life: Math.max(1, life) },
-        })),
-
-      setHints: (hints) =>
-        set((s) => ({
-          draft: { ...s.draft, hints: Math.max(0, hints) },
-        })),
-
-      setHostPosition: (position) =>
-        set((s) => {
-          const af = get().availableFrameworks;
-
-          const firstId =
-            position === 'FRONTEND'
-              ? pickFirstFrameworkId(af?.FRONTEND)
-              : pickFirstFrameworkId(af?.BACKEND);
-
-          return {
-            draft: {
-              ...s.draft,
-              hostPosition: position,
-              hostFrameworkId: firstId,
-            },
-          };
-        }),
-
-      setHostFrameworkId: (frameworkId) =>
-        set((s) => ({
-          draft: { ...s.draft, hostFrameworkId: frameworkId },
-        })),
-
-      setGuestPosition: (position) =>
-        set((s) => {
-          const af = get().availableFrameworks;
-
-          const firstId =
-            position === 'FRONTEND'
-              ? pickFirstFrameworkId(af?.FRONTEND)
-              : pickFirstFrameworkId(af?.BACKEND);
-
-          return {
-            draft: {
-              ...s.draft,
-              guestPosition: position,
-              guestFrameworkId: firstId,
-            },
-          };
-        }),
-
-      setGuestFrameworkId: (frameworkId) =>
-        set((s) => ({
-          draft: { ...s.draft, guestFrameworkId: frameworkId },
-        })),
-
-      validateDraft: () => {
-        const {
-          mode,
-          themeId,
-          life,
-          hints,
-          position,
-          selectedFrameworkId,
-          frontendId,
-          backendId,
-          roomName,
-          hostPosition,
-          hostFrameworkId,
-          guestPosition,
-          guestFrameworkId,
-        } = get().draft;
-
-        const errors: string[] = [];
-
-        if (!mode) errors.push('플레이 모드를 선택해주세요.');
-        if (!themeId) errors.push('플레이할 테마를 선택해주세요.');
-        if (life < 1) errors.push('목숨은 최소 1개 이상이어야 합니다.');
-        if (hints < 0) errors.push('힌트 개수는 0개 이상이어야 합니다.');
-
-        // 싱글모드 검증
-        if (mode === 'SINGLE') {
-          if (!position) errors.push('포지션을 선택해주세요.');
-
-          // FULLSTACK인 경우 frontendId와 backendId 둘 다 필수
-          if (position === 'FULLSTACK') {
-            if (!frontendId)
-              errors.push('프론트엔드 프레임워크를 선택해주세요.');
-            if (!backendId) errors.push('백엔드 프레임워크를 선택해주세요.');
-          } else {
-            // FRONTEND 또는 BACKEND인 경우 selectedFrameworkId 필수
-            if (!selectedFrameworkId) errors.push('프레임워크를 선택해주세요.');
-          }
-        }
-
-        // 멀티모드 검증
-        if (mode === 'MULTI') {
-          if (!roomName || roomName.trim() === '')
-            errors.push('방 제목을 입력해주세요.');
-          if (!hostPosition) errors.push('나의 포지션을 선택해주세요.');
-          if (!hostFrameworkId) errors.push('나의 프레임워크를 선택해주세요.');
-          if (!guestPosition) errors.push('상대의 포지션을 선택해주세요.');
-          if (!guestFrameworkId)
-            errors.push('상대의 프레임워크를 선택해주세요.');
-        }
-
-        return errors.length ? { ok: false, errors } : { ok: true };
-      },
-
-      buildCreatePayload: () => {
-        const v = get().validateDraft();
-        if (!v.ok) return null;
-
-        const {
-          themeId,
-          position,
-          selectedFrameworkId,
-          frontendId,
-          backendId,
-        } = get().draft;
-
-        // FULLSTACK인 경우 frontId와 backId 둘 다 전송 (validation 통과했으므로 null 아님)
-        if (position === 'FULLSTACK') {
-          const payload: CreateRoomRequest = {
-            themeId: themeId!,
-            position: position!,
-            frontId: frontendId!, // FULLSTACK에서는 필수값 (validation 통과함)
-            backId: backendId!, // FULLSTACK에서는 필수값 (validation 통과함)
-          };
-          return payload;
-        }
-
-        // FRONTEND 또는 BACKEND인 경우 기존 로직 유지
-        const payload: CreateRoomRequest = {
-          themeId: themeId!,
-          position: position!,
-          frontId: position === 'FRONTEND' ? selectedFrameworkId : null,
-          backId: position === 'BACKEND' ? selectedFrameworkId : null,
-        };
-
-        return payload;
-      },
-
-      buildMultiRoomPayload: () => {
-        const v = get().validateDraft();
-        if (!v.ok) return null;
-
-        const { themeId, roomName, hostFrameworkId, guestFrameworkId } =
-          get().draft;
-
-        const payload: CreateMultiRoomRequest = {
-          themeId: themeId!,
-          roomName: roomName.trim(),
-          host: {
-            frameworkId: hostFrameworkId!,
-          },
-          guest: {
-            frameworkId: guestFrameworkId!,
-          },
-        };
-
-        return payload;
-      },
-
-      resetRoomCreation: () =>
-        set({
-          draft: DEFAULT_DRAFT,
-          themeName: null,
-          themeImageUrl: null,
-          availableFrameworks: null,
-          currentRoomId: null,
-          currentQuestId: null,
-          questList: null,
-          questListThemeId: null,
-        }),
+  // Construct state with memoization (actions는 동일한 참조 유지)
+  const state: RoomCreationState = useMemo(
+    () => ({
+      draft,
+      currentRoomId,
+      currentQuestId,
+      questList,
+      questListThemeId,
+      themeName,
+      themeImageUrl,
+      availableFrameworks,
+      // Actions는 동일한 참조 유지
+      ...actions,
     }),
-    {
-      name: 'room-creation-draft',
-      partialize: (s) => ({
-        draft: s.draft,
-        themeName: s.themeName,
-        themeImageUrl: s.themeImageUrl,
-        availableFrameworks: s.availableFrameworks,
-      }),
-    },
-  ),
-);
+    [
+      draft,
+      currentRoomId,
+      currentQuestId,
+      questList,
+      questListThemeId,
+      themeName,
+      themeImageUrl,
+      availableFrameworks,
+    ],
+  );
+
+  return selector ? selector(state) : (state as T);
+}
+
+// Attach static methods
+useRoomStoreHook.getState = getState;
+useRoomStoreHook.subscribe = useRoomDraftStore.subscribe;
+
+export const useRoomStore = useRoomStoreHook;

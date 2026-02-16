@@ -37,6 +37,26 @@ services:
       interval: 5s
       retries: 10
     restart: unless-stopped
+  
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin}
+      TZ: Asia/Seoul
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - 5672:5672      # AMQP 프로토콜
+      - 15672:15672    # Management UI
+    networks:
+      - network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 networks:
   network:
