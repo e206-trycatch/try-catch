@@ -292,7 +292,8 @@
 
     📂frontend/src/
     ├─ main.tsx                         # 엔트리포인트
-    ├─ App.tsx                          # 라우팅 설정
+    ├─ App.tsx                          # 라우팅 설정 (React.lazy 코드 스플리팅)
+    ├─ index.css                        # 전역 스타일 (Tailwind, 커스텀 폰트, 애니메이션)
     │
     ├─ 📁api/                           # API 레이어
     │  ├─ api.ts                        # Axios 인스턴스 + 인터셉터
@@ -300,11 +301,21 @@
     │  ├─ roomApi.ts                    # 방 생성/참가
     │  ├─ themeApi.ts                   # 테마 목록
     │  ├─ questFile.ts                  # 퀘스트 파일 조회
+    │  ├─ multiQuestFile.ts             # 멀티모드 퀘스트 파일 조회
+    │  ├─ retryQuestFile.ts             # 재도전 퀘스트 파일 조회
     │  ├─ codeSubmission.ts             # 코드 제출
     │  ├─ submissionApi.ts              # 제출 결과
-    │  └─ hintApi.ts                    # AI 힌트
+    │  ├─ hintApi.ts                    # AI 힌트
+    │  ├─ gameSession.ts                # 멀티 게임 세션
+    │  ├─ getSingleTimer.ts             # 타이머 조회
+    │  ├─ startSingleGameTimer.ts       # 싱글 타이머 시작
+    │  ├─ startMultiGameTimer.ts        # 멀티 타이머 시작
+    │  ├─ questStories.ts               # 퀘스트 스토리 배경
+    │  ├─ saveCodeForShare.ts           # 멀티모드 코드 저장
+    │  ├─ shareCode.ts                  # 멀티모드 코드 불러오기
+    │  └─ user.ts                       # 유저 정보
     │
-    ├─ 📁stores/                          # Zustand 상태 관리
+    ├─ 📁stores/                        # Zustand 상태 관리
     │  ├─ useStore.ts                   # 유저/인증 상태
     │  ├─ useGameStore.ts               # 게임 진행 상태
     │  ├─ useRoomStore.ts               # 방 정보
@@ -313,49 +324,118 @@
     │  ├─ useSubmissionStore.ts         # 코드 제출 상태
     │  ├─ useSocketStore.ts             # WebSocket 연결
     │  ├─ useResultStore.ts             # 결과 상태
+    │  ├─ useSoundStore.ts              # 사운드 상태
     │  └─ room/                         # 방 관련 세분화 스토어
-    │     ├─ useRoomMetaStore.ts
-    │     ├─ useRoomDraftStore.ts
-    │     └─ useQuestCacheStore.ts
     │
-    ├─ 📁sockets/                         # WebSocket
+    ├─ 📁sockets/                       # WebSocket
     │  ├─ stomp.ts                      # STOMP subscribe/publish
     │  └─ types.ts
     │
-    ├─ 📁hooks/                           # 공통 훅
+    ├─ 📁hooks/                         # 공통 훅
     │  ├─ useStompSubscription.ts       # STOMP 구독 래퍼
-    │  └─ useRoomSettingInit.ts         # 방 설정 초기화
+    │  ├─ useRoomSettingInit.ts         # 방 설정 초기화
+    │  ├─ useAudio.ts                   # 오디오 재생
+    │  ├─ useTypingSound.ts             # 타이핑 효과음
+    │  └─ hooks.ts                      # 기타 공통 훅
     │
-    ├─ 📁components/                      # 공통 UI
+    ├─ 📁layouts/                       # 레이아웃
+    │  ├─ AppLayout.tsx                 # Header + Outlet + Footer
+    │  └─ index.tsx
+    │
+    ├─ 📁components/                    # 공통 UI
     │  ├─ common/                       # LoadingSpinner, ErrorMessage 등
     │  ├─ header/                       # Header, 로그인/아웃 메뉴
+    │  ├─ footer/                       # Footer
+    │  ├─ framer-motion/                # 페이지 전환 Wrapper
+    │  ├─ effects/                      # 시각 효과
+    │  ├─ routes/                       # PrivateRoute, GuestRoute
+    │  ├─ sound/                        # 사운드 토글
     │  ├─ room-setting/                 # 방 설정 폼
+    │  ├─ lobby/                        # 로비 UI
+    │  ├─ invitation-code/              # 초대 코드
+    │  ├─ quest/                        # 퀘스트 설명
+    │  ├─ story/                        # 스토리
+    │  ├─ nav/                          # 네비게이션
     │  └─ theme-selection/              # 테마 카드
     │
-    ├─ 📁pages/                           # 페이지 (사용자 흐름 순)
+    ├─ 📁pages/                         # 페이지 (사용자 흐름 순)
     │  ├─ home/HomePage.tsx
     │  ├─ login/LoginPage.tsx
     │  ├─ signup/SignupPage.tsx
     │  ├─ mode-selection/ModeSelectionPage.tsx
     │  ├─ theme-selection/ThemeSelectionPage.tsx
+    │  ├─ story/StoryPage.tsx
     │  ├─ room-settings/
     │  │  ├─ SingleRoomSettingPage.tsx
     │  │  └─ MultiRoomSettingPage.tsx
     │  ├─ multi-room/LobbyPage.tsx
-    │  ├─ quest-description/
-    │  │  ├─ SingleQuestDescriptionPage.tsx
-    │  │  └─ MultiQuestDescriptionPage.tsx
-    │  ├─ game/
-    │  │  ├─ GamePage.tsx               # 메인 게임 화면
-    │  │  ├─ components/                # CodeEditor, Explorer, Terminal 등
-    │  │  └─ hooks/                     # useFile, useIde, useTimer
-    │  └─ result/
-    │     ├─ ResultPage.tsx
-    │     └─ components/                # 성공/실패 결과 화면
+    │  ├─ invitation-code/InvitationCodePage.tsx
+    │  ├─ quest-description/QuestDescriptionPage.tsx
+    │  ├─ dino-game/DinoGamePage.tsx
+    │  ├─ game/                         # 메인 게임 페이지
+    │  │  ├─ GamePage.tsx               # 게임 화면 (Monaco IDE 레이아웃)
+    │  │  ├─ constants.ts               # 게임 상수
+    │  │  ├─ 📁components/              # 게임 UI 컴포넌트
+    │  │  │  ├─ CodeEditor.tsx          # Monaco Editor 래퍼
+    │  │  │  ├─ EditorPanel.tsx         # 에디터 + 파일탭 패널
+    │  │  │  ├─ MarkdownViewer.tsx      # 마크다운 뷰어 (lazy)
+    │  │  │  ├─ Explorer.tsx            # 파일 탐색기
+    │  │  │  ├─ Node.tsx                # 파일 트리 노드
+    │  │  │  ├─ FileTabs.tsx            # 열린 파일 탭
+    │  │  │  ├─ MenuBar.tsx             # 좌측 메뉴바
+    │  │  │  ├─ GameInfoBar.tsx         # 타이머/목숨/참여자 표시
+    │  │  │  ├─ SubmitBtn.tsx           # 제출 버튼
+    │  │  │  ├─ Terminal.tsx            # 터미널 컨테이너
+    │  │  │  ├─ TerminalTabs.tsx        # 터미널 탭
+    │  │  │  ├─ TerminalLogView.tsx     # 에러 로그 뷰어
+    │  │  │  ├─ TimeOverModal.tsx       # 시간 초과 모달
+    │  │  │  ├─ 📁hint/                # AI 힌트
+    │  │  │  │  ├─ HintButton.tsx
+    │  │  │  │  ├─ HintModal.tsx        # 힌트 모달 (lazy)
+    │  │  │  │  ├─ HintInputForm.tsx
+    │  │  │  │  ├─ HintMessageList.tsx
+    │  │  │  │  ├─ HintMessageItem.tsx
+    │  │  │  │  ├─ HintInfoTooltip.tsx
+    │  │  │  │  ├─ hintInfoMessages.ts
+    │  │  │  │  └─ TypingIndicator.tsx
+    │  │  │  └─ 📁toast/               # 제출 확인 토스트
+    │  │  │     ├─ SubmitConfirmToast.tsx
+    │  │  │     ├─ ShareCodeToast.tsx
+    │  │  │     └─ toastStyles.ts
+    │  │  ├─ 📁hooks/                   # 게임 전용 훅
+    │  │  │  ├─ useGameInit.ts          # 게임 초기화 (API 병렬 호출)
+    │  │  │  ├─ useFile.ts              # 파일 트리 구성
+    │  │  │  ├─ useIde.ts               # IDE 상태 (탭, 코드, 스플릿)
+    │  │  │  ├─ useTimer.ts             # 타이머 표시
+    │  │  │  ├─ useTerminal.ts          # 에러 로그 관리
+    │  │  │  ├─ useBackgroundImage.ts   # 배경 이미지 로드
+    │  │  │  └─ useStompSubscription.ts # 멀티모드 STOMP 구독
+    │  │  ├─ 📁types/                   # 타입 정의
+    │  │  │  ├─ apiTypes.ts
+    │  │  │  └─ ideTypes.ts
+    │  │  └─ 📁utils/                   # 유틸리티
+    │  │     ├─ fileTreeUtils.ts
+    │  │     ├─ frameworkUtils.ts
+    │  │     └─ submissionUtils.ts
+    │  ├─ result/                       # 결과 페이지
+    │  │  ├─ ResultPage.tsx
+    │  │  ├─ ResultLoadingPage.tsx
+    │  │  ├─ 📁components/              # 성공/실패 결과 화면
+    │  │  │  ├─ SuccessResult.tsx
+    │  │  │  ├─ SingleFailResult.tsx
+    │  │  │  ├─ MultiFailResult.tsx
+    │  │  │  └─ ErrorDisplay.tsx
+    │  │  ├─ hooks/
+    │  │  ├─ types/
+    │  │  └─ utils/
+    │  └─ mypage/MyPage.tsx
     │
-    └─ 📁utils/                           # 유틸리티
+    └─ 📁utils/                         # 유틸리티
         ├─ errorUtils.ts
-        └─ validationUtils.ts
+        ├─ validationUtils.ts
+        ├─ participantUtils.ts
+        ├─ logger.ts
+        └─ utils.ts
 
 </details>
 

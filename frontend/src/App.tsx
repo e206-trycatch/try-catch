@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { AnimatePresence } from 'framer-motion';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Bounce, ToastContainer } from 'react-toastify';
@@ -100,60 +99,58 @@ function App() {
           minHeight: 'auto',
         }}
       />
-      <AnimatePresence>
-        <Suspense
-          fallback={
-            <div className="flex justify-center items-center min-h-screen">
-              <LoadingSpinner />
-            </div>
-          }
-        >
-          <Routes>
-            <Route element={<MainLayout />}>
-              {/* Public - 누구나 접근 가능 */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/dino" element={<DinoGamePage />} />
+      <Suspense
+        fallback={
+          <div className="flex justify-center items-center min-h-screen">
+            <LoadingSpinner />
+          </div>
+        }
+      >
+        <Routes>
+          <Route element={<MainLayout />}>
+            {/* Public - 누구나 접근 가능 */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/dino" element={<DinoGamePage />} />
 
-              {/* Guest Only - 비로그인 유저만 접근 가능 */}
-              <Route element={<GuestRoute />}>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-              </Route>
-
-              {/* Private - 로그인 유저만 접근 가능 */}
-              <Route element={<PrivateRoute />}>
-                <Route path="/selection/mode" element={<ModeSelectionPage />} />
-                <Route
-                  path="/selection/theme"
-                  element={<ThemeSelectionPage />}
-                />
-                <Route path="/story" element={<StoryPage />} />
-                <Route
-                  path="/quest-description"
-                  element={<QuestDescriptionPage />}
-                />
-                <Route
-                  path="/single-room-settings"
-                  element={<SingleRoomSettingPage />}
-                />
-                <Route
-                  path="/multi-room-settings"
-                  element={<MultiRoomSettingPage />}
-                />
-                <Route path="/multi-room/lobby" element={<LobbyPage />} />
-                <Route path="/invitation" element={<InvitationPage />} />
-                <Route path="/game/:roomId/:questId" element={<GamePage />} />
-                <Route
-                  path="/result/loading/:roomId?"
-                  element={<ResultLoadingPage />}
-                />
-                <Route path="/result/:roomId?" element={<ResultPage />} />
-                <Route path="/mypage" element={<MyPage />} />
-              </Route>
+            {/* Guest Only - 비로그인 유저만 접근 가능 */}
+            <Route element={<GuestRoute />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
             </Route>
-          </Routes>
-        </Suspense>
-      </AnimatePresence>
+
+            {/* Private - 로그인 유저만 접근 가능 */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/selection/mode" element={<ModeSelectionPage />} />
+              <Route
+                path="/selection/theme"
+                element={<ThemeSelectionPage />}
+              />
+              <Route path="/story" element={<StoryPage />} />
+              <Route
+                path="/quest-description"
+                element={<QuestDescriptionPage />}
+              />
+              <Route
+                path="/single-room-settings"
+                element={<SingleRoomSettingPage />}
+              />
+              <Route
+                path="/multi-room-settings"
+                element={<MultiRoomSettingPage />}
+              />
+              <Route path="/multi-room/lobby" element={<LobbyPage />} />
+              <Route path="/invitation" element={<InvitationPage />} />
+              <Route path="/game/:roomId/:questId" element={<GamePage />} />
+              <Route
+                path="/result/loading/:roomId?"
+                element={<ResultLoadingPage />}
+              />
+              <Route path="/result/:roomId?" element={<ResultPage />} />
+              <Route path="/mypage" element={<MyPage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Suspense>
     </>
   );
 }

@@ -68,29 +68,36 @@ export function useGameInit(
         setLoading(false);
       }
 
-      if (mode === 'MULTI') {
-        try {
-          const session = await getGameSession(Number(roomId));
-          setGameSession(session);
-        } catch (e) {
-          console.error('멀티 세션 로드 실패:', e);
-        }
+      // 멀티 세션 조회 + 타이머 복원을 병렬로 실행
+      const [sessionResult, timerResult] = await Promise.allSettled([
+        mode === 'MULTI'
+          ? getGameSession(Number(roomId))
+          : Promise.resolve(null),
+        getSingleTimer(Number(roomId)),
+      ]);
+
+      if (sessionResult.status === 'fulfilled' && sessionResult.value) {
+        setGameSession(sessionResult.value);
+      } else if (sessionResult.status === 'rejected') {
+        console.error('멀티 세션 로드 실패:', sessionResult.reason);
       }
 
-      // 타이머 복원
-      try {
-        const timeData = await getSingleTimer(Number(roomId));
-
-        if (timeData.startedAt) {
-          // 기존 타이머가 있으면 복원 (새로고침 대응)
-          startTimer(timeData.deadlineAt);
-        } else if (mode === 'SINGLE') {
-          await new Promise((r) => setTimeout(r, TIMER_DELAY));
-          const newTimeData = await startSingleGameTimer(Number(roomId));
-          startTimer(newTimeData.deadlineAt);
+      if (timerResult.status === 'fulfilled') {
+        const timeData = timerResult.value;
+        try {
+          if (timeData.startedAt) {
+            // 기존 타이머가 있으면 복원 (새로고침 대응)
+            startTimer(timeData.deadlineAt);
+          } else if (mode === 'SINGLE') {
+            await new Promise((r) => setTimeout(r, TIMER_DELAY));
+            const newTimeData = await startSingleGameTimer(Number(roomId));
+            startTimer(newTimeData.deadlineAt);
+          }
+        } catch (e) {
+          console.error('타이머 시작 실패:', e);
         }
-      } catch (e) {
-        console.error('타이머 조회 실패:', e);
+      } else {
+        console.error('타이머 조회 실패:', timerResult.reason);
       }
     };
 

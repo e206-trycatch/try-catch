@@ -1,10 +1,10 @@
 import { Editor } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import ReactMarkdown from 'react-markdown';
+import { lazy, Suspense } from 'react';
 import { Bounce, toast, ToastContainer } from 'react-toastify';
-import remarkGfm from 'remark-gfm';
 
 import type { CodeRole, FileNode } from '../types/ideTypes';
+
+const MarkdownViewer = lazy(() => import('./MarkdownViewer'));
 
 interface CodeEditorProps {
   activeFile: FileNode | null;
@@ -50,9 +50,11 @@ export default function CodeEditor({
           파일을 선택해주세요
         </div>
       ) : activeFile.language === 'markdown' ? (
-        <div className="w-full h-full overflow-auto bg-[#1E1E1EB3] p-6 prose prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{code}</ReactMarkdown>
-        </div>
+        <Suspense
+          fallback={<div className="w-full h-full bg-[#1E1E1EB3] p-6" />}
+        >
+          <MarkdownViewer code={code} />
+        </Suspense>
       ) : (
         <Editor
           key={activeFile.id}
@@ -81,7 +83,8 @@ export default function CodeEditor({
 
             editor.onKeyDown((e) => {
               const isSave =
-                (e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyS;
+                (e.ctrlKey || e.metaKey) &&
+                e.keyCode === monacoInstance.KeyCode.KeyS;
 
               if (isSave) {
                 e.preventDefault();
