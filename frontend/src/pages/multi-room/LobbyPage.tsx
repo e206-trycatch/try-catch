@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useGameStore } from '@/stores/useGameStore';
 
 import { fetchQuestList, leaveMultiRoom } from '../../api/roomApi';
-import shootingStarWhite from '../../assets/images/icons/try-catch-favicon-fefefe.png';
+import shootingStarWhite from '../../assets/images/try-catch-favicon.png';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import InviteCodeSection from '../../components/lobby/InviteCodeSection';
@@ -281,6 +281,7 @@ const LobbyPage = () => {
               src={shootingStarWhite}
               alt="Shooting Star"
               className="w-[28px]"
+              loading="lazy"
             />
             <span className="text-white text-[22px] font-semibold tracking-wide">
               Waiting Room · · ·

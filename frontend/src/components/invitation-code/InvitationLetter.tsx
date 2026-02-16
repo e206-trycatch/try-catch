@@ -47,6 +47,7 @@ const Letter = forwardRef<HTMLDivElement, LetterProps>(
                 src={EnvelopeIcon}
                 alt="Envelope Icon"
                 style={{ width: '23px' }}
+                loading="lazy"
               />
               <div className="text-[#030030] text-[17px] font-normal leading-[21px] tracking-[-0.7px]">
                 친구로부터 받은 초대 코드를 입력해주세요.

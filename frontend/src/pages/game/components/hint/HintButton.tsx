@@ -1,4 +1,4 @@
-import AiHintIcon from '../../../../assets/images/icons/ai_hint_icon.png';
+import AiHintIcon from '../../../../assets/images/icons/ai_hint_icon.svg';
 import { useHintStore } from '../../../../stores/useHintStore';
 
 interface Props {

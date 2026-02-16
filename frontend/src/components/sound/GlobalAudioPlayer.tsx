@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import mainBgm from '../../assets/sounds/1199_Flyns Forest.mp3';
+import mainBgm from '../../assets/sounds/1199_Flyns-Forest.mp3';
 import { useSoundStore } from '../../stores/useSoundStore';
 
 const GlobalAudioPlayer = () => {

@@ -121,10 +121,7 @@ function App() {
             {/* Private - 로그인 유저만 접근 가능 */}
             <Route element={<PrivateRoute />}>
               <Route path="/selection/mode" element={<ModeSelectionPage />} />
-              <Route
-                path="/selection/theme"
-                element={<ThemeSelectionPage />}
-              />
+              <Route path="/selection/theme" element={<ThemeSelectionPage />} />
               <Route path="/story" element={<StoryPage />} />
               <Route
                 path="/quest-description"
