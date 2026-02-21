@@ -4,12 +4,12 @@
 [🗓️ 개발 일정](#️-개발-일정)  
 [😊 팀 구성](#-팀-구성)  
 [🛠️ 기술 스택](#️-기술-스택)  
-[▶️ 주요 기능 및 이미지](#️-주요-기능-및-이미지)  
+[🎞️ 주요 기능 및 이미지](#️-주요-기능-및-이미지)  
 [🖇️ ERD](#️-erd)  
 [🌏 아키텍처 구조](#-아키텍처-구조)  
 [📁 디렉터리 구조](#-디렉터리-구조)  
 [📝 프로젝트 산출물](#-프로젝트-산출물)  
-[✔️ Jira Issues](#️-jira-issues)  
+[✔️ Jira Issues](#️-jira-issues)
 
 <br /><br />
 
@@ -25,7 +25,7 @@
 - **WebSocket + STOMP를 활용**한 멀티모드에서는 팀원과 역할을 나누어 각자 **버그를 해결하며 함께 탈출하는 협업 경험을 제공**합니다.
 - **LLM 기반 AI 힌트 시스템**이 정답 없이 **단계별 힌트를 제공**합니다.
 - **GPT API 기반 AI 채점 시스템**이 정답 코드의 점수를 매겨줍니다.  
-<br />
+  <br />
 
 ## 🗓️ 개발 일정
 
@@ -35,7 +35,7 @@
 - **4주차 (1/26 ~2/1)** : 구현 및 연동
 - **5주차 (2/2~2/8)** : 테스트, 마무리
 - **2/9** : 최종 프로젝트 평가  
-<br />
+  <br />
 
 ## 😊 팀 구성
 
@@ -134,61 +134,66 @@
 
 <h3>🟣 Front-End </h3>
 
-<img src="https://img.shields.io/badge/Visual Studio Code-007ACC?style=for-the-badge">
-<img src="https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white">
-<img src="https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white">
-<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=React&logoColor=white"> 
-<img src="https://img.shields.io/badge/Typescript-3178C6?style=for-the-badge&logo=Typescript&logoColor=white"> 
-<img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=Vite&logoColor=white"> 
-<img src="https://img.shields.io/badge/zustand-000000?style=for-the-badge&logo=&logoColor=white"> 
-<img src="https://img.shields.io/badge/axios-5A29E4?style=for-the-badge&logo=styledcomponents&logoColor=white">
-<img src="https://img.shields.io/badge/WebSocket-000000?style=for-the-badge&logo=&logoColor=white"> 
-<br>
+![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-007ACC?style=for-the-badge)
+![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=React&logoColor=white)
+![Typescript](https://img.shields.io/badge/Typescript-3178C6?style=for-the-badge&logo=Typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=Vite&logoColor=white)
+![Zustand](https://img.shields.io/badge/zustand-000000?style=for-the-badge)
+![Axios](https://img.shields.io/badge/axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/tailwind%20css-49bfd1?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-000000?style=for-the-badge)
+<br />
 
 <h3>🔵 Back-End</h3>
 
-<img src="https://img.shields.io/badge/IntelliJ IDEA-000000?style=for-the-badge">
-<img src="https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white">
-<img src="https://img.shields.io/badge/Gradle-09425e.svg?style=for-the-badge&logo=Gradle&logoColor=white"> 
-<img src="https://img.shields.io/badge/SpringBoot_3.5.9-6DB33F?style=for-the-badge&logo=SpringBoot&logoColor=white"> 
-<img src="https://img.shields.io/badge/Spring Data JPA-6DB33F?style=for-the-badge&logo=&logoColor=white"> 
-<img src="https://img.shields.io/badge/Spring Security-6DB33F?style=for-the-badge&logo=SpringSecurity&logoColor=white">
-<img src="https://img.shields.io/badge/JWT-6f1082?style=for-the-badge&logo=JSON%20web%20tokens">
-<img src="https://img.shields.io/badge/STOMP-000000?style=for-the-badge&logo=&logoColor=white">
+![IntelliJ IDEA](https://img.shields.io/badge/IntelliJ%20IDEA-000000?style=for-the-badge&logo=intellij-idea&logoColor=white)
+![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge)
+![Gradle](https://img.shields.io/badge/Gradle-09425e.svg?style=for-the-badge&logo=Gradle&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/SpringBoot_3.5.9-6DB33F?style=for-the-badge&logo=SpringBoot&logoColor=white)
+![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-6DB33F?style=for-the-badge&logo=&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring%20Security-6DB33F?style=for-the-badge&logo=SpringSecurity&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-6f1082?style=for-the-badge&logo=JSON%20web%20tokens)
+![STOMP](https://img.shields.io/badge/STOMP-000000?style=for-the-badge&logo=&logoColor=white)
+<br />
 
 <h3>🤖 AI</h3>
 
-<img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54">
-<img src="https://img.shields.io/badge/FAST API-009688?style=for-the-badge&logo=fastapi&logoColor=white">
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Fast API](https://img.shields.io/badge/FAST%20API-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+<br />
 
 <h3>🖧 Infra & DevOps</h3>
 
-<img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white">
-<img src="https://img.shields.io/badge/docker compose-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white">
-<img src="https://img.shields.io/badge/jenkins-%232C5263.svg?style=for-the-badge&logo=jenkins&logoColor=white">
-<img src="https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white">
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/docker%20compose-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Jenkins](https://img.shields.io/badge/jenkins-%232C5263.svg?style=for-the-badge&logo=jenkins&logoColor=white)
+![Nginx](https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white)
+<br />
 
 <h3>🗄️ Database</h3>
 
-<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=MySQL&logoColor=white"> 
-<img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=Redis&logoColor=white">
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=Redis&logoColor=white)
+<br />
 
 <h3>⚙️ Tools</h3>
 
-<img src="https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white">
-<img src="https://img.shields.io/badge/gitlab-%23181717.svg?style=for-the-badge&logo=gitlab&logoColor=white">
-<img src="https://img.shields.io/badge/jira-%230A0FFF.svg?style=for-the-badge&logo=jira&logoColor=white">
-<img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white">
-<img src="https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white">
+![Git](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white)
+![Gitlab](https://img.shields.io/badge/gitlab-%23181717.svg?style=for-the-badge&logo=gitlab&logoColor=white)
+![Jira](https://img.shields.io/badge/jira-%230A0FFF.svg?style=for-the-badge&logo=jira&logoColor=white)
+![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white)
+![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)
+<br />
 
 <h3>🖥️ Monitoring</h3>
 
-<img src="https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white">
-<img src="https://img.shields.io/badge/grafana-%23F46800.svg?style=for-the-badge&logo=grafana&logoColor=white">
-
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/grafana-%23F46800.svg?style=for-the-badge&logo=grafana&logoColor=white)
 <br /><br />
 
-## ▶️ 주요 기능 및 이미지
+## 🎞️ 주요 기능 및 이미지
 
 <div align="center">
     <table>
