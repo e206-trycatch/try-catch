@@ -10,7 +10,21 @@ import java.util.List;
 public interface UserMapper {
 
     // 제출 기록 조회
-    List<SubmissionHistory> findSubmissionHistory(
+//    List<SubmissionHistory> findSubmissionHistory(
+//            @Param("userId") Long userId,
+//            @Param("limit") int limit,
+//            @Param("offset") int offset
+//    );
+
+    // (수정버전) 제출 기록 조회(싱글)
+    List<SubmissionHistory> findSingleSuccessThemes(
+            @Param("userId") Long userId,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    // 제출 기록 조회 (멀티)
+    List<SubmissionHistory> findMultiSuccessThemes(
             @Param("userId") Long userId,
             @Param("limit") int limit,
             @Param("offset") int offset
