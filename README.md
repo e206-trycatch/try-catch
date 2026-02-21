@@ -15,7 +15,7 @@
 
 ## ✨ 서비스 소개
 
-<img src="./readme-assets/01_try-catch_main.gif" width="100%">  
+<video src="https://github.com/user-attachments/assets/391bfb93-4e15-48c7-a578-b69db6ac9ed9.mp4" autoplay loop muted></video>
 <br /><br />
 
 **[방탈출 컨셉 게임으로 즐기는 실전 디버깅 학습 서비스]**
