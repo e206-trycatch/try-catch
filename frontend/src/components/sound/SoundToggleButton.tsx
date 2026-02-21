@@ -19,6 +19,7 @@ const SoundToggleButton = ({ className = '' }: SoundToggleButtonProps) => {
         src={isMuted ? soundOffIcon : soundOnIcon}
         alt={isMuted ? 'Sound Off' : 'Sound On'}
         className="w-6 h-6"
+        loading="lazy"
       />
       <span>{isMuted ? 'OFF' : 'ON'}</span>
     </button>

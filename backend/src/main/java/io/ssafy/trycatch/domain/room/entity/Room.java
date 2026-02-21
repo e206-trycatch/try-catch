@@ -109,6 +109,10 @@ public class Room {
         this.startedAt = LocalDateTime.now();
     }
 
+    public void endTimer() {
+        this.startedAt = null;
+    }
+
     public void endGame() {
         this.status = RoomStatus.ENDED;
     }
@@ -125,5 +129,9 @@ public class Room {
     // 힌트 3으로 초기화
     public void resetHint() {
         this.remainingHintCount = 3;
+    }
+
+    public void delete() {
+        this.isDeleted = TrueOrFalse.T;
     }
 }

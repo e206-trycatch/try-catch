@@ -1,12 +1,12 @@
+import axios from 'axios';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
 import {
-  signup,
+  checkEmail,
   checkLoginId,
   checkNickname,
-  checkEmail,
+  signup,
 } from '../../api/auth';
 
 const SignupPage = () => {
@@ -70,7 +70,9 @@ const SignupPage = () => {
         // 중복인 경우
         setIsIdChecked(true);
         setIsIdAvailable(false);
-        setIdMessage(err.response.data?.message || '이미 사용 중인 아이디입니다.');
+        setIdMessage(
+          err.response.data?.message || '이미 사용 중인 아이디입니다.',
+        );
       } else {
         setIdMessage('중복 확인 중 오류가 발생했습니다.');
       }
@@ -94,7 +96,9 @@ const SignupPage = () => {
         // 중복인 경우
         setIsNicknameChecked(true);
         setIsNicknameAvailable(false);
-        setNicknameMessage(err.response.data?.message || '이미 사용 중인 닉네임입니다.');
+        setNicknameMessage(
+          err.response.data?.message || '이미 사용 중인 닉네임입니다.',
+        );
       } else {
         setNicknameMessage('중복 확인 중 오류가 발생했습니다.');
       }
@@ -118,7 +122,9 @@ const SignupPage = () => {
         // 중복인 경우
         setIsEmailChecked(true);
         setIsEmailAvailable(false);
-        setEmailMessage(err.response.data?.message || '이미 사용 중인 이메일입니다.');
+        setEmailMessage(
+          err.response.data?.message || '이미 사용 중인 이메일입니다.',
+        );
       } else {
         setEmailMessage('중복 확인 중 오류가 발생했습니다.');
       }
@@ -131,7 +137,13 @@ const SignupPage = () => {
     setError(null);
 
     // 필수 입력 검증
-    if (!id.trim() || !password.trim() || !passwordConfirm.trim() || !nickname.trim() || !email.trim()) {
+    if (
+      !id.trim() ||
+      !password.trim() ||
+      !passwordConfirm.trim() ||
+      !nickname.trim() ||
+      !email.trim()
+    ) {
       setError('모든 필드를 입력해주세요.');
       return;
     }
@@ -211,7 +223,9 @@ const SignupPage = () => {
           </div>
           <div className="flex justify-between items-center mb-4">
             {idMessage && (
-              <span className={`text-xs ${isIdAvailable ? 'text-green-400' : 'text-red-400'}`}>
+              <span
+                className={`text-xs ${isIdAvailable ? 'text-green-400' : 'text-red-400'}`}
+              >
                 {idMessage}
               </span>
             )}
@@ -239,7 +253,9 @@ const SignupPage = () => {
 
           {/* 비밀번호 확인 입력 */}
           <div className="mb-4">
-            <label className="block text-white text-sm mb-2">비밀번호 확인</label>
+            <label className="block text-white text-sm mb-2">
+              비밀번호 확인
+            </label>
             <input
               type="password"
               placeholder="PASSWORD"
@@ -269,7 +285,9 @@ const SignupPage = () => {
           </div>
           <div className="flex justify-between items-center mb-4">
             {nicknameMessage && (
-              <span className={`text-xs ${isNicknameAvailable ? 'text-green-400' : 'text-red-400'}`}>
+              <span
+                className={`text-xs ${isNicknameAvailable ? 'text-green-400' : 'text-red-400'}`}
+              >
                 {nicknameMessage}
               </span>
             )}
@@ -301,7 +319,9 @@ const SignupPage = () => {
           </div>
           <div className="flex justify-between items-center mb-6">
             {emailMessage && (
-              <span className={`text-xs ${isEmailAvailable ? 'text-green-400' : 'text-red-400'}`}>
+              <span
+                className={`text-xs ${isEmailAvailable ? 'text-green-400' : 'text-red-400'}`}
+              >
                 {emailMessage}
               </span>
             )}
@@ -333,7 +353,10 @@ const SignupPage = () => {
         {/* 로그인 링크 */}
         <div className="text-center mt-6 text-sm">
           <span className="text-gray-400">이미 계정이 있으신가요?</span>{' '}
-          <Link to="/login" className="text-white underline hover:text-gray-300">
+          <Link
+            to="/login"
+            className="text-white underline hover:text-gray-300"
+          >
             로그인하러 가기
           </Link>
         </div>

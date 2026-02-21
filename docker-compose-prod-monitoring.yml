@@ -1,0 +1,38 @@
+services:
+  prometheus:
+    build:
+      context: .
+      dockerfile: Dockerfile.prometheus
+    container_name: trycatch-prometheus
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "8083:9090"
+    networks:
+      - network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    container_name: trycatch-grafana
+    ports:
+      - "8082:3000"
+    networks:
+      - network
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+networks:
+  network:
+    name: trycatch-net
+    external: true
+
+volumes:
+  prometheus_data:
+  grafana_data:

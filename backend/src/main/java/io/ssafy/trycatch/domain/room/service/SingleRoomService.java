@@ -7,15 +7,21 @@ import io.ssafy.trycatch.domain.room.entity.*;
 import io.ssafy.trycatch.domain.room.enums.*;
 import io.ssafy.trycatch.domain.room.repository.*;
 import io.ssafy.trycatch.global.common.TrueOrFalse;
+import io.ssafy.trycatch.global.exception.CustomException;
+import io.ssafy.trycatch.websocket.common.TimeLimitPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static io.ssafy.trycatch.global.exception.ErrorCode.ROOM_USER_NOT_FOUND;
 
 @Slf4j
 @Service
@@ -219,6 +225,7 @@ public class SingleRoomService {
                 .collect(Collectors.toList());
     }
 
+    // 문제 파일 조회
     @Transactional
     public ProblemFilesRespDto getProblemFiles(Long roomId, Long questId) {
         // 1. Room 조회
@@ -231,7 +238,6 @@ public class SingleRoomService {
 
         // 힌트 개수 초기화
         room.resetHint();
-        room.startQuestGame();
         
         roomRepository.save(room);
         // 2. Room에서 frontendId, backendId 추출
@@ -278,7 +284,7 @@ public class SingleRoomService {
     }
 
     // frontendId/backendId 유무로 position 판단
-    private String determinePosition(Long frontendId, Long backendId) {
+    public String determinePosition(Long frontendId, Long backendId) {
         if (frontendId != null && backendId != null) {
             return "FULLSTACK";
         } else if (frontendId != null && backendId == null) {
@@ -291,7 +297,7 @@ public class SingleRoomService {
     }
 
     // position에 따라 ProblemFramework 조회
-    private ProblemFramework findProblemFrameworkByPosition(
+    public ProblemFramework findProblemFrameworkByPosition(
             Long questId, String position, Long frontendId, Long backendId) {
 
         switch (position) {
@@ -325,7 +331,7 @@ public class SingleRoomService {
     }
 
     // position에 따라 파일 필터링
-    private List<ProblemFile> filterFilesByPosition(List<ProblemFile> files, String position) {
+    public List<ProblemFile> filterFilesByPosition(List<ProblemFile> files, String position) {
         if ("FRONTEND".equals(position)) {
             // FRONTEND만
             return files.stream()
@@ -353,14 +359,6 @@ public class SingleRoomService {
 
         roomUserRepository.save(roomUser);
         log.info("싱글 방 유저 생성 완료 - userId: {}, roomId: {}", userId, roomId);
-    }    
-
-    // 게임 시작 (상태 변경 및 시작 시간 기록)
-    @Transactional
-    public void startGame(Long roomId) {
-        Room room = findRoomById(roomId);
-        room.startGame(); // 엔티티의 비즈니스 로직 호출
-        log.info("게임 시작 - roomId: {}, status: {}", roomId, room.getStatus());
     }
 
     // 힌트 사용 (개수 차감)

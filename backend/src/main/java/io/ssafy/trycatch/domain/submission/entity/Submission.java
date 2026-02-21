@@ -40,10 +40,19 @@ public class Submission {
     @Column(name = "error_log", columnDefinition = "TEXT")
     private String errorLog;
 
+    @Column(name = "frontend_error_log", columnDefinition = "TEXT")
+    private String frontendErrorLog;
+
+    @Column(name = "backend_error_log", columnDefinition = "TEXT")
+    private String backendErrorLog;
+
     @Column
     private Integer score;
 
-    @CreationTimestamp
+    @Enumerated(EnumType.STRING)
+    @Column(name = "processing_status", nullable = false)
+    private ProcessingStatus processingStatus = ProcessingStatus.PENDING;
+
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
@@ -67,8 +76,8 @@ public class Submission {
 
     @Builder
     public Submission(Long userId, Long roomId, Long problemFrameworkId,
-                      String language, Status status, Long executionTime,
-                      String errorLog, Integer score) {
+                      Status status, Long executionTime,
+                      String errorLog, Integer score, LocalDateTime submittedAt) {
         this.userId = userId;
         this.roomId = roomId;
         this.problemFrameworkId = problemFrameworkId;
@@ -76,7 +85,8 @@ public class Submission {
         this.executionTime = executionTime;
         this.errorLog = errorLog;
         this.score = score;
-        this.submittedAt = LocalDateTime.now();
+        this.processingStatus = ProcessingStatus.PENDING;  // 항상 PENDING으로 초기화
+        this.submittedAt = submittedAt;
     }
 
     public void updateResult(Status status, Long executionTime, String errorLog, Integer score) {
@@ -84,6 +94,18 @@ public class Submission {
         this.executionTime = executionTime;
         this.errorLog = errorLog;
         this.score = score;
+        this.processingStatus = ProcessingStatus.COMPLETED;  // 완료 시 업데이트
+    }
+
+    public void updateResult(Status status, Long executionTime,
+                             String frontendErrorLog, String backendErrorLog, String errorLog, Integer score) {
+        this.status = status;
+        this.executionTime = executionTime;
+        this.frontendErrorLog = frontendErrorLog;
+        this.backendErrorLog = backendErrorLog;
+        this.errorLog = errorLog;  // 하위 호환용
+        this.score = score;
+        this.processingStatus = ProcessingStatus.COMPLETED;
     }
 
     public enum Status {
@@ -92,6 +114,10 @@ public class Submission {
 
     public enum IsDeleted {
         T, F
+    }
+
+    public enum ProcessingStatus {
+        PENDING, COMPLETED
     }
 
 }

@@ -1,10 +1,33 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          router: ['react-router-dom'],
+          monaco: ['monaco-editor'],
+          stomp: ['@stomp/stompjs', 'sockjs-client'],
+        },
+      },
+    },
+  },
+
+  // sockjs-client가 Node.js의 global 변수를 참조하므로 브라우저용 호환처리
+  define: {
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
 
   // 로컬호스트로 백엔드 연결하기 위한 vite proxy 세팅
   // 개발 서버 설정 (npm run dev 시 적용)
@@ -15,7 +38,10 @@ export default defineConfig({
       // 예: localhost:5173/api/v1/users → localhost:8081/api/v1/users
       '/api': {
         target: 'https://i14e206.p.ssafy.io/', // 백엔드 서버 주소
+        // target: 'http://localhost:8081/', // 백엔드 서버 주소(로컬 테스트용)
+
         changeOrigin: true, // 요청 헤더의 Host를 target 주소로 변경 (CORS 우회)
+        ws: true, // WebSocket 업그레이드 프록시 허용
       },
     },
   },

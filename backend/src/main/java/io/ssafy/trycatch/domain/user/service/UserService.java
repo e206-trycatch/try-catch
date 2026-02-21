@@ -38,9 +38,34 @@ public class UserService {
     }
 
     // 제출 기록 조회
-    public SubmissionHistoryRespDto getSubmissionHistory(Long userId, int page, int size) {
-        log.info("제출 기록 조회 요청 - userId: {}, page: {}, size: {}", userId, page, size);
+//    public SubmissionHistoryRespDto getSubmissionHistory(Long userId, int page, int size) {
+//        log.info("제출 기록 조회 요청 - userId: {}, page: {}, size: {}", userId, page, size);
+//
+//        // 유저 존재 확인
+//        userRepository.findByIdAndIsDeleted(userId, TrueOrFalse.F)
+//                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+//
+//        // 페이지네이션 계산
+//        int offset = (page - 1) * size;
+//
+//        // 데이터 조회
+//        List<SubmissionHistory> submissions = userMapper.findSubmissionHistory(userId, size, offset);
+//        long totalElements = userMapper.countSubmissionHistory(userId);
+//        int totalPages = (int) Math.ceil((double) totalElements / size);
+//
+//        // 페이지 정보
+//        PageInfo pageInfo = PageInfo.builder()
+//                .currentPage(page)
+//                .totalPages(totalPages)
+//                .totalElements(totalElements)
+//                .size(size)
+//                .build();
+//
+//        return SubmissionHistoryRespDto.success(submissions, pageInfo);
+//    }
 
+    // 제출 기록 조회(수정 버전)
+    public SubmissionHistoryRespDto getSuccessThemes(long userId, String mode, int page, int size){
         // 유저 존재 확인
         userRepository.findByIdAndIsDeleted(userId, TrueOrFalse.F)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -49,7 +74,14 @@ public class UserService {
         int offset = (page - 1) * size;
 
         // 데이터 조회
-        List<SubmissionHistory> submissions = userMapper.findSubmissionHistory(userId, size, offset);
+        List<SubmissionHistory> submissions = null;
+
+        if (mode.equals("single")){
+            submissions = userMapper.findSingleSuccessThemes(userId, size, offset);
+        } else if(mode.equals("multi")){
+            submissions = userMapper.findMultiSuccessThemes(userId, size, offset);
+        }
+
         long totalElements = userMapper.countSubmissionHistory(userId);
         int totalPages = (int) Math.ceil((double) totalElements / size);
 

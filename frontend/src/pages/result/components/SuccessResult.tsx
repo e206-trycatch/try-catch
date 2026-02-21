@@ -1,13 +1,11 @@
-// 성공 결과 컴포넌트
 import { useNavigate } from 'react-router-dom';
 
+import { disconnectStomp } from '../../../sockets/stomp';
 import { useGameStore } from '../../../stores/useGameStore';
 import { useResultStore } from '../../../stores/useResultStore';
 import { useRoomStore } from '../../../stores/useRoomStore';
 import { formatTime } from '../../../utils/utils';
 import type { SuccessSubmissionResult } from '../types/resultTypes';
-// TODO: 아이콘 추가 후 import 활성화
-// import rocketIcon from '../../../assets/images/icons/rocket.png';
 
 interface Props {
   result: SuccessSubmissionResult;
@@ -16,23 +14,23 @@ interface Props {
 const SuccessResult = ({ result }: Props) => {
   const navigate = useNavigate();
   const clearStore = useResultStore((state) => state.clear);
-  const { roomId, questOrder, executionTimeMs, next } = result;
+  const { questOrder, executionTimeMs, next, score } = result;
+
+  const successText = 'SUCCESS!';
 
   const handleNext = () => {
     clearStore();
     if (next.hasNextQuest) {
-      // 다음 문제로 넘어가면 draft로 초기화 하기
       const { draft } = useRoomStore.getState();
       if (draft) {
         useGameStore.getState().setGameState(draft.life, draft.hints);
       }
-
-      // 다음 문제로 넘어가면 submissionId null로 초기화 하기
       useGameStore.getState().setSubmissionId(null);
-
-      // 다음 문제로 이동
-      navigate(`/game/${roomId}/${next.nextQuestId}`);
+      useRoomStore.getState().setCurrentQuestId(next.nextQuestId);
+      navigate('/story');
     } else {
+      useGameStore.getState().setMode(null);
+      disconnectStomp();
       navigate('/');
     }
   };
@@ -42,11 +40,21 @@ const SuccessResult = ({ result }: Props) => {
       <p className="text-white text-xl">Quest {questOrder}</p>
 
       <div className="flex items-center gap-4">
-        {/* TODO: 아이콘 추가 후 활성화 */}
-        {/* <img src={rocketIcon} alt="success" className="w-12 h-12" /> */}
         <span className="text-4xl">🚀</span>
-        <span className="text-green-400 text-4xl font-bold">SUCCESS!</span>
+        <div className="flex">
+          {successText.split('').map((letter, index) => (
+            <span
+              key={index}
+              className="text-green-400 text-4xl font-bold animate-success-letter"
+              style={{ animationDelay: `${0.5 + index * 0.1}s` }}
+            >
+              {letter}
+            </span>
+          ))}
+        </div>
       </div>
+
+      <p className="text-2xl text-white font-semibold">코드 점수: {score}점</p>
 
       <p className="text-white">총 소요시간 {formatTime(executionTimeMs)}</p>
 

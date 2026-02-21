@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import backIcon from '../../assets/images/icons/back_icon.png';
 import trycatchLogo from '../../assets/images/trycatch_logo.png';
 import { useStore } from '../../stores/useStore';
 import GlobalAudioPlayer from '../sound/GlobalAudioPlayer';
@@ -13,6 +12,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
+  const isGamePage = location.pathname.startsWith('/game');
 
   // 로그아웃 처리
   const handleLogout = async () => {
@@ -24,7 +24,7 @@ const Header = () => {
     <>
       <GlobalAudioPlayer />
       <header
-        className="w-full flex items-center absolute top-0 left-0 z-10 text-white"
+        className={`w-full flex items-center absolute top-0 left-0 text-white ${isGamePage ? 'z-50' : 'z-10'}`}
         style={{ padding: '24px 80px' }}
       >
         {/* 좌측 로고 영역 */}
@@ -35,14 +35,13 @@ const Header = () => {
             style={{ gap: '0.5vw' }}
           >
             <img
-              src={backIcon}
-              alt="Back"
-              style={{ width: '24px', height: '24px' }}
-            />
-            <img
               src={trycatchLogo}
               alt="TryCatch Logo"
-              style={{ width: '95px', height: '23px', marginLeft: '0.5vw' }}
+              style={{
+                width: '110px',
+                height: '30px',
+                paddingBottom: '3px',
+              }}
               className="object-contain"
             />
           </Link>

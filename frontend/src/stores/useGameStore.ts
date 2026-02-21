@@ -1,45 +1,102 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+type GameMode = 'SINGLE' | 'MULTI' | null;
 
 interface GameState {
+  mode: GameMode;
   currentLife: number;
   currentHints: number;
   currentRoomId: number | null;
-  problemFrameworkId: number | null;
   submissionId: string | null;
+  deadlineAt: string | null;
+  remainingSeconds: number;
 
+  setMode: (mode: GameMode) => void;
   setGameState: (life: number, hints: number) => void;
   initializeForRoom: (roomId: number, life: number, hints: number) => void;
-  setProblemFrameworkId: (id: number | null) => void;
   setSubmissionId: (id: number | null) => void;
+  resetSubmissionId: () => void;
+  startTimer: (deadlineAt: string) => void;
+  stopTimer: () => void;
+  expireTimer: () => void;
 }
 
-export const useGameStore = create<GameState>((set) => ({
-  currentLife: 3,
-  currentHints: 3,
-  currentRoomId: null,
-  problemFrameworkId: null,
-  submissionId: null,
+let intervalId: number | null = null;
 
-  setGameState: (life, hints) =>
-    set({
-      currentLife: life,
-      currentHints: hints,
-    }),
+export const useGameStore = create<GameState>()(
+  persist(
+    (set, get) => ({
+      mode: null,
+      currentLife: 3,
+      currentHints: 3,
+      currentRoomId: null,
+      submissionId: null,
+      deadlineAt: null,
+      remainingSeconds: 0,
 
-  initializeForRoom: (roomId, life, hints) =>
-    set({
-      currentRoomId: roomId,
-      currentLife: life,
-      currentHints: hints,
-    }),
+      setMode: (mode) => set({ mode }),
 
-  setProblemFrameworkId: (id) =>
-    set({
-      problemFrameworkId: id,
-    }),
+      setGameState: (life, hints) =>
+        set({
+          currentLife: life,
+          currentHints: hints,
+        }),
 
-  setSubmissionId: (id) =>
-    set({
-      submissionId: id ? String(id) : null,
+      initializeForRoom: (roomId, life, hints) =>
+        set({
+          currentRoomId: roomId,
+          currentLife: life,
+          currentHints: hints,
+        }),
+
+      setSubmissionId: (id) =>
+        set({
+          submissionId: id ? String(id) : null,
+        }),
+
+      resetSubmissionId: () =>
+        set({
+          submissionId: null,
+        }),
+
+      startTimer: (deadlineAt) => {
+        if (intervalId) clearInterval(intervalId);
+
+        const calc = () =>
+          Math.max(
+            0,
+            Math.floor((new Date(deadlineAt).getTime() - Date.now()) / 1000),
+          );
+
+        set({ deadlineAt, remainingSeconds: calc() });
+
+        intervalId = window.setInterval(() => {
+          const sec = calc();
+          set({ remainingSeconds: sec });
+
+          if (sec <= 0 && intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        }, 1000);
+      },
+
+      stopTimer: () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      },
+
+      expireTimer: () => {
+        get().stopTimer();
+        set({ remainingSeconds: 0 });
+      },
     }),
-}));
+    {
+      name: 'game-store',
+      partialize: (state) => ({ mode: state.mode }),
+    },
+  ),
+);

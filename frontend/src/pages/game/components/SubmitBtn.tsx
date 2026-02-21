@@ -1,4 +1,4 @@
-import SubmitBgIcon from '../../../assets/images/buttons/code_submit_btn.png';
+import SubmitBtnIcon from '../../../assets/images/icons/submit_icon.png';
 
 type SubmitBtnProps = {
   onClick: () => void;
@@ -7,14 +7,20 @@ type SubmitBtnProps = {
 export default function SubmitBtn({ onClick }: SubmitBtnProps) {
   return (
     <button
-      className="w-[95px] h-[45px] bg-center bg-no-repeat cursor-pointer text-black ml-auto"
+      className="text-xl p-5 text-white flex gap-3 items-center justify-center cursor-pointer ml-auto rounded-sm transition-transform duration-200 hover:scale-110 active:scale-95"
       onClick={onClick}
-      style={{
-        backgroundImage: `url(${SubmitBgIcon})`,
-      }}
       type="button"
     >
-      제출
+      <span>제출</span>
+      <span>
+        <img
+          src={SubmitBtnIcon}
+          alt="제출"
+          width={32}
+          height={32}
+          className="w-8"
+        />
+      </span>
     </button>
   );
 }

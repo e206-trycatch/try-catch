@@ -62,26 +62,17 @@ public class SingleRoomController {
                 ApiRespDto.success("퀘스트 스토리를 불러왔습니다.", response)
         );
     }
-
+    // 문제 파일 목록 조회
     @GetMapping("/{roomId}/quest/{questId}/files")
     public ResponseEntity<ApiRespDto<ProblemFilesRespDto>> getProblemFiles(
             @PathVariable Long roomId,
-            @PathVariable Long questId) {
+        @PathVariable Long questId) {
 
-        ProblemFilesRespDto response = singleRoomService.getProblemFiles(roomId, questId);
+            ProblemFilesRespDto response = singleRoomService.getProblemFiles(roomId, questId);
 
-        return ResponseEntity.ok(
-                ApiRespDto.success("문제 파일 목록을 불러왔습니다.", response)
-        );
-    }
-
-    // 게임 시작
-    @PostMapping("/{roomId}/start")
-    public ResponseEntity<ApiRespDto<String>> startGame(@PathVariable Long roomId) {
-        singleRoomService.startGame(roomId);
-        return ResponseEntity.ok(
-                ApiRespDto.success("게임이 시작되었습니다.", null)
-        );
+            return ResponseEntity.ok(
+                    ApiRespDto.success("문제 파일 목록을 불러왔습니다.", response)
+            );
     }
 
     // 힌트 사용

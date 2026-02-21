@@ -1,4 +1,5 @@
-import projectAiMainImage from '../assets/images/project_ai/Project_ai_quest_main.png';
+import graveyardOfTheDeepMainImage from '../assets/images/Graveyard_of_the_deep_quest_main.webp';
+import projectAiMainImage from '../assets/images/project_ai/Project_ai_quest_main.webp';
 
 export type GameMode = 'SINGLE' | 'MULTI';
 export type RoomStatus = 'CREATED' | 'PLAYING' | 'ENDED';
@@ -250,12 +251,11 @@ const makeTheme = (
 
 const THEME_BOMB = makeTheme({
   themeId: 2,
-  name: '폭탄 해제',
+  name: '심해의 무덤',
   description: '빌드 서버의 CI 폭탄을 제한 시간 내에 해제하라.',
   genre: '공포',
   level: 1,
-  themeImageUrl:
-    'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800',
+  themeImageUrl: graveyardOfTheDeepMainImage,
   baseQuestId: 100,
   isAvailable: false,
 });

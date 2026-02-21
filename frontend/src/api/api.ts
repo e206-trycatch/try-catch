@@ -12,30 +12,6 @@ const api = axios.create({
   withCredentials: true, // 쿠키 자동 전송 (refreshToken용)
 });
 
-// ===== 재발급 상태 관리 =====
-let isRefreshing = false;
-let refreshSubscribers: {
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}[] = [];
-
-// 대기 중인 요청들에게 새 토큰 전달
-const onRefreshed = (newToken: string) => {
-  refreshSubscribers.forEach(({ resolve }) => resolve(newToken));
-  refreshSubscribers = [];
-};
-
-// 대기 중인 요청들에게 에러 전달
-const onRefreshFailed = (error: unknown) => {
-  refreshSubscribers.forEach(({ reject }) => reject(error));
-  refreshSubscribers = [];
-};
-
-// ===== 타입 정의 =====
-interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
-  _retry?: boolean;
-}
-
 // ===== 요청 인터셉터 =====
 // 모든 요청에 accessToken 헤더 추가
 api.interceptors.request.use((config) => {
@@ -47,93 +23,102 @@ api.interceptors.request.use((config) => {
 });
 
 // ===== 응답 인터셉터 =====
-// 401 에러 시 토큰 재발급 처리
+// 401 에러 시 토큰 갱신 후 재시도, 실패 시 로그아웃
+
+// 토큰 갱신 상태 관리
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+// refresh 완료 시 대기 중인 요청들에게 새 토큰 전달
+const onRefreshed = (token: string) => {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+};
+
+// refresh 완료 대기열에 추가
+const addSubscriber = (callback: (token: string) => void) => {
+  refreshSubscribers.push(callback);
+};
+
+// 재시도 플래그를 위한 타입 확장
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 api.interceptors.response.use(
   (response) => response,
 
   async (error: AxiosError) => {
+    const originalRequest = error.config as CustomAxiosRequestConfig;
+
+    // 취소된 요청은 무시
     if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
       return Promise.reject(error);
     }
-    const originalRequest = error.config as CustomAxiosRequestConfig;
 
-    // config가 없으면 그냥 에러 반환 (예방적 체크)
-    if (!originalRequest) {
-      return Promise.reject(error);
-    }
+    // 401 에러 처리
+    if (error.response?.status === 401) {
+      const url = originalRequest?.url || '';
 
-    // 네트워크 에러 (서버 응답 없음)
-    if (!error.response) {
-      console.error('네트워크 에러:', error.message);
-      return Promise.reject(error);
-    }
+      // 로그인 요청 실패는 그대로 반환 (잘못된 비밀번호 등)
+      if (url.includes('/auth/login')) {
+        return Promise.reject(error);
+      }
 
-    // 401이 아닌 에러는 그대로 반환
-    if (error.response.status !== 401) {
-      return Promise.reject(error);
-    }
+      // refresh 요청 자체가 실패하면 로그아웃
+      if (url.includes('/auth/refresh')) {
+        await useStore.getState().logout();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
 
-    // /auth/login 요청은 토큰 재발급 불필요 (로그인 실패는 그대로 에러 반환)
-    if (originalRequest.url?.includes('/auth/login')) {
-      return Promise.reject(error);
-    }
+      // 이미 재시도한 요청이면 로그아웃 (무한 루프 방지)
+      if (originalRequest._retry) {
+        await useStore.getState().logout();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
 
-    // /refresh 요청 자체가 실패 → 로그아웃
-    if (originalRequest.url?.includes('/auth/refresh')) {
-      await useStore.getState().logout();
-      window.location.href = '/login';
-      return Promise.reject(error);
-    }
-
-    // 이미 재시도한 요청이면 실패 처리
-    if (originalRequest._retry) {
-      return Promise.reject(error);
-    }
-
-    // 재발급 중이면 대기열에 추가
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        refreshSubscribers.push({
-          resolve: (newToken: string) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      // 토큰 갱신 중이면 대기열에 추가
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addSubscriber((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             resolve(api(originalRequest));
-          },
-          reject: (err: unknown) => {
-            reject(err);
-          },
+          });
         });
-      });
+      }
+
+      // 토큰 갱신 시작
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { data } = await axios.post('/api/v1/auth/refresh', null, {
+          withCredentials: true,
+        });
+
+        const newToken = data.result.accessToken;
+        useStore.getState().setAccessToken(newToken);
+
+        // 대기 중인 요청들에게 새 토큰 전달
+        onRefreshed(newToken);
+
+        // 원래 요청 재시도
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch {
+        // refresh 실패 → 로그아웃
+        await useStore.getState().logout();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
-    // 재발급 시작
-    originalRequest._retry = true;
-    isRefreshing = true;
-
-    try {
-      const { data } = await api.post('/auth/refresh');
-      const newToken = data.result.accessToken;
-
-      // 새 토큰 저장
-      useStore.getState().setAccessToken(newToken);
-
-      // 대기 중인 요청들 처리
-      onRefreshed(newToken);
-
-      // 원래 요청 재시도
-      originalRequest.headers.Authorization = `Bearer ${newToken}`;
-      return api(originalRequest);
-    } catch (refreshError) {
-      // 대기열 정리
-      onRefreshFailed(refreshError);
-
-      // 로그아웃
-      await useStore.getState().logout();
-      window.location.href = '/login';
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
-    }
-  }
+    return Promise.reject(error);
+  },
 );
 
 export default api;

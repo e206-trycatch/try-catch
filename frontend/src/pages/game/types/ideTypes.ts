@@ -1,7 +1,7 @@
 export type NodeType = 'folder' | 'file';
-export type CodeRole = 'FRONTEND' | 'BACKEND' | null;
+export type CodeRole = 'FRONTEND' | 'BACKEND' | 'FULLSTACK' | null;
+export type TimerStatus = 'RUNNING' | 'EXPIRED' | null;
 
-// 백엔드에서 내려주는 데이터(QuestFile) 타입 정의
 export interface QuestFile {
   fileId: number; // 파일 고유 id
   filePath: string; // 파일 경로
@@ -10,11 +10,12 @@ export interface QuestFile {
   code: string; // 파일 코드
 }
 
-// 벡엔드에서 내려주는 데이터(QuestInfo) 타입 정의
 export interface QuestInfo {
   problemFrameworkId: number;
+  framework?: string; // AI 힌트용 프레임워크 이름 ("vue", "spring" 등), FULLSTACK은 null
   frontendErrorLog: string;
   backendErrorLog: string;
+  myPosition?: CodeRole;
 
   files: QuestFile[];
 }

@@ -2,10 +2,11 @@ package io.ssafy.trycatch.domain.submission.dto.request;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
-@Getter
+@Getter @Setter
 @NoArgsConstructor
 public class SubmissionReqDto {
 
@@ -13,13 +14,13 @@ public class SubmissionReqDto {
     private SubmissionItem frontend;
     private SubmissionItem backend;
 
-    @Getter
+    @Getter @Setter
     @NoArgsConstructor
     public static class SubmissionItem {
         private List<FileItem> files;
     }
 
-    @Getter
+    @Getter @Setter
     @NoArgsConstructor
     public static class FileItem {
         private String filePath;

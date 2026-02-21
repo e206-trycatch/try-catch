@@ -8,6 +8,13 @@ export type RolePayload = {
   files: FilePayload[];
 };
 
+export type CodeSaveRequest = {
+  problemFrameworkId: number | null;
+  files: FilePayload[];
+};
+
+export type GameStatus = 'PLAYING' | null;
+
 export type SubmissionRequest = {
   problemFrameworkId: number | null;
   frontend?: RolePayload;
@@ -67,3 +74,52 @@ export type SubmissionResult = Omit<
   hasNextQuest: boolean;
   nextQuestId: number | null;
 };
+
+export interface GameTimerResponse {
+  roomId: number;
+  status: GameStatus;
+  startedAt: string;
+  deadlineAt: string;
+
+  serverNow?: string | null;
+  remainingSeconds?: number | null;
+  expired?: boolean | null;
+}
+
+export interface Participant {
+  userId: number;
+  nickname: string;
+  isReady: boolean;
+}
+
+export interface GameSessionHost extends Participant {
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
+}
+
+export interface GameSessionGuest extends Participant {
+  frontId?: number;
+  frontName?: string;
+  backId?: number;
+  backName?: string;
+}
+
+export interface GameSessionResponse {
+  roomId: number;
+  roomName: string;
+  invitationCode: string;
+  themeId: number;
+  themeName: string;
+  host: GameSessionHost;
+  guest: GameSessionGuest;
+  roomStatus: string;
+}
+
+export interface QuestStoriesResponse {
+  storyId: number;
+  storyOrder: number;
+  imageUrl: string;
+  content: string;
+}

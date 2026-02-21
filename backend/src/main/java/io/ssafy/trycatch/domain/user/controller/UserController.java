@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,22 +33,35 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // 제출 기록 조회
-    @GetMapping("/me/submissions")
-    public ResponseEntity<SubmissionHistoryRespDto> getMySubmissions(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Long userId = getCurrentUserId();
-        log.info("제출 기록 조회 API 호출 - userId: {}, page: {}, size: {}", userId, page, size);
-
-        SubmissionHistoryRespDto response = userService.getSubmissionHistory(userId, page, size);
-        return ResponseEntity.ok(response);
-    }
+//    // 제출 기록 조회
+//    @GetMapping("/me/submissions")
+//    public ResponseEntity<SubmissionHistoryRespDto> getMySubmissions(
+//            @RequestParam(defaultValue = "1") int page,
+//            @RequestParam(defaultValue = "10") int size) {
+//        Long userId = getCurrentUserId();
+//        log.info("제출 기록 조회 API 호출 - userId: {}, page: {}, size: {}", userId, page, size);
+//
+//        SubmissionHistoryRespDto response = userService.getSubmissionHistory(userId, page, size);
+//        return ResponseEntity.ok(response);
+//    }
 
     // SecurityContext에서 userId 추출
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (Long) authentication.getPrincipal();
+    }
+
+    @GetMapping("/me/submissions")
+    public ResponseEntity<SubmissionHistoryRespDto> getSuccessThemes(
+            @RequestParam(defaultValue = "single") String mode,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal long userId) {
+
+        log.info("제출 기록 조회 API 호출 - userId: {}, mode: {}, page: {}, size: {}", userId, mode, page, size);
+
+        SubmissionHistoryRespDto response = userService.getSuccessThemes(userId, mode, page, size);
+        return ResponseEntity.ok(response);
     }
 
 }

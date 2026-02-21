@@ -1,11 +1,42 @@
 // 프로필 조회 섹션 (1차: 조회만, 2차: 수정 기능 추가 예정)
 
+import { toast } from 'react-toastify';
+
+import defaultProfile from '../../assets/images/icons/default_profile.webp';
 import type { Profile } from './types/user';
-import defaultProfile from '../../assets/images/icons/default_profile.png';
 
 interface ProfileSectionProps {
   profile: Profile | null;
 }
+
+// 미구현 기능 알림용 버튼 컴포넌트
+const ActionButton = ({
+  children,
+  variant = 'default',
+}: {
+  children: React.ReactNode;
+  variant?: 'default' | 'small' | 'link';
+}) => {
+  const handleNotImplemented = () => {
+    toast.info('추후 기능 구현 예정입니다.', {
+      containerId: 'global',
+    });
+  };
+
+  const baseStyles = {
+    default:
+      'px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors',
+    small:
+      'px-6 py-1 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors',
+    link: 'text-gray-400 hover:text-white transition-colors underline',
+  };
+
+  return (
+    <button onClick={handleNotImplemented} className={baseStyles[variant]}>
+      {children}
+    </button>
+  );
+};
 
 const ProfileSection = ({ profile }: ProfileSectionProps) => {
   if (!profile) return null;
@@ -28,11 +59,10 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
               onError={(e) => {
                 e.currentTarget.src = defaultProfile;
               }}
+              loading="lazy"
             />
           </div>
-          <button className="px-6 py-1 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-            수정
-          </button>
+          <ActionButton variant="small">수정</ActionButton>
         </div>
 
         {/* 폼 필드 영역 */}
@@ -47,12 +77,8 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                중복확인
-              </button>
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                수정
-              </button>
+              <ActionButton>중복확인</ActionButton>
+              <ActionButton>수정</ActionButton>
             </div>
           </div>
 
@@ -66,9 +92,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                확인
-              </button>
+              <ActionButton>확인</ActionButton>
             </div>
           </div>
 
@@ -82,15 +106,15 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white placeholder-gray-600"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                수정
-              </button>
+              <ActionButton>수정</ActionButton>
             </div>
           </div>
 
           {/* 비밀번호 확인 */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">비밀번호 확인</label>
+            <label className="block text-sm text-gray-400 mb-1">
+              비밀번호 확인
+            </label>
             <div className="flex gap-2">
               <input
                 type="password"
@@ -98,9 +122,7 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white placeholder-gray-600"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                확인
-              </button>
+              <ActionButton>확인</ActionButton>
             </div>
           </div>
 
@@ -114,17 +136,13 @@ const ProfileSection = ({ profile }: ProfileSectionProps) => {
                 className="flex-1 px-4 py-2 bg-[#2a2a3d] border border-gray-700 rounded text-white"
                 readOnly
               />
-              <button className="px-4 py-2 bg-white text-black text-sm rounded hover:bg-gray-200 transition-colors">
-                확인
-              </button>
+              <ActionButton>확인</ActionButton>
             </div>
           </div>
 
           {/* 프로필 저장 링크 */}
           <div className="text-right pt-4">
-            <button className="text-gray-400 hover:text-white transition-colors underline">
-              {'>'} 프로필 저장
-            </button>
+            <ActionButton variant="link">{'>'} 프로필 저장</ActionButton>
           </div>
         </div>
       </div>

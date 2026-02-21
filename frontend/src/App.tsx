@@ -1,21 +1,44 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { Bounce, ToastContainer } from 'react-toastify';
 
 import LoadingSpinner from './components/common/LoadingSpinner';
+import GuestRoute from './components/routes/GuestRoute';
+import PrivateRoute from './components/routes/PrivateRoute';
 import MainLayout from './layouts/AppLayout';
-import GamePage from './pages/game/GamePage';
 import HomePage from './pages/home/HomePage';
 import LoginPage from './pages/login/LoginPage';
-import ModeSelectionPage from './pages/mode-selection/ModeSelectionPage';
-import MyPage from './pages/mypage/MyPage';
-import QuestDescriptionPage from './pages/quest-description/QuestDescriptionPage';
-import ResultLoadingPage from './pages/result/ResultLoadingPage';
-import ResultPage from './pages/result/ResultPage';
-import SingleRoomSettingPage from './pages/room-settings/SingleRoomSettingPage';
 import SignupPage from './pages/signup/SignupPage';
-import ThemeSelectionPage from './pages/theme-selection/ThemeSelectionPage';
 import { useStore } from './stores/useStore';
+
+const GamePage = lazy(() => import('./pages/game/GamePage'));
+const DinoGamePage = lazy(() => import('./pages/dino-game/DinoGamePage'));
+const ResultPage = lazy(() => import('./pages/result/ResultPage'));
+const ResultLoadingPage = lazy(
+  () => import('./pages/result/ResultLoadingPage'),
+);
+const MyPage = lazy(() => import('./pages/mypage/MyPage'));
+const StoryPage = lazy(() => import('./pages/story/StoryPage'));
+const LobbyPage = lazy(() => import('./pages/multi-room/LobbyPage'));
+const QuestDescriptionPage = lazy(
+  () => import('./pages/quest-description/QuestDescriptionPage'),
+);
+const ThemeSelectionPage = lazy(
+  () => import('./pages/theme-selection/ThemeSelectionPage'),
+);
+const ModeSelectionPage = lazy(
+  () => import('./pages/mode-selection/ModeSelectionPage'),
+);
+const SingleRoomSettingPage = lazy(
+  () => import('./pages/room-settings/SingleRoomSettingPage'),
+);
+const MultiRoomSettingPage = lazy(
+  () => import('./pages/room-settings/MultiRoomSettingPage'),
+);
+const InvitationPage = lazy(
+  () => import('./pages/invitation-code/InvitationCodePage'),
+);
 
 function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -56,34 +79,76 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        {/* 메인(대문) */}
-        <Route path="/" element={<HomePage />} />
-        {/* 로그인/회원가입 */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+    <>
+      <ToastContainer
+        containerId="global"
+        position="top-center"
+        autoClose={1500}
+        hideProgressBar
+        transition={Bounce}
+        style={{ marginTop: '12px', zIndex: 99999 }}
+        newestOnTop
+        toastStyle={{
+          backgroundColor: '#1e1b3a',
+          border: '1px solid #555184',
+          color: '#e2e0f0',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 500,
+          padding: '12px 12px',
+          minHeight: 'auto',
+        }}
+      />
+      <Suspense
+        fallback={
+          <div className="flex justify-center items-center min-h-screen">
+            <LoadingSpinner />
+          </div>
+        }
+      >
+        <Routes>
+          <Route element={<MainLayout />}>
+            {/* Public - 누구나 접근 가능 */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/dino" element={<DinoGamePage />} />
 
-        {/* 모드 */}
-        <Route path="/selection/mode" element={<ModeSelectionPage />} />
-        {/* 테마 */}
-        <Route path="/selection/theme" element={<ThemeSelectionPage />} />
-        {/* 퀘스트 */}
-        <Route path="/quest-description" element={<QuestDescriptionPage />} />
-        {/* 싱글모드 방 설정 */}
-        <Route
-          path="/single-room-settings"
-          element={<SingleRoomSettingPage />}
-        />
-        {/* 게임 */}
-        <Route path="/game/:roomId/:questId" element={<GamePage />} />
-        {/* 결과 */}
-        <Route path="/result/loading" element={<ResultLoadingPage />} />
-        <Route path="/result" element={<ResultPage />} />
-        {/* 마이페이지 */}
-        <Route path="/mypage" element={<MyPage />} />
-      </Route>
-    </Routes>
+            {/* Guest Only - 비로그인 유저만 접근 가능 */}
+            <Route element={<GuestRoute />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+            </Route>
+
+            {/* Private - 로그인 유저만 접근 가능 */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/selection/mode" element={<ModeSelectionPage />} />
+              <Route path="/selection/theme" element={<ThemeSelectionPage />} />
+              <Route path="/story" element={<StoryPage />} />
+              <Route
+                path="/quest-description"
+                element={<QuestDescriptionPage />}
+              />
+              <Route
+                path="/single-room-settings"
+                element={<SingleRoomSettingPage />}
+              />
+              <Route
+                path="/multi-room-settings"
+                element={<MultiRoomSettingPage />}
+              />
+              <Route path="/multi-room/lobby" element={<LobbyPage />} />
+              <Route path="/invitation" element={<InvitationPage />} />
+              <Route path="/game/:roomId/:questId" element={<GamePage />} />
+              <Route
+                path="/result/loading/:roomId?"
+                element={<ResultLoadingPage />}
+              />
+              <Route path="/result/:roomId?" element={<ResultPage />} />
+              <Route path="/mypage" element={<MyPage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

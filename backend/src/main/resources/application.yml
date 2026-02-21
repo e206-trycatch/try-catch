@@ -1,20 +1,57 @@
 spring:
   application:
     name: trycatch
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
   datasource:
     url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&useSSL=false
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_ROOT_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 30    # 여기가 핵심! (현재 10으로 잡혀있음)
+      minimum-idle: 10
+      connection-timeout: 30000
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
           time_zone: Asia/Seoul
-        show_sql: true
+        show_sql: false
         format_sql: false
+
+
+  data:
+    redis:
+      host: localhost  # Docker Compose 환경
+      port: 6379
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    listener:
+      simple:
+        # 동시 처리 스레드 수 (GPT API 호출 고려)
+        concurrency: 3
+        max-concurrency: 5
+        # 메시지 재시도 설정
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
 
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
@@ -38,8 +75,32 @@ gpt:
 logging:
   level:
     org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql: trace
-    io.ssafy: debug
+    io.ssafy: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+
+
+minio:
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ROOT_USER}
+  secret-key: ${MINIO_ROOT_PASSWORD}
+  bucket: ${MINIO_BUCKET}
+
+app:
+  file-base-url: ${FILE_BASE_URL}
+
+ai:
+  server:
+    base-url: ${AI_SERVER_URL}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
 
 # 서버 설정
 server:
@@ -48,3 +109,7 @@ server:
   # 프록시가 전달하는 X-Forwarded-* 헤더(원본 호스트, 프로토콜, IP 등)를 Spring이 인식하도록 함
   # 이 설정이 없으면 Spring은 요청의 Origin을 잘못 인식하여 CORS 에러가 발생할 수 있음
   forward-headers-strategy: framework
+scoring:
+  mock-enabled: false
+  mock-delay-ms: 30000
+

@@ -23,7 +23,7 @@ public class SubmissionHistoryRespDto {
     @Getter
     @Builder
     public static class SubmissionHistory {
-        private Long submissionId;
+        private Long userId;
         private String gameMode;
         private String themeName;
         private String frameworkName;

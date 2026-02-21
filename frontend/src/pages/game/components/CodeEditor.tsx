@@ -1,48 +1,99 @@
 import { Editor } from '@monaco-editor/react';
+import { lazy, Suspense } from 'react';
+import { Bounce, toast, ToastContainer } from 'react-toastify';
 
-import type { FileNode } from '../types/ideTypes';
+import type { CodeRole, FileNode } from '../types/ideTypes';
+
+const MarkdownViewer = lazy(() => import('./MarkdownViewer'));
 
 interface CodeEditorProps {
   activeFile: FileNode | null;
   code: string;
   onChange: (value: string) => void;
+  userRole?: CodeRole;
 }
 
 export default function CodeEditor({
   activeFile,
   code,
   onChange,
+  userRole,
 }: CodeEditorProps) {
-  if (!activeFile) {
-    return (
-      <div style={{ color: '#888', padding: '20px' }}>파일을 선택해주세요.</div>
-    );
-  }
+  const isReadOnly =
+    userRole != null &&
+    userRole !== 'FULLSTACK' &&
+    activeFile?.role != null &&
+    activeFile.role !== userRole;
+
   return (
-    // div에 연결 -> 화면에 렌더링 될 때 자동으로 요소를 넣어준다.
-    <Editor
-      key={activeFile.id}
-      width="100%"
-      height="100%"
-      language={activeFile.language ?? 'javascript'} // 활성화 된 파일이 있고, 언어가 있다면 그 값 쓰기
-      value={code} // 에디터에 표시되는 텍스트
-      theme="vs-dark"
-      options={{
-        minimap: { enabled: false },
-        fontSize: 16,
-        contextmenu: false, // 우클릭 메뉴 제거
-      }}
-      onChange={(f) => onChange(f ?? '')}
-      // 복사 + 붙여넣기 방지
-      onMount={(editor) => {
-        editor.onKeyDown((e) => {
-          // 윈도우 ctrl, 맥 command
-          // e.code = 내가 어떤 키를 눌렀는지 나타내는 값
-          if ((e.ctrlKey || e.metaKey) && ['KeyC', 'KeyV'].includes(e.code)) {
-            e.preventDefault();
-          }
-        });
-      }}
-    />
+    <>
+      <ToastContainer
+        position="top-center"
+        autoClose={800}
+        hideProgressBar
+        transition={Bounce}
+        style={{ marginTop: '12px', zIndex: 99999 }}
+        newestOnTop
+        toastStyle={{
+          backgroundColor: '#2d0a0a',
+          border: '1px solid #dc2626',
+          color: '#fca5a5',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 500,
+          padding: '12px 12px',
+          minHeight: 'auto',
+        }}
+      />
+      {!activeFile ? (
+        <div className="w-full h-full text-[#88888} p-5 flex flex-col justify-center items-center blinking-text">
+          파일을 선택해주세요
+        </div>
+      ) : activeFile.language === 'markdown' ? (
+        <Suspense
+          fallback={<div className="w-full h-full bg-[#1E1E1EB3] p-6" />}
+        >
+          <MarkdownViewer code={code} />
+        </Suspense>
+      ) : (
+        <Editor
+          key={activeFile.id}
+          width="100%"
+          height="100%"
+          language={activeFile.language ?? 'javascript'}
+          value={code}
+          theme="vs-dark"
+          options={{
+            minimap: { enabled: false },
+            fontSize: 16,
+            contextmenu: false,
+            readOnly: isReadOnly,
+          }}
+          onChange={(f) => onChange(f ?? '')}
+          onMount={(editor, monacoInstance) => {
+            monacoInstance.editor.defineTheme('transparent-dark', {
+              base: 'vs-dark',
+              inherit: true,
+              rules: [],
+              colors: {
+                'editor.background': '#1E1E1EB3',
+              },
+            });
+            monacoInstance.editor.setTheme('transparent-dark');
+
+            editor.onKeyDown((e) => {
+              const isSave =
+                (e.ctrlKey || e.metaKey) &&
+                e.keyCode === monacoInstance.KeyCode.KeyS;
+
+              if (isSave) {
+                e.preventDefault();
+                toast.error('저장 기능을 사용할 수 없습니다.');
+              }
+            });
+          }}
+        />
+      )}
+    </>
   );
 }

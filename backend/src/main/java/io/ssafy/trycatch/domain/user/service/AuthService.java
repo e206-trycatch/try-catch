@@ -92,7 +92,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
                 .email(request.getEmail())
-                .profileUrl("https://drive.google.com/file/d/1Vm-D394jwwYs9fiuR53qogyhGvTJX2BD/view?usp=drive_link")
+                .profileUrl("https://i14e206.p.ssafy.io/api/v1/files/image/user/b9be7099-72a0-4ba0-be74-f31ba78495df_default_profile.png")
                 .isDeleted(TrueOrFalse.F)
                 .build();
 

@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { login } from '../../api/auth';
 import { useStore } from '../../stores/useStore';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const storeLogin = useStore((state) => state.login);
+
+  // PrivateRoute에서 전달받은 원래 목적지
+  const from = location.state?.from || '/';
 
   // 폼 상태
   const [loginId, setLoginId] = useState('');
@@ -36,7 +40,7 @@ const LoginPage = () => {
           nickname: response.result.nickname,
           profileUrl: response.result.profileUrl,
         });
-        navigate('/');
+        navigate(from, { replace: true });
       }
     } catch (err: unknown) {
       // 에러 처리

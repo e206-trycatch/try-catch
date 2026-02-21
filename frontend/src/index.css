@@ -1,12 +1,30 @@
 @import 'tailwindcss';
 
+@plugin "tailwind-scrollbar";
+@plugin "@tailwindcss/typography";
+
 /* ! 전역 스타일 설정 */
 @font-face {
   font-family: 'Umdot';
-  src: url('./assets/fonts/Umdot11.woff')
-    format('woff2');
+  src: url('./assets/fonts/Umdot11.woff2') format('woff2');
   font-weight: normal;
   font-display: swap;
+}
+
+@keyframes success-letter {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-success-letter {
+  opacity: 0;
+  animation: success-letter 0.4s cubic-bezier(0.5, 1.5, 0.5, 1) forwards;
 }
 
 @layer base {
@@ -29,6 +47,7 @@
     background-color: #030030;
     color: #fefefe;
     line-height: 1.5;
+    box-sizing: border-box;
   }
 
   #root {
@@ -55,6 +74,16 @@
   }
 }
 
+/* 페이지 전환 페이드인 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* 깜빡이는 효과 */
 @keyframes blink {
   0% {
@@ -69,5 +98,38 @@
 }
 
 .blinking-text {
-  animation: blink 1.0s infinite;
+  animation: blink 1s infinite;
+}
+
+/* 호스트 시작 버튼 깜빡이는 효과 */
+@keyframes lobby-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(254, 254, 254, 0);
+  }
+  50% {
+    opacity: 0.85;
+    box-shadow: 0 0 5px #fefefe;
+  }
+}
+
+.animate-lobby-blink {
+  animation: lobby-blink 1.2s ease-in-out infinite;
+}
+
+/* 타이머 경고 */
+@keyframes timer-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.timer-warning {
+  color: #ef4444;
+  animation: timer-blink 1s linear infinite;
 }

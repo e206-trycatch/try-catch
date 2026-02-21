@@ -37,6 +37,11 @@ public class RoomUser {
     private TrueOrFalse isReady = TrueOrFalse.F;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "is_game_ready", nullable = false)
+    @Builder.Default
+    private TrueOrFalse isGameReady = TrueOrFalse.F;  // 게임 시작 Ready
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "position")
     private RoomPosition position;
 
@@ -77,5 +82,19 @@ public class RoomUser {
 
     public boolean isReady() {
         return this.isReady == TrueOrFalse.F;
+    }
+
+    public void toggleReady() {
+        this.isReady = this.isReady == TrueOrFalse.T
+                ? TrueOrFalse.F
+                : TrueOrFalse.T;
+    }
+
+    public void setGameReady(boolean ready) {
+        this.isGameReady = ready ? TrueOrFalse.T : TrueOrFalse.F;
+    }
+
+    public void resetReady() {
+        this.isReady = TrueOrFalse.F;
     }
 }
